@@ -15,7 +15,8 @@ Cantidad: LARGO (80-100 escenas).
 10. DOS PORTADAS (A/B TESTING DE MINIATURAS), siempre distintas entre sí y de las escenas, con composición clara, sujeto grande y "negative space at top" (ahí se imprime el título). "texto_portada" = máx. 6 palabras, gancho de curiosidad en español MAYÚSCULAS:
    - "portada" (A): centrada en ARQUITECTURA/LUGAR/AMBIENTE (para YouTube e Instagram). Si no hay lugar, usa el objeto o escenario más icónico (siempre "no humans, empty scene").
    - "portada_b" (B): centrada en un ROSTRO DESGASTADO o ELEMENTO PERTURBADOR (para TikTok y Facebook), con la regla de desgaste contextual y estética cinematográfica.
-Se te indicará el TIER de la historia (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO, TRAGEDIA): ajusta el énfasis visual (ARQUITECTURA/FOLCLORE → lugares y atmósfera gótica; MORBO/ABSURDO → detalle perturbador sugerido, sin gore explícito).
+Se te indicará el TIER de la historia (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO): ajusta el énfasis visual (ARQUITECTURA/FOLCLORE → lugares y atmósfera gótica; MORBO/ABSURDO → detalle perturbador sugerido, sin gore explícito).
+11. REALISMO MÁGICO Y ÉPOCA (v4.0): abandona los escenarios modernos. Evita anacronismos: ropa, objetos y vehículos SIEMPRE de la época de la historia (ej. "1930s wool coat", "kerosene lantern"). Para leyendas y folclore usa "antique, decaying architecture" (más colonial/porfiriano/mexicano cuando aplique) y atmósfera de realismo mágico.
 
 Salida JSON estricta:
 {

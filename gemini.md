@@ -28,6 +28,19 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 
 ---
 
+## 1.2 CALIBRACIÓN ALGORÍTMICA v4.0 (MÉTRICAS REALES)
+**Datos de YouTube Shorts (7 videos):** La Casa de las Brujas (1m53s) 1,003 vistas · Lecumberri (1m26s) 673 · Mansión Winchester (1m27s) 604 · Faro abandonado (1m08s) 167 · Pelayo (2m56s) 69 · Kaprun (1m11s) 14. Facebook viraliza lo absurdo/escatológico (58k con "El pedo más letal", pero 144 en YouTube); TikTok premia morbo visual y leyendas locales (600-850); Instagram solo sobrevive con estética gótica/arquitectónica; Bilibili sin tracción (envíos suspendidos).
+
+**Conclusiones aplicadas:**
+*   **Duración:** locución ideal de **85-115 s** (≈215-280 palabras). `MAX_DURACION_S = 120` en `generador.py`: si el audio de ElevenLabs lo excede, el guion se reedita automáticamente (hasta 3 intentos) y se regenera la locución.
+*   **Temática:** se priorizan leyendas urbanas latinas, folclore mexicano y arquitectura maldita. **Prohibidas** tragedias internacionales o desastres sin componente sobrenatural (el tier `TRAGEDIA` fue eliminado).
+*   **Tiers y enrutamiento (forzado en Python, `RUTEO_TIER`):** `FOLCLORE`/`ARQUITECTURA` → YouTube Shorts y TikTok (+ Instagram y Facebook); `MORBO`/`ABSURDO` (gore, escatología) → **solo Facebook y TikTok** para proteger la retención de YouTube. La metadata de redes omitidas se descarta y `metadata.md` lista "Publicar en / Omitir".
+*   **Metadata localizada:** jerga y términos locales de México/Latinoamérica en títulos, descripciones y hashtags. Cada red incluye `hora_publicacion` (hora CDMX); Bilibili suspendido hasta tener un prompt propio (idealmente con subtítulos en mandarín).
+*   **Visual:** realismo mágico y época estricta; sin anacronismos ni escenarios modernos; `antique, decaying architecture` en leyendas; portadas A/B (`00_portada.png` arquitectura para YouTube/IG, `00_portada_tiktok.png` rostro/elemento perturbador para TikTok/FB).
+*   **Flujo:** ya **no hay pausa** (Freno del Director eliminado): tras generar imágenes se ensambla el video automáticamente. Repositorio: `github.com/fminajasc1000/narrativasumergidas`.
+
+---
+
 ## 2. REGLAS CORE DE LA INGENIERÍA DE PROMPTS (SINTONÍA ABSOLUTA)
 El sistema sufrió problemas de "alucinaciones IA" y anacronismos que fueron erradicados implementando estas reglas inquebrantables en el código y en los prompts:
 

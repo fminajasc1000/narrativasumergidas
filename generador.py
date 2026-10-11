@@ -40,6 +40,7 @@ PROMPT_BASE = "photorealistic, highly detailed, sharp focus"
 NEGATIVO_BASE = "watermark, deformed, borders, letterbox"
 FUENTE_IMPACT = "/System/Library/Fonts/Supplemental/Impact.ttf"
 DURACION_PORTADA = 0.35  # segundos que la portada aparece como primer frame del video (0 = desactivar)
+MAX_DURACION_S = 120  # límite de locución: arriba de esto Shorts penaliza (ideal 85-115 s)
 
 TEMAS_AZAR = [
     # Ponderados según rendimiento real: arquitectura/folclore (YouTube+IG), morbo (TikTok), absurdo (Facebook)
@@ -243,15 +244,36 @@ def exportar_metadata(datos, ruta):
                 f.write(f"- Prompt: {e.get('prompt', '')}\n\n")
     except Exception as e: print(f"Error metadata: {e}")
 
+# Matriz de enrutamiento (v4.0): folclore/arquitectura → YouTube Shorts y TikTok (+IG/FB); viscerales → solo Facebook y TikTok
+REDES_VIDEO = ["youtube_shorts", "tiktok", "facebook_reels", "instagram_reels"]
+RUTEO_TIER = {
+    "FOLCLORE": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"],
+    "ARQUITECTURA": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"],
+    "MORBO": ["facebook_reels", "tiktok"],
+    "ABSURDO": ["facebook_reels", "tiktok"],
+}
+
+def aplicar_ruteo(ep):
+    tier = str(ep.get("tier", "")).upper().strip()
+    if tier not in RUTEO_TIER: tier = "ARQUITECTURA"; ep["tier"] = tier
+    publicar = RUTEO_TIER[tier]
+    ep["enrutamiento"] = {"publicar": publicar, "omitir": [r for r in REDES_VIDEO if r not in publicar]}
+    meta = ep.get("metadata", {})
+    for r in ep["enrutamiento"]["omitir"]: meta.pop(r, None)
+    meta.pop("bilibili", None)  # suspendido
+
 def generar_datos_completos(peticion, evitar=()):
     print("\n--- FASE 1: GUION Y ESTRATEGIA ---")
     sys_guion = open("prompt_guion.md", encoding="utf-8").read()
     datos_guion = llamar_claude(sys_guion, construir_mensaje(peticion, evitar))
     if not datos_guion: return None
 
+    ep = datos_guion.get("episodio", {})
+    aplicar_ruteo(ep)
+    print(f"   Tier: {ep.get('tier')} → publicar en: {', '.join(ep['enrutamiento']['publicar'])}")
+
     print("--- FASE 2: DIRECCIÓN DE ARTE ---")
     sys_escenas = open("prompt_escenas.md", encoding="utf-8").read()
-    ep = datos_guion.get("episodio", {})
     historia = ep.get("locucion_elevenlabs", {}).get("texto_completo", "")
     datos_escenas = llamar_claude(sys_escenas, f"Título: {ep.get('titulo', '')}\nTIER: {ep.get('tier', '')}\n\nVisuales para:\n\n{historia}")
     if not datos_escenas: return None
@@ -307,12 +329,34 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
 # ---------------------------------------------------------------------------
 # FLUJO 1: LOTE DE VIDEOS
 # ---------------------------------------------------------------------------
+def duracion_audio(ruta):
+    try:
+        a = AudioFileClip(ruta); d = a.duration; a.close(); return d
+    except Exception: return 0
+
+def acortar_guion(texto, objetivo_s):
+    palabras = int(objetivo_s * 2.5)
+    r = llamar_claude("Eres editor de guiones de video corto. Responde SOLO JSON: {\"texto_completo\": \"...\"}",
+                      f"Reedita este guion para que dure MÁXIMO {objetivo_s} segundos de locución (~{palabras} palabras). "
+                      f"Conserva el gancho inicial, la revelación y el cierre con CTA y nombre del canal. Recorta relleno.\n\n{texto}")
+    return (r or {}).get("texto_completo")
+
 def preparar_video(ep, titulo):
-    """Crea carpeta, metadata y audio (sin SD)."""
+    """Crea carpeta, metadata y audio (sin SD). Rechaza/reedita guiones cuyo audio exceda MAX_DURACION_S."""
     os.makedirs(titulo, exist_ok=True)
-    exportar_metadata(ep, titulo)
     ruta_aud = os.path.join(titulo, "00_locucion.mp3")
-    if not os.path.exists(ruta_aud): generar_audio(ep.get("locucion_elevenlabs", {}), ruta_aud)
+    for intento in range(3):
+        if not os.path.exists(ruta_aud): generar_audio(ep.get("locucion_elevenlabs", {}), ruta_aud)
+        dur = duracion_audio(ruta_aud)
+        if dur <= MAX_DURACION_S: break
+        print(f"⚠ Locución de {dur:.0f}s excede {MAX_DURACION_S}s (penalización en Shorts). Reeditando guion ({intento + 1}/3)...")
+        nuevo = acortar_guion(ep["locucion_elevenlabs"].get("texto_completo", ""), MAX_DURACION_S - 10)
+        if not nuevo: break
+        ep["locucion_elevenlabs"]["texto_completo"] = nuevo
+        os.remove(ruta_aud)
+    else:
+        print("⚠ No se logró bajar de la duración máxima; se usa la última versión.")
+    exportar_metadata(ep, titulo)
     return ruta_aud
 
 def lista_imagenes_faltantes(ep, titulo):

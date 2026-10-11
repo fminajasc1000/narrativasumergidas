@@ -25,7 +25,7 @@ REGLAS DE PROMPTS DE IMAGEN (SDXL, en inglés):
 
 REGLAS DE METADATA:
 - facebook: ángulo polémico/dilema moral, clickbait ético ("¿Qué opinas de esta atrocidad?"), pide etiquetar a alguien. instagram: visual, estético, dato curioso GUARDABLE ("guarda esto"), invita a compartir. youtube_community: pregunta directa + encuesta.
-- CALIBRACIÓN REAL: Facebook premia lo absurdo/indignante; YouTube y Instagram premian arquitectura maldita y folclore de México/Latinoamérica; evita tragedias internacionales genéricas. Clasifica la historia en "tier" (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO, TRAGEDIA) y adapta el cierre: ABSURDO → indignación/burla; ARQUITECTURA/FOLCLORE → invitar a explorar el lugar real.
+- CALIBRACIÓN REAL: Facebook premia lo absurdo/indignante; YouTube y Instagram premian arquitectura maldita y folclore de México/Latinoamérica. PROHIBIDAS las tragedias internacionales sin componente sobrenatural. Usa jerga y términos locales de México/Latinoamérica en copys y hashtags. Clasifica la historia en "tier" (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO) y adapta el cierre: ABSURDO → indignación/burla; ARQUITECTURA/FOLCLORE → invitar a explorar el lugar real. Viscerales (MORBO/ABSURDO) solo para Facebook.
 - La diapositiva 1 debe tener un gancho de curiosidad máximo (texto ≤8 palabras) porque decide si se desliza.
 - Cada red lleva "hora_publicacion": mejor día y hora local de Ciudad de México (CST) con razón breve. Referencias: Facebook 18:00-21:00 (mié-dom); Instagram carrusel 19:00-21:00 (lun-mié, vie) ; YouTube Community 12:00-14:00 o 18:00-20:00 (mar-jue).
 
@@ -35,7 +35,7 @@ Salida JSON estricta:
     "titulo": "Título interno",
     "serie": "Nombre de la serie (ej: Casos Sumergidos)",
     "parte": "Parte 1",
-    "tier": "ABSURDO | ARQUITECTURA | FOLCLORE | MORBO | TRAGEDIA",
+    "tier": "ABSURDO | ARQUITECTURA | FOLCLORE | MORBO",
     "estilo_visual_global": "dark eerie true crime atmosphere, cold palette, heavy film grain, photorealistic 35mm photography",
     "gancho_siguiente": "Teaser de la próxima parte",
     "diapositivas": [
