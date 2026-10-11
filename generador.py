@@ -50,20 +50,33 @@ TEMAS_AZAR = [
     "procedimiento médico o castigo histórico macabro (morbo médico)", "hecho histórico absurdo, bizarro e indignante que parece mentira",
     "ritual folclórico que aún se practica en secreto", "caso de supervivencia extrema olvidado"]
 
-ARCHIVO_HISTORIAS_USADAS = "historias_usadas.json"
+# Ubicación dual del historial: en el repo (versionado) y en el Home del usuario (a prueba de borrados de carpetas)
+ARCHIVO_HISTORIAS_LOCAL = os.path.abspath("historias_usadas.json")
+ARCHIVO_HISTORIAS_HOME = os.path.expanduser("~/.narrativas_historias_usadas.json")
 
 def obtener_historias_previas():
-    """Recopila todas las historias/casos ya generados para que Claude jamás los repita."""
+    """Recopila todas las historias/casos ya generados para que Claude jamás los repita,
+    incluso si el usuario borra las carpetas de videos para liberar espacio en disco."""
     historias = set()
-    # 1. Cargar archivo persistente si existe
-    if os.path.exists(ARCHIVO_HISTORIAS_USADAS):
+
+    def _leer_archivo(ruta):
+        if not os.path.exists(ruta): return
         try:
-            with open(ARCHIVO_HISTORIAS_USADAS, encoding="utf-8") as f:
+            with open(ruta, encoding="utf-8") as f:
                 datos = json.load(f)
-                if isinstance(datos, list): historias.update(str(x).strip() for x in datos if x)
+                if isinstance(datos, list):
+                    for item in datos:
+                        if isinstance(item, dict) and item.get("titulo"):
+                            historias.add(item["titulo"].strip())
+                        elif isinstance(item, str) and item.strip():
+                            historias.add(item.strip())
         except Exception: pass
 
-    # 2. Escaneo de carpetas de días (viernes, sabado, domingo, etc.) o locales con metadata.md
+    # 1. Leer del archivo local y del archivo en el Home del sistema (respaldo seguro)
+    _leer_archivo(ARCHIVO_HISTORIAS_LOCAL)
+    _leer_archivo(ARCHIVO_HISTORIAS_HOME)
+
+    # 2. Escaneo de carpetas de días (viernes, sabado, etc.) si aún existen en disco
     for r, _, archivos in os.walk("."):
         if any(p in r for p in ["venv", ".git", "stable-diffusion-webui", "__pycache__"]): continue
         if "metadata.md" in archivos:
@@ -75,17 +88,48 @@ def obtener_historias_previas():
                             if tit: historias.add(tit)
                             break
             except Exception: pass
+
     return sorted(list(historias))
 
-def registrar_historia_usada(titulo):
-    """Guarda un caso o historia en el historial permanente para evitar duplicados futuros."""
+def registrar_historia_usada(titulo, tipo="video"):
+    """Guarda un caso o historia en el historial permanente (en repo y en Home) para evitar duplicados futuros."""
     if not titulo: return
-    previas = set(obtener_historias_previas())
-    previas.add(str(titulo).strip())
-    try:
-        with open(ARCHIVO_HISTORIAS_USADAS, "w", encoding="utf-8") as f:
-            json.dump(sorted(list(previas)), f, ensure_ascii=False, indent=2)
-    except Exception: pass
+    titulo_limpio = str(titulo).strip()
+    
+    # Cargar registros existentes
+    registros = {}
+    for ruta in [ARCHIVO_HISTORIAS_HOME, ARCHIVO_HISTORIAS_LOCAL]:
+        if os.path.exists(ruta):
+            try:
+                with open(ruta, encoding="utf-8") as f:
+                    datos = json.load(f)
+                    if isinstance(datos, list):
+                        for item in datos:
+                            if isinstance(item, dict) and item.get("titulo"):
+                                registros[item["titulo"].strip()] = item
+                            elif isinstance(item, str) and item.strip():
+                                t = item.strip()
+                                registros[t] = {"titulo": t, "fecha": "", "slug": slug(t, 40)}
+            except Exception: pass
+
+    # Insertar o actualizar el nuevo registro
+    import datetime
+    fecha_hoy = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    registros[titulo_limpio] = {
+        "titulo": titulo_limpio,
+        "fecha": fecha_hoy,
+        "tipo": tipo,
+        "slug": slug(titulo_limpio, 40)
+    }
+
+    lista_ordenada = sorted(list(registros.values()), key=lambda x: x["titulo"])
+
+    # Escribir en ambas ubicaciones confiables
+    for ruta in [ARCHIVO_HISTORIAS_LOCAL, ARCHIVO_HISTORIAS_HOME]:
+        try:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump(lista_ordenada, f, ensure_ascii=False, indent=2)
+        except Exception: pass
 
 # ---------------------------------------------------------------------------
 # UTILIDADES
@@ -913,7 +957,8 @@ def completar_guiones(m, ruta, generar):
         guardar_manifest(ruta, m)
         tit = titulo_de(datos)
         if tit:
-            registrar_historia_usada(tit)
+            tipo_contenido = "historia_foto" if "historia" in ruta else "video"
+            registrar_historia_usada(tit, tipo=tipo_contenido)
             if tit not in historias_historicas: historias_historicas.append(tit)
 
 def flujo_videos():

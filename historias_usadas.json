@@ -1,10 +1,50 @@
 [
-  "La Casa de las Escaleras al Techo: El Laberinto de Sarah Winchester",
-  "La Casa que Nunca Podía Terminarse: El Laberinto de Sarah Winchester",
-  "La Casa que Nunca Terminó de Construirse: Winchester",
-  "La Mansión Winchester: La Casa que Nunca Pudo Terminar",
-  "La Quemada: el rostro que ardió a propósito",
-  "La escalera que no lleva a ninguna parte: la mansión Winchester",
-  "Lecumberri: El Panóptico que Nunca Dejó de Vigilar",
-  "San Juan Parangaricutiro: El pueblo que se tragó un volcán"
+  {
+    "titulo": "La Casa de las Escaleras al Techo: El Laberinto de Sarah Winchester",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "la_casa_de_las_escaleras_al_techo_el_lab"
+  },
+  {
+    "titulo": "La Casa que Nunca Podía Terminarse: El Laberinto de Sarah Winchester",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "la_casa_que_nunca_podía_terminarse_el_la"
+  },
+  {
+    "titulo": "La Casa que Nunca Terminó de Construirse: Winchester",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "la_casa_que_nunca_terminó_de_construirse"
+  },
+  {
+    "titulo": "La Mansión Winchester: La Casa que Nunca Pudo Terminar",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "la_mansión_winchester_la_casa_que_nunca_"
+  },
+  {
+    "titulo": "La Quemada: el rostro que ardió a propósito",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "la_quemada_el_rostro_que_ardió_a_propósi"
+  },
+  {
+    "titulo": "La escalera que no lleva a ninguna parte: la mansión Winchester",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "la_escalera_que_no_lleva_a_ninguna_parte"
+  },
+  {
+    "titulo": "Lecumberri: El Panóptico que Nunca Dejó de Vigilar",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "lecumberri_el_panóptico_que_nunca_dejó_d"
+  },
+  {
+    "titulo": "San Juan Parangaricutiro: El pueblo que se tragó un volcán",
+    "fecha": "2026-10-11 15:14",
+    "tipo": "video",
+    "slug": "san_juan_parangaricutiro_el_pueblo_que_s"
+  }
 ]
