@@ -389,16 +389,15 @@ def alinear_escenas_con_audio(escenas, ruta_audio, texto_completo=""):
         num_palabras = len(re.findall(r'\b\w+\b', frase))
         pesos.append(max(num_palabras, 4)) # mínimo equivalente a 4 palabras
 
-    peso_total = sum(pesos)
+    peso_total = sum(pesos) if sum(pesos) > 0 else 1.0
     tiempo_acumulado = 0.0
 
     for i, e in enumerate(imgs_validas):
-        # Duración proporcional exacta a su fragmento narrado
+        # Duración proporcional exacta a su fragmento narrado con respecto al MP3
         if i == len(imgs_validas) - 1:
             dur = max(0.5, duracion_total - tiempo_acumulado)
         else:
             dur = (pesos[i] / peso_total) * duracion_total
-            dur = max(1.5, dur) # al menos 1.5s por imagen para apreciarse
 
         e["segundo_inicio"] = round(tiempo_acumulado, 2)
         e["duracion_calculada"] = round(dur, 2)
@@ -527,15 +526,18 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
 
         texto_pantalla = esc.get("tip_texto_pantalla")
         if i == 0 and texto_pantalla and texto_pantalla.strip() != "":
-            fuente = FUENTE_IMPACT if os.path.exists(FUENTE_IMPACT) else "Arial-Bold"
-            texto = texto_pantalla.upper()
-            pos_y = int(1920 * 0.20)
+            try:
+                fuente = FUENTE_IMPACT if os.path.exists(FUENTE_IMPACT) else "Arial-Bold"
+                texto = texto_pantalla.upper()
+                pos_y = int(1920 * 0.20)
 
-            txt_sombra1 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 18)).set_duration(duracion_clip)
-            txt_sombra2 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 9)).set_duration(duracion_clip)
-            txt_borde = TextClip(texto, fontsize=105, color='black', stroke_color='black', stroke_width=15, font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(duracion_clip)
-            txt_color = TextClip(texto, fontsize=105, color='#FFDE00', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(duracion_clip)
-            capas_escena.extend([txt_sombra1, txt_sombra2, txt_borde, txt_color])
+                txt_sombra1 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 18)).set_duration(duracion_clip)
+                txt_sombra2 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 9)).set_duration(duracion_clip)
+                txt_borde = TextClip(texto, fontsize=105, color='black', stroke_color='black', stroke_width=15, font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(duracion_clip)
+                txt_color = TextClip(texto, fontsize=105, color='#FFDE00', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(duracion_clip)
+                capas_escena.extend([txt_sombra1, txt_sombra2, txt_borde, txt_color])
+            except Exception as e_txt:
+                print(f"Aviso: no se pudo superponer texto en primer clip ({e_txt}), continuando sin texto.")
 
         clips.append(CompositeVideoClip(capas_escena, size=(1080, 1920)))
 
@@ -549,8 +551,15 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
 
     # Limitación de CPU a 4 threads y preset mediano para evitar 100% de CPU y desconexión de periféricos
     num_threads = min(4, max(1, (os.cpu_count() or 4) // 2))
-    vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast", threads=num_threads, logger=None)
-    os.replace(temporal, destino)
+    try:
+        vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast", threads=num_threads, logger=None)
+        os.replace(temporal, destino)
+        print(f"✔ Video ensamblado: {destino}")
+    finally:
+        try: vid.close()
+        except: pass
+        try: audio.close()
+        except: pass
 
 # ---------------------------------------------------------------------------
 # FLUJO 1: LOTE DE VIDEOS
@@ -803,18 +812,272 @@ def flujo_historias_foto():
         print(f"⚠ Lote incompleto ({fallos} diapositivas o guiones fallaron). Ejecuta la opción 2 y elige reanudar: continuará solo con lo que falta.")
 
 # ---------------------------------------------------------------------------
+# REANUDACIÓN DE CARPETAS EXISTENTES O INCONCLUSAS
+# ---------------------------------------------------------------------------
+def parsear_metadata_carpeta(ruta_carpeta):
+    """Extrae título, guion y escenas desde metadata.md si existe en la carpeta."""
+    ruta_md = os.path.join(ruta_carpeta, "metadata.md")
+    info = {"titulo": os.path.basename(ruta_carpeta.rstrip("/\\")), "guion": "", "escenas": []}
+    if not os.path.exists(ruta_md):
+        return info
+
+    try:
+        with open(ruta_md, encoding="utf-8") as f:
+            contenido = f.read()
+
+        m_tit = re.search(r"^#\s*🎬\s*(.+)$", contenido, re.M)
+        if m_tit: info["titulo"] = m_tit.group(1).strip()
+
+        m_gui = re.search(r"##\s*📜\s*GUION\s*\n(.*?)(?=\n---|\n##|$)", contenido, re.DOTALL)
+        if m_gui: info["guion"] = m_gui.group(1).strip()
+
+        bloque_escenas = re.search(r"##\s*🖼\s*ESCENAS.*?\n(.*)", contenido, re.DOTALL)
+        if bloque_escenas:
+            partes = re.split(r"\n###\s*Escena\s*\d+:\s*", "\n" + bloque_escenas.group(1))
+            for p in partes[1:]:
+                lineas = p.strip().split("\n")
+                if not lineas: continue
+                primera = lineas[0].strip()
+                m_arch = re.match(r"([^\s\[]+)", primera)
+                archivo = m_arch.group(1) if m_arch else primera
+                if not archivo.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                    continue
+
+                esc = {"archivo": archivo}
+                for l in lineas[1:]:
+                    l = l.strip()
+                    if l.startswith("- Movimiento:"): esc["movimiento_camara"] = l.split(":", 1)[1].strip()
+                    elif l.startswith("- SFX:"): esc["sfx_capcut"] = l.split(":", 1)[1].strip()
+                    elif l.startswith("- Texto en Pantalla:"): esc["tip_texto_pantalla"] = l.split(":", 1)[1].strip()
+                    elif l.startswith("- Prompt:"): esc["prompt"] = l.split(":", 1)[1].strip()
+                    elif l.startswith("- Frase audio:"): esc["frase_guion_asociada"] = l.split(":", 1)[1].strip().strip('"')
+                info["escenas"].append(esc)
+    except Exception as e:
+        print(f"Aviso al leer metadata.md en '{ruta_carpeta}': {e}")
+
+    return info
+
+def detectar_carpetas_inconclusas(base_dir="."):
+    """Detecta carpetas con recursos listos (audio/imágenes), clasificando las que tienen o no .mp4."""
+    carpetas = []
+    rutas_a_explorar = [base_dir]
+    try:
+        for entrada in os.scandir(base_dir):
+            if entrada.is_dir() and not entrada.name.startswith((".", "venv", "__pycache__", "stable-diffusion-webui")):
+                rutas_a_explorar.append(entrada.path)
+    except Exception:
+        pass
+
+    for r in rutas_a_explorar:
+        try:
+            for entrada in os.scandir(r):
+                if entrada.is_dir() and not entrada.name.startswith((".", "venv", "__pycache__", "stable-diffusion-webui")):
+                    p = entrada.path
+                    archivos = os.listdir(p)
+                    mp3s = [f for f in archivos if f.endswith(".mp3")]
+                    pngs = [f for f in archivos if f.lower().endswith(('.png', '.jpg', '.jpeg')) and not f.startswith("00_portada") and not f.endswith("_base.png")]
+                    mp4s = [f for f in archivos if f.endswith(".mp4") and not f.endswith(".parcial.mp4")]
+                    if mp3s or pngs:
+                        dur_aud = duracion_audio(os.path.join(p, mp3s[0])) if mp3s else 0
+                        carpetas.append({
+                            "ruta": p,
+                            "nombre": entrada.name,
+                            "mp3": os.path.join(p, mp3s[0]) if mp3s else None,
+                            "duracion_audio": dur_aud,
+                            "num_imgs": len(pngs),
+                            "tiene_mp4": len(mp4s) > 0,
+                            "arch_mp4": mp4s[0] if mp4s else None,
+                            "tiene_portada": os.path.exists(os.path.join(p, "00_portada.png")),
+                            "tiene_meta": os.path.exists(os.path.join(p, "metadata.md"))
+                        })
+        except Exception:
+            pass
+
+    return carpetas
+
+def reanudar_y_ensamblar_carpeta(ruta_carpeta):
+    """Reanuda y ensambla el video para una carpeta dada, completando lo que falte."""
+    if not os.path.exists(ruta_carpeta):
+        print(f"✖ La carpeta '{ruta_carpeta}' no existe.")
+        return False
+
+    nombre_carpeta = os.path.basename(ruta_carpeta.rstrip("/\\"))
+    print(f"\n📂 Analizando carpeta: {nombre_carpeta} ({ruta_carpeta})")
+
+    # 1. Buscar audio
+    archivos = os.listdir(ruta_carpeta)
+    mp3s = [f for f in archivos if f.endswith(".mp3")]
+    ruta_audio = os.path.join(ruta_carpeta, mp3s[0]) if mp3s else None
+
+    meta_info = parsear_metadata_carpeta(ruta_carpeta)
+    titulo_limpio = meta_info.get("titulo") or nombre_carpeta
+    titulo_slug = slug(nombre_carpeta)
+
+    if not ruta_audio:
+        print("⚠ No se encontró ningún archivo .mp3 de locución en la carpeta.")
+        if meta_info.get("guion") and API_KEY_ELEVENLABS:
+            if input("¿Deseas generar la locución con ElevenLabs usando el guion de metadata.md? [S/n]: ").strip().lower() != "n":
+                ruta_audio = os.path.join(ruta_carpeta, "00_locucion.mp3")
+                generar_audio({"texto_completo": meta_info["guion"]}, ruta_audio)
+        if not ruta_audio or not os.path.exists(ruta_audio):
+            print("✖ No es posible continuar sin audio .mp3.")
+            return False
+
+    dur_aud = duracion_audio(ruta_audio)
+    print(f"   🎙 Audio detectado: {os.path.basename(ruta_audio)} ({dur_aud:.1f} segundos)")
+
+    # 2. Escenas e imágenes
+    escenas_meta = meta_info.get("escenas", [])
+    imgs_disco = sorted([f for f in archivos if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))
+                         and not f.startswith("00_portada") and not f.endswith("_base.png")])
+
+    print(f"   🖼 Imágenes encontradas en disco: {len(imgs_disco)}")
+
+    # Comprobar imágenes faltantes según metadata.md
+    faltantes = [e for e in escenas_meta if not os.path.exists(os.path.join(ruta_carpeta, e["archivo"])) and e.get("prompt")]
+    if faltantes:
+        print(f"   ⚠ Según metadata.md faltan {len(faltantes)} imágenes de las {len(escenas_meta)} planificadas.")
+        print("     1) Generar las imágenes faltantes en SDXL Lightning y luego ensamblar")
+        print(f"     2) Ensamblar ahora usando solo las {len(imgs_disco)} imágenes existentes en la carpeta")
+        print("     0) Cancelar")
+        eleccion = input("   Opción [2]: ").strip() or "2"
+        if eleccion == "0":
+            return False
+        if eleccion == "1":
+            p = iniciar_sd()
+            try:
+                for it in faltantes:
+                    ruta_salida = os.path.join(ruta_carpeta, it["archivo"])
+                    print(f"   🎨 Generando {it['archivo']}...")
+                    generar_foto(it.get("prompt", ""), ruta_salida, 768, 1344)
+            finally:
+                detener_sd(p)
+            archivos = os.listdir(ruta_carpeta)
+            imgs_disco = sorted([f for f in archivos if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))
+                                 and not f.startswith("00_portada") and not f.endswith("_base.png")])
+
+    if not imgs_disco:
+        print("✖ No hay imágenes para ensamblar el video.")
+        return False
+
+    # Construir lista de escenas definitiva
+    if escenas_meta:
+        escenas_finales = [e for e in escenas_meta if os.path.exists(os.path.join(ruta_carpeta, e["archivo"]))]
+        archivos_en_meta = {e["archivo"] for e in escenas_meta}
+        for img in imgs_disco:
+            if img not in archivos_en_meta:
+                escenas_finales.append({"archivo": img, "movimiento_camara": "zoom_in", "tip_texto_pantalla": ""})
+    else:
+        escenas_finales = [{"archivo": img, "movimiento_camara": "zoom_in" if idx % 2 == 0 else "pan", "tip_texto_pantalla": ""}
+                           for idx, img in enumerate(imgs_disco)]
+
+    # 3. Portada
+    ruta_portada = os.path.join(ruta_carpeta, "00_portada.png")
+    if not os.path.exists(ruta_portada):
+        if os.path.exists(os.path.join(ruta_carpeta, "00_portada_tiktok.png")):
+            ruta_portada = os.path.join(ruta_carpeta, "00_portada_tiktok.png")
+        else:
+            ruta_portada = None
+
+    if ruta_portada:
+        print(f"   🖼 Portada detectada: {os.path.basename(ruta_portada)}")
+    else:
+        print("   ℹ Sin portada 00_portada.png; se ensamblará el video directamente desde la primera escena.")
+
+    # 4. Sincronización y ensamblaje
+    print(f"\n⏱ Calibrando {len(escenas_finales)} escenas con la locución...")
+    escenas_sincronizadas = alinear_escenas_con_audio(escenas_finales, ruta_audio, meta_info.get("guion", ""))
+
+    print("🎬 Iniciando renderizado del video...")
+    ensamblar(escenas_sincronizadas, ruta_audio, ruta_carpeta, titulo_slug, portada=ruta_portada)
+
+    destino_mp4 = os.path.join(ruta_carpeta, f"{titulo_slug}.mp4")
+    if os.path.exists(destino_mp4):
+        tam_mb = os.path.getsize(destino_mp4) / (1024 * 1024)
+        print(f"\n✅ ¡Video ensamblado exitosamente!")
+        print(f"   📁 Archivo: {destino_mp4} ({tam_mb:.1f} MB)")
+        return True
+    else:
+        print(f"\n✖ Ocurrió un error y no se pudo generar el archivo .mp4.")
+        return False
+
+def menu_reanudar_carpeta(todos=None):
+    if todos is None:
+        todos = detectar_carpetas_inconclusas()
+
+    inconclusos = [c for c in todos if not c["tiene_mp4"]]
+    con_video = [c for c in todos if c["tiene_mp4"]]
+
+    print("\n===== REANUDAR / ENSAMBLAR VIDEO INCONCLUSO =====")
+    if inconclusos:
+        print("\n⚡ Carpetas pendientes (audio/imágenes listas, SIN archivo .mp4):")
+        for i, c in enumerate(inconclusos, 1):
+            aud = f"{c['duracion_audio']:.0f}s" if c["duracion_audio"] else "Sin audio"
+            port = "✔ Portada" if c["tiene_portada"] else "Sin portada"
+            print(f"  {i}) {c['nombre']} [{c['num_imgs']} imágenes | {aud} | {port}]")
+    else:
+        print("\nNo se detectaron carpetas pendientes sin video .mp4.")
+
+    if con_video:
+        print("\n📦 Carpetas que ya tienen video .mp4 (por si deseas re-ensamblar):")
+        base_offset = len(inconclusos)
+        for i, c in enumerate(con_video, 1):
+            print(f"  {base_offset + i}) {c['nombre']} [{c['num_imgs']} imágenes | ya tiene {c['arch_mp4']}]")
+
+    print("\nOpciones adicionales:")
+    if inconclusos:
+        print("  T) Ensamblar TODAS las carpetas pendientes sin .mp4")
+    print("  R) Escribir ruta manual de carpeta")
+    print("  0) Volver al menú principal")
+
+    op = input("\nElige una opción: ").strip()
+    if op == "0" or not op:
+        return
+
+    if op.upper() == "T" and inconclusos:
+        print(f"\n🚀 Procesando {len(inconclusos)} carpetas pendientes en cola...")
+        for c in inconclusos:
+            reanudar_y_ensamblar_carpeta(c["ruta"])
+        return
+
+    if op.upper() == "R":
+        ruta_manual = input("Introduce la ruta de la carpeta: ").strip()
+        if os.path.exists(ruta_manual):
+            reanudar_y_ensamblar_carpeta(ruta_manual)
+        else:
+            print(f"✖ La ruta '{ruta_manual}' no existe.")
+        return
+
+    try:
+        idx = int(op)
+        todos_en_orden = inconclusos + con_video
+        if 1 <= idx <= len(todos_en_orden):
+            elegido = todos_en_orden[idx - 1]
+            reanudar_y_ensamblar_carpeta(elegido["ruta"])
+        else:
+            print("Opción inválida.")
+    except ValueError:
+        print("Opción no reconocida.")
+
+# ---------------------------------------------------------------------------
 # MENÚ
 # ---------------------------------------------------------------------------
 def iniciar():
     if not API_KEY_ANTHROPIC: print("⚠ Falta API_KEY_ANTHROPIC en .env")
     while True:
+        carpetas = detectar_carpetas_inconclusas()
+        pendientes = [c for c in carpetas if not c["tiene_mp4"]]
+        aviso = f" (¡{len(pendientes)} pendiente(s) de ensamblar!)" if pendientes else ""
+
         print("\n===== NARRATIVAS SUMERGIDAS =====")
         print("  1) Videos verticales (uno o varios)")
         print("  2) Historias fotográficas (carruseles FB / IG / YouTube)")
+        print(f"  3) Reanudar / Ensamblar carpeta existente (MP3 + imágenes){aviso}")
         print("  0) Salir")
         op = input("Opción: ").strip()
         if op == "1": flujo_videos()
         elif op == "2": flujo_historias_foto()
+        elif op == "3": menu_reanudar_carpeta(carpetas)
         elif op == "0": break
 
 if __name__ == "__main__": iniciar()

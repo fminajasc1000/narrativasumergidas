@@ -42,6 +42,9 @@ Motor de automatización semi-asistida de contenido multiplataforma: videos vert
    python generador.py
    ```
 
-## Flujo
-Tras generar las imágenes, el video se ensambla **automáticamente** (sin pausa). Cada video se clasifica por *tier* (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO) y su `metadata.md` indica en qué redes publicar, cuáles omitir y la hora ideal. Si la locución excede 120 s, el guion se reedita. Bilibili está suspendido temporalmente.
+## Flujo y Reanudación Inteligente (v4.3)
+1. **Detección y Reanudación de Carpetas:** Si una generación quedó a medias (por ejemplo, con el `.mp3` y las imágenes generadas pero sin ensamblar el `.mp4`), el menú principal lo detecta y muestra la opción `3) Reanudar / Ensamblar carpeta existente`. Permite reanudar de inmediato, generar solo las imágenes faltantes si hiciera falta, o ensamblar con las existentes.
+2. **Sincronización Exacta MP3 vs Escenas:** Los cortes de cada escena se calculan proporcionalmente sobre la duración real del archivo de audio `.mp3` generado por ElevenLabs, registrando los intervalos exactos `[MM:SS - MM:SS]` en `metadata.md`.
+3. **Control Térmico y de CPU en Mac mini M4:** Los procesos de renderizado de MoviePy (máximo 4 threads, preset `veryfast`) y de Stable Diffusion WebUI (`OMP_NUM_THREADS=4`) están limitados para evitar el 100% de uso de CPU y garantizar la estabilidad de los periféricos USB/Bluetooth.
+4. **Ensamblado Automático sin Freno:** Tras generar las imágenes, el video se ensambla **automáticamente** (sin pausas). Cada video se clasifica por *tier* (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO) y su `metadata.md` indica en qué redes publicar, cuáles omitir y la hora ideal de publicación. Si la locución excede 120 s, el guion se reedita automáticamente.
 

@@ -27,11 +27,10 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 *   **Seguridad:** las API keys se leen de `.env` (`API_KEY_ANTHROPIC`, `API_KEY_ELEVENLABS`, `VOICE_ID_ELEVENLABS`); nunca deben escribirse en el código. `VOICE_ID_ELEVENLABS` tiene prioridad sobre el voice_id del guion.
 
 ---
-
-## 1.3 NOVEDADES v4.1 (`generador.py`)
-*   **Reanudación tras fallos:** cada lote se guarda en `lote_videos_actual.json` / `lote_historias_actual.json` (reemplazan a `ultimo_lote.json`). Al abrir una opción, si hay un lote sin terminar el sistema ofrece **reanudarlo**: solo regenera guiones que faltan (y si la fase 2 de arte falló reutiliza el guion ya hecho), audio, imágenes o diapositivas ausentes, y ensambla solo los videos sin `.mp4` (el render se escribe como `.parcial.mp4` y se renombra al terminar). Cada imagen de SDXL reintenta 3 veces. Un video o historia que falla no detiene el resto del lote.
-*   **N videos por tema:** en el modo "Tema" se pueden dar uno o varios temas (`|`) y cuántos videos/historias **por tema**; con N>1 sobre el mismo tema, Claude recibe "caso X de N" y debe aportar un caso/ángulo distinto sin repetir títulos.
-*   **Portadas diseñadas por historia** (`disenar_portada`): color grading, viñeta, degradados de legibilidad, título con **palabra clave resaltada en color de acento con brillo**, badge/etiqueta, barra de acento, marco y firma del canal. Claude define por portada `texto_portada`, `palabra_clave`, `etiqueta` y `color_acento` (hex; si falta se usa la paleta del tier). Tres portadas: `00_portada.png` (A, arquitectura, YouTube/IG), `00_portada_tiktok.png` (B, rostro/elemento perturbador, TikTok/FB) y `00_portada_bilibili.png` (C, **horizontal 16:9, 1920x1080**, título en chino simplificado `texto_portada_zh` + español; Bilibili sigue suspendido pero la portada queda lista).
+## 1.4 NOVEDADES v4.3 (`generador.py`)
+*   **Reanudación directa de carpetas inconclusas:** Opción `3) Reanudar / Ensamblar carpeta existente` en el menú principal. Detecta automáticamente si hay proyectos donde se generó el audio (`00_locucion.mp3`) y las imágenes pero no se ensambló el `.mp4`. Permite ensamblar al instante con las imágenes existentes o generar solo las faltantes en SDXL.
+*   **Sincronización exacta con el MP3 real:** Cada escena ajusta su duración (`segundo_inicio`, `segundo_fin`, `duracion_calculada`) calculada proporcionalmente sobre el `.mp3` de ElevenLabs, registrando los timestamps `[MM:SS - MM:SS]` en `metadata.md` sin desajustes temporales.
+*   **Control térmico y de CPU en Mac mini M4:** Limitación estricta de concurrencia en MoviePy (`threads=4`, preset `veryfast`) y variables de entorno en SD WebUI (`OMP_NUM_THREADS=4`, `MKL_NUM_THREADS=4`) para prevenir el 100% de uso de CPU y evitar desconexiones de periféricos USB/Bluetooth.
 
 ---
 
