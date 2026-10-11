@@ -46,6 +46,15 @@ Si el usuario te da tema/historia, respétalo, pero clasifícalo y enrútalo igu
 - INSTAGRAM REELS: Enfoque estético y de dato curioso GUARDABLE: "Guarda este dato", "Comparte con quien ama los lugares embrujados". Tono visual y misterioso, 5-8 hashtags de nicho gótico/arquitectura/misterio.
 - Cada red lleva "hora_publicacion": mejor ventana (hora local de Ciudad de México, CST) y día, con razón breve, adaptada al tier. Referencias: TikTok 19:00-22:00 (mar-jue y dom); Facebook 18:00-21:00 (mié-dom); YouTube Shorts 12:00-14:00 o 19:00-21:00 (vie-sáb); Instagram 20:00-22:00 (lun-mié y vie). Para MORBO/ABSURDO prioriza noche (21:00-23:00).
 
+═══ ESTRATEGIA PARA CUALQUIER MOMENTO DEL DÍA (v4.4) ═══
+El creador puede publicar este video en CUALQUIER momento del día (no solo de noche).
+Agrega en "metadata" el bloque "estrategia_horaria" con un gancho breve adaptado para cada franja:
+- "manana": (07:00-10:00 CST) Gancho de camino al trabajo/estudio o inicio de jornada.
+- "mediodia": (12:00-15:00 CST) Gancho para el break de comida/almuerzo.
+- "tarde": (16:00-19:00 CST) Gancho de desconexión y debate.
+- "noche": (20:00-23:00 CST) Gancho prime time para ver a oscuras.
+- "madrugada": (00:00-04:00 CST) Gancho de insomnio ("Si estás despierto a las 3 a.m...").
+
 ═══ SALIDA JSON ESTRICTA ═══
 {
   "episodio": {
@@ -62,7 +71,14 @@ Si el usuario te da tema/historia, respétalo, pero clasifícalo y enrútalo igu
       "facebook_reels": {"titulo": "...", "descripcion": "...", "hashtags": "...", "hora_publicacion": "..."},
       "instagram_reels": {"titulo": "...", "descripcion": "...", "hashtags": "...", "hora_publicacion": "..."},
       "comentario_fijado": "Pregunta polémica general A/B",
-      "respuestas_interaccion": ["R1", "R2"]
+      "respuestas_interaccion": ["R1", "R2"],
+      "estrategia_horaria": {
+        "manana": "Gancho matutino...",
+        "mediodia": "Gancho de almuerzo...",
+        "tarde": "Gancho de tarde...",
+        "noche": "Gancho nocturno...",
+        "madrugada": "Gancho de insomnio..."
+      }
     }
   }
 }

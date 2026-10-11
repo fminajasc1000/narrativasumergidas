@@ -27,10 +27,11 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 *   **Seguridad:** las API keys se leen de `.env` (`API_KEY_ANTHROPIC`, `API_KEY_ELEVENLABS`, `VOICE_ID_ELEVENLABS`); nunca deben escribirse en el código. `VOICE_ID_ELEVENLABS` tiene prioridad sobre el voice_id del guion.
 
 ---
-## 1.4 NOVEDADES v4.3 (`generador.py`)
-*   **Reanudación directa de carpetas inconclusas:** Opción `3) Reanudar / Ensamblar carpeta existente` en el menú principal. Detecta automáticamente si hay proyectos donde se generó el audio (`00_locucion.mp3`) y las imágenes pero no se ensambló el `.mp4`. Permite ensamblar al instante con las imágenes existentes o generar solo las faltantes en SDXL.
-*   **Sincronización exacta con el MP3 real:** Cada escena ajusta su duración (`segundo_inicio`, `segundo_fin`, `duracion_calculada`) calculada proporcionalmente sobre el `.mp3` de ElevenLabs, registrando los timestamps `[MM:SS - MM:SS]` en `metadata.md` sin desajustes temporales.
-*   **Control térmico y de CPU en Mac mini M4:** Limitación estricta de concurrencia en MoviePy (`threads=4`, preset `veryfast`) y variables de entorno en SD WebUI (`OMP_NUM_THREADS=4`, `MKL_NUM_THREADS=4`) para prevenir el 100% de uso de CPU y evitar desconexiones de periféricos USB/Bluetooth.
+## 1.5 NOVEDADES v4.4 (`generador.py` - Transiciones Ópticas, Movimientos y Flexibilidad 24h)
+*   **Transiciones Ópticas Suaves:** Eliminados los cortes planos o destellos negros con `CompositeVideoClip` layering. Disolvencia óptica suave (`crossfade` de 0.35 s) donde la escena saliente se funde suavemente con la entrante sin huecos. Soporte para `fade_black` (fundido a negro teatral para saltos de época o muerte) y `cut` (corte directo para gancho inicial).
+*   **Cámara Cinematográfica Dinámica:** `mover_clip` soporta 7 movimientos fluidos: `zoom_in` (+8%), `zoom_out` (-8%), `pan_left`, `pan_right`, `tilt_up`, `tilt_down` y `slow_drift` diagonal orgánico.
+*   **Cuota Visual Calibrada:** Se calcula automáticamente entre 18 y 25 escenas (~4.5 s por imagen) para que el espectador aprecie los detalles de SDXL sin saturarse ni generar excesos absurdos como 64 imágenes.
+*   **Flexibilidad 24 Horas:** Selector de momento del día (Mañana, Mediodía, Tarde, Noche Prime, Madrugada/Insomnio, o Multi-horario completo). La iluminación de las imágenes se adapta al momento (niebla matutina, sol duro de mediodía, hora dorada crepuscular o penumbra nocturna) y `metadata.md` incluye la estrategia de publicación para cualquier hora.
 
 ---
 

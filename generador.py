@@ -89,6 +89,23 @@ def pedir_modo(etiqueta):
     n = pedir_int(f"¿Cuántos {etiqueta} generar?", 1)
     return [{"tipo": "tema", "texto": None} for _ in range(n)]
 
+FRANJAS_DIA = {
+    "1": ("Cualquier momento / Multi-horario (estrategia 24h completa en metadata, recomendado)", "multi"),
+    "2": ("Mañana (07:00 - 10:00 CST: despertar, transporte, datos insólitos)", "manana"),
+    "3": ("Mediodía (12:00 - 15:00 CST: break de almuerzo, misterio y arquitectura)", "mediodia"),
+    "4": ("Tarde (16:00 - 19:00 CST: salida laboral/escolar, debate en Facebook)", "tarde"),
+    "5": ("Noche Prime (20:00 - 23:00 CST: máxima oscuridad, terror inmersivo)", "noche"),
+    "6": ("Madrugada / Insomnio (00:00 - 04:00 CST: paranoia y misterio para desvelados)", "madrugada"),
+}
+
+def pedir_config_videos():
+    print("\n¿Para qué momento del día deseas enfocar la historia / publicación?")
+    for k, (nombre, _) in FRANJAS_DIA.items():
+        print(f"  {k}) {nombre}")
+    op = input("Opción [1]: ").strip() or "1"
+    _, clave = FRANJAS_DIA.get(op, FRANJAS_DIA["1"])
+    return {"momento_dia": clave}
+
 def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     if peticion["tipo"] == "historia":
         return f"Adapta ESTA historia proporcionada por el creador (no inventes otra):\n\n{peticion['texto']}"
@@ -97,6 +114,20 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     if peticion.get("de", 1) > 1:
         msg += (f"\n\nEs el caso {peticion['variante']} de {peticion['de']} sobre el MISMO tema. Debe ser un caso, lugar, personaje o ángulo "
                 f"DISTINTO a los demás de esta serie, con su propio gancho y título; no repitas datos ni final.")
+
+    momento = peticion.get("momento_dia")
+    if momento and momento != "multi":
+        descripciones = {
+            "manana": "MAÑANA (07:00-10:00 CST: camino al trabajo/estudio, tono intrigante y dato insólito matutino)",
+            "mediodia": "MEDIODÍA (12:00-15:00 CST: break de comida/almuerzo, misterio envolvente)",
+            "tarde": "TARDE (16:00-19:00 CST: salida de actividades, debate moral y tensión)",
+            "noche": "NOCHE PRIME (20:00-23:00 CST: máxima oscuridad, terror inmersivo)",
+            "madrugada": "MADRUGADA / INSOMNIO (00:00-04:00 CST: atmósfera de paranoia para los que no pueden dormir)",
+        }
+        msg += f"\n\nMOMENTO DEL DÍA OBJETIVO: Diseña el gancho, el tono y la ambientación lumínica específicamente para la franja de {descripciones.get(momento, momento.upper())}."
+    else:
+        msg += "\n\nMOMENTO DEL DÍA: Flexible / Cualquier momento. Incluye en la metadata la tabla 'estrategia_horaria' adaptada para mañana, mediodía, tarde, noche y madrugada."
+
     if evitar: msg += "\n\nIMPORTANTE: NO repitas estos casos ya usados en este lote: " + "; ".join(evitar)
     return msg
 
@@ -425,7 +456,19 @@ def exportar_metadata(datos, ruta):
                     f.write(f"**Hashtags:** {meta[red].get('hashtags', '')}\n")
                     f.write(f"**🕒 Hora ideal de publicación:** {meta[red].get('hora_publicacion', '')}\n\n")
             f.write(f"**Comentario Fijado:** {meta.get('comentario_fijado', '')}\n")
-            f.write(f"**Respuestas:** {', '.join(meta.get('respuestas_interaccion', []))}\n\n---\n")
+            f.write(f"**Respuestas:** {', '.join(meta.get('respuestas_interaccion', []))}\n\n")
+
+            horarios = meta.get("estrategia_horaria", {})
+            if horarios or any(meta.get(r, {}).get("hora_publicacion") for r in REDES_VIDEO):
+                f.write("### ⏰ ESTRATEGIA PARA CUALQUIER MOMENTO DEL DÍA\n")
+                if horarios.get("manana"): f.write(f"- 🌅 **Mañana (07:00 - 10:00 CST):** {horarios['manana']}\n")
+                if horarios.get("mediodia"): f.write(f"- ☀️ **Mediodía (12:00 - 15:00 CST):** {horarios['mediodia']}\n")
+                if horarios.get("tarde"): f.write(f"- 🌇 **Tarde (16:00 - 19:00 CST):** {horarios['tarde']}\n")
+                if horarios.get("noche"): f.write(f"- 🌙 **Noche Prime (20:00 - 23:00 CST):** {horarios['noche']}\n")
+                if horarios.get("madrugada"): f.write(f"- 🕯️ **Madrugada / Insomnio (00:00 - 04:00 CST):** {horarios['madrugada']}\n")
+                f.write("\n")
+
+            f.write("---\n")
             for clave, arch, uso in (("portada", "00_portada.png", "YouTube / Instagram"), ("portada_b", "00_portada_tiktok.png", "TikTok / Facebook"),
                                      ("portada_bilibili", "00_portada_bilibili.png", "Bilibili 16:9 (suspendido, lista para cuando se reactive)")):
                 p = datos.get(clave, {})
@@ -440,7 +483,8 @@ def exportar_metadata(datos, ruta):
                 stamp = f"[{m_ini:02d}:{s_ini:02d} - {m_fin:02d}:{s_fin:02d}]"
                 f.write(f"### Escena {i}: {e.get('archivo', '')} {stamp}\n")
                 if e.get("frase_guion_asociada"): f.write(f"- Frase audio: \"{e.get('frase_guion_asociada')}\"\n")
-                f.write(f"- Movimiento: {e.get('movimiento_camara', '')}\n")
+                f.write(f"- Movimiento: {e.get('movimiento_camara', 'zoom_in')}\n")
+                f.write(f"- Transición: {e.get('transicion', 'crossfade')}\n")
                 f.write(f"- SFX: {e.get('sfx_capcut', '')}\n")
                 f.write(f"- Texto en Pantalla: {e.get('tip_texto_pantalla', '')}\n")
                 f.write(f"- Prompt: {e.get('prompt', '')}\n\n")
@@ -548,12 +592,68 @@ def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=Non
     ep["escenas"] = escenas
     return datos_guion
 
-def mover_clip(clip, mov, factor=0.12):
-    clip = clip.resize(height=1920)
-    if clip.w < 1080: clip = clip.resize(width=1080)
-    clip = clip.crop(x_center=clip.w/2, y_center=clip.h/2, width=1080, height=1920)
-    if mov == "zoom_in": return clip.resize(lambda t: 1 + factor * (t / clip.duration))
-    return clip.resize(lambda t: 1 + (factor/2) * (t / clip.duration))
+def mover_clip(clip_img, mov="zoom_in", dur=4.0):
+    """Aplica animación de cámara cinematográfica fluida y sin saltos (zoom in/out, pan left/right, tilt up/down, drift)."""
+    mov = (mov or "zoom_in").lower().strip()
+    factor = 0.08  # 8% para máxima suavidad visual
+    W, H = 1080, 1920
+
+    if mov == "zoom_in":
+        base = clip_img.resize(height=H)
+        if base.w < W: base = base.resize(width=W)
+        base = base.crop(x_center=base.w/2, y_center=base.h/2, width=W, height=H)
+        c = base.resize(lambda t: 1.0 + factor * (t / max(0.1, dur))).set_position(('center', 'center'))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    elif mov == "zoom_out":
+        base = clip_img.resize(height=H)
+        if base.w < W: base = base.resize(width=W)
+        base = base.crop(x_center=base.w/2, y_center=base.h/2, width=W, height=H)
+        c = base.resize(lambda t: (1.0 + factor) - factor * (t / max(0.1, dur))).set_position(('center', 'center'))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    elif mov in ("pan_left", "pan"):
+        desp = 100
+        base = clip_img.resize(height=H)
+        if base.w < W + desp: base = base.resize(width=W + desp)
+        c = base.set_position(lambda t: (int(-desp * (t / max(0.1, dur))), 'center'))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    elif mov == "pan_right":
+        desp = 100
+        base = clip_img.resize(height=H)
+        if base.w < W + desp: base = base.resize(width=W + desp)
+        c = base.set_position(lambda t: (int(-desp + desp * (t / max(0.1, dur))), 'center'))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    elif mov in ("tilt_up", "tilt"):
+        desp = 120
+        base = clip_img.resize(width=W)
+        if base.h < H + desp: base = base.resize(height=H + desp)
+        c = base.set_position(lambda t: ('center', int(-desp + desp * (t / max(0.1, dur)))))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    elif mov == "tilt_down":
+        desp = 120
+        base = clip_img.resize(width=W)
+        if base.h < H + desp: base = base.resize(height=H + desp)
+        c = base.set_position(lambda t: ('center', int(-desp * (t / max(0.1, dur)))))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    elif mov == "slow_drift":
+        desp = 50
+        base = clip_img.resize(height=H + desp)
+        if base.w < W + desp: base = base.resize(width=W + desp)
+        c = base.set_position(lambda t: (int(-desp * (t / max(0.1, dur))), int(-desp * (t / max(0.1, dur)))))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
+
+    else:
+        # Por defecto: zoom sutil
+        base = clip_img.resize(height=H)
+        if base.w < W: base = base.resize(width=W)
+        base = base.crop(x_center=base.w/2, y_center=base.h/2, width=W, height=H)
+        c = base.resize(lambda t: 1.0 + (factor / 2) * (t / max(0.1, dur))).set_position(('center', 'center'))
+        return CompositeVideoClip([c], size=(W, H)).set_duration(dur)
 
 def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     print(f"\n--- ENSAMBLANDO: {titulo} ---")
@@ -568,40 +668,60 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     imgs = [e for e in escenas_sincronizadas if os.path.exists(os.path.join(ruta_carpeta, e.get("archivo", "")))]
     if not imgs: return
 
-    clips = []
     duracion_defecto = audio.duration / len(imgs)
+    t_trans = 0.35  # duración del crossfade óptico suave
+    t_portada = DURACION_PORTADA if (portada and os.path.exists(portada) and DURACION_PORTADA > 0) else 0.0
 
+    capas_totales = []
+
+    # 1. Portada al inicio (miniatura para plataformas)
+    if t_portada > 0:
+        c_portada = ImageClip(portada).set_duration(t_portada).resize((1080, 1920)).set_start(0.0)
+        capas_totales.append(c_portada)
+
+    # 2. Construcción de capas con transiciones ópticas fluidas
     for i, esc in enumerate(imgs):
-        # Duración calibrada con el audio MP3
-        duracion_clip = esc.get("duracion_calculada", duracion_defecto)
-        if i == len(imgs) - 1:
-            duracion_clip += 0.5  # breve margen final para rematar audio
+        t_inicio = t_portada + esc.get("segundo_inicio", i * duracion_defecto)
+        dur_clip = esc.get("duracion_calculada", duracion_defecto)
+        trans = esc.get("transicion", "crossfade").lower().strip()
+        mov = esc.get("movimiento_camara", "zoom_in")
 
-        base_clip = mover_clip(ImageClip(os.path.join(ruta_carpeta, esc.get("archivo"))).set_duration(duracion_clip), esc.get("movimiento_camara")).crossfadein(0.1)
-        capas_escena = [base_clip.set_position(('center', 'center'))]
+        # Extender clip si el siguiente realiza disolvencia (crossfade), evitando saltos o marcos negros
+        proxima_cross = (i < len(imgs) - 1) and (imgs[i + 1].get("transicion", "crossfade").lower().strip() == "crossfade")
+        dur_extendida = dur_clip + (t_trans if proxima_cross else (0.5 if i == len(imgs) - 1 else 0.0))
 
+        ruta_img = os.path.join(ruta_carpeta, esc.get("archivo"))
+        clip_base = ImageClip(ruta_img)
+        clip_anim = mover_clip(clip_base, mov, dur=dur_extendida)
+
+        # Transición de entrada
+        if trans == "fade_black":
+            clip_anim = clip_anim.fadein(0.25).fadeout(0.25)
+        elif trans == "crossfade" and i > 0:
+            clip_anim = clip_anim.crossfadein(t_trans)
+
+        clip_anim = clip_anim.set_start(t_inicio)
+        capas_totales.append(clip_anim)
+
+        # Texto de gancho en primer clip
         texto_pantalla = esc.get("tip_texto_pantalla")
         if i == 0 and texto_pantalla and texto_pantalla.strip() != "":
             try:
                 fuente = FUENTE_IMPACT if os.path.exists(FUENTE_IMPACT) else "Arial-Bold"
                 texto = texto_pantalla.upper()
                 pos_y = int(1920 * 0.20)
+                dur_txt = min(dur_clip, 3.5)
 
-                txt_sombra1 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 18)).set_duration(duracion_clip)
-                txt_sombra2 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 9)).set_duration(duracion_clip)
-                txt_borde = TextClip(texto, fontsize=105, color='black', stroke_color='black', stroke_width=15, font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(duracion_clip)
-                txt_color = TextClip(texto, fontsize=105, color='#FFDE00', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(duracion_clip)
-                capas_escena.extend([txt_sombra1, txt_sombra2, txt_borde, txt_color])
+                txt_sombra1 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 18)).set_duration(dur_txt).set_start(t_inicio)
+                txt_sombra2 = TextClip(texto, fontsize=105, color='black', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y + 9)).set_duration(dur_txt).set_start(t_inicio)
+                txt_borde = TextClip(texto, fontsize=105, color='black', stroke_color='black', stroke_width=15, font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(dur_txt).set_start(t_inicio)
+                txt_color = TextClip(texto, fontsize=105, color='#FFDE00', font=fuente, method='caption', size=(900, None)).set_position(('center', pos_y)).set_duration(dur_txt).set_start(t_inicio)
+                capas_totales.extend([txt_sombra1, txt_sombra2, txt_borde, txt_color])
             except Exception as e_txt:
                 print(f"Aviso: no se pudo superponer texto en primer clip ({e_txt}), continuando sin texto.")
 
-        clips.append(CompositeVideoClip(capas_escena, size=(1080, 1920)))
-
-    # PORTADA FINGIDA: primer frame breve = miniatura automática en las plataformas
-    if portada and os.path.exists(portada) and DURACION_PORTADA > 0:
-        clips.insert(0, ImageClip(portada).set_duration(DURACION_PORTADA).resize((1080, 1920)))
-
-    vid = concatenate_videoclips(clips, method="compose").set_audio(audio.audio_fadeout(0.5))
+    duracion_video = t_portada + audio.duration
+    vid = CompositeVideoClip(capas_totales, size=(1080, 1920)).set_duration(duracion_video).set_audio(audio.audio_fadeout(0.5))
     destino = os.path.join(ruta_carpeta, f"{titulo}.mp4")
     temporal = os.path.join(ruta_carpeta, f"{titulo}.parcial.mp4")
 
@@ -749,7 +869,11 @@ def completar_guiones(m, ruta, generar):
         guardar_manifest(ruta, m)
 
 def flujo_videos():
-    m = elegir_lote(MANIFEST_VIDEOS, "videos")
+    m = elegir_lote(MANIFEST_VIDEOS, "videos", pedir_config_videos)
+    cfg = m.get("config") or {}
+    momento = cfg.get("momento_dia", "multi")
+    for pet in m.get("peticiones", []):
+        pet.setdefault("momento_dia", momento)
 
     def gen(pet, usados, i):
         def guardar_parcial(g):  # fase 1 lista: si falla la fase 2 no se repite el guion
@@ -909,6 +1033,7 @@ def parsear_metadata_carpeta(ruta_carpeta):
                 for l in lineas[1:]:
                     l = l.strip()
                     if l.startswith("- Movimiento:"): esc["movimiento_camara"] = l.split(":", 1)[1].strip()
+                    elif l.startswith("- Transición:") or l.startswith("- Transicion:"): esc["transicion"] = l.split(":", 1)[1].strip()
                     elif l.startswith("- SFX:"): esc["sfx_capcut"] = l.split(":", 1)[1].strip()
                     elif l.startswith("- Texto en Pantalla:"): esc["tip_texto_pantalla"] = l.split(":", 1)[1].strip()
                     elif l.startswith("- Prompt:"): esc["prompt"] = l.split(":", 1)[1].strip()
