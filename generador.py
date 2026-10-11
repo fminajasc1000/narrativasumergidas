@@ -245,9 +245,12 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
             "noche": "NOCHE PRIME (20:00-23:00 CST: máxima oscuridad, terror inmersivo)",
             "madrugada": "MADRUGADA / INSOMNIO (00:00-04:00 CST: atmósfera de paranoia para los que no pueden dormir)",
         }
-        msg += f"\n\nMOMENTO DEL DÍA OBJETIVO: Diseña el gancho, el tono y la ambientación lumínica específicamente para la franja de {descripciones.get(momento, momento.upper())}."
+        msg += (f"\n\nMOMENTO DEL DÍA OBJETIVO: Diseña el gancho, el tono y la ambientación lumínica específicamente para la franja de {descripciones.get(momento, momento.upper())}.\n"
+                f"- OBLIGATORIO: En la metadata de CADA red social, el campo 'hora_publicacion' DEBE colocar la hora recomendada de publicación dentro de esta franja de {descripciones.get(momento, momento.upper())}.")
     else:
-        msg += "\n\nMOMENTO DEL DÍA: Flexible / Cualquier momento. Incluye en la metadata la tabla 'estrategia_horaria' adaptada para mañana, mediodía, tarde, noche y madrugada."
+        msg += ("\n\nMOMENTO DEL DÍA: Flexible / Cualquier momento.\n"
+                "- OBLIGATORIO: En la metadata de CADA red social, incluye en 'hora_publicacion' la mejor ventana horaria y día óptimo para esa plataforma según su tier.\n"
+                "- Incluye además en la metadata la tabla 'estrategia_horaria' adaptada para mañana, mediodía, tarde, noche y madrugada.")
 
     if evitar:
         # Tomar los últimos 40 para no saturar el prompt pero garantizar cobertura absoluta
@@ -584,13 +587,21 @@ def exportar_metadata(datos, ruta):
             f.write(f"## 📜 GUION\n{datos.get('locucion_elevenlabs', {}).get('texto_completo', '')}\n\n---\n")
             f.write("## 📱 COPY PARA REDES SOCIALES\n")
             meta = datos.get("metadata", {})
+            momento_sel = datos.get("momento_dia") or "multi"
+            
             for red in ["youtube_shorts", "tiktok", "facebook_reels", "instagram_reels", "bilibili"]:
                 if red in meta:
                     f.write(f"### {red.upper().replace('_', ' ')}\n")
                     f.write(f"**Título:** {meta[red].get('titulo', '')}\n")
                     f.write(f"**Descripción:** {meta[red].get('descripcion', '')}\n")
                     f.write(f"**Hashtags:** {meta[red].get('hashtags', '')}\n")
-                    f.write(f"**🕒 Hora ideal de publicación:** {meta[red].get('hora_publicacion', '')}\n\n")
+                    
+                    # Garantizar hora de publicación en TODOS los casos (usando la generada por Claude o el horario calibrado según el momento seleccionado)
+                    hora_pub = meta[red].get("hora_publicacion")
+                    if not hora_pub:
+                        dict_red = HORARIOS_RECOMENDADOS_DEFECTO.get(red, {})
+                        hora_pub = dict_red.get(momento_sel) or dict_red.get("multi", "20:00 CST - horario de alta interacción")
+                    f.write(f"**🕒 Hora recomendada de publicación:** {hora_pub}\n\n")
             f.write(f"**Comentario Fijado:** {meta.get('comentario_fijado', '')}\n")
             f.write(f"**Respuestas:** {', '.join(meta.get('respuestas_interaccion', []))}\n\n")
 
@@ -633,6 +644,66 @@ RUTEO_TIER = {
     "ARQUITECTURA": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"],
     "MORBO": ["facebook_reels", "tiktok"],
     "ABSURDO": ["facebook_reels", "tiktok"],
+}
+
+# Horarios de publicación recomendados (hora Ciudad de México, CST) calibrados por red y por momento del día
+HORARIOS_RECOMENDADOS_DEFECTO = {
+    "youtube_shorts": {
+        "multi": "Viernes o Sábado 19:30 CST - ventana prime time para YouTube Shorts con mayor retención",
+        "manana": "08:15 CST - camino al trabajo/estudio, alto consumo móvil matutino",
+        "mediodia": "13:30 CST - descanso de almuerzo/comida",
+        "tarde": "17:45 CST - salida laboral/escolar",
+        "noche": "20:30 CST - prime time nocturno en casa",
+        "madrugada": "01:00 CST - nicho insomnio/misterio nocturno"
+    },
+    "tiktok": {
+        "multi": "Domingo o Jueves 21:00 CST - pico semanal de audiencia en TikTok para misterio y leyendas",
+        "manana": "07:45 CST - primera revisión matutina de feed",
+        "mediodia": "14:00 CST - pico de interacción de mediodía",
+        "tarde": "18:30 CST - regreso a casa y tiempo libre",
+        "noche": "21:30 CST - máximo pico nocturno de retención en TikTok",
+        "madrugada": "02:15 CST - comunidad nocturna activa buscando historias perturbadoras"
+    },
+    "facebook_reels": {
+        "multi": "Sábado o Miércoles 19:00 CST - mayor volumen de compartidos y comentarios familiares",
+        "manana": "08:30 CST - lectura matutina y noticias",
+        "mediodia": "13:00 CST - break laboral para debate y compartir",
+        "tarde": "17:30 CST - pico de interacción vespertina en Facebook",
+        "noche": "20:00 CST - hora estelar de debate y etiquetas en comentarios",
+        "madrugada": "00:30 CST - usuarios nocturnos conectados"
+    },
+    "instagram_reels": {
+        "multi": "Miércoles o Martes 20:30 CST - día y hora con mayor ratio de guardados y compartidos",
+        "manana": "09:00 CST - pausa matutina",
+        "mediodia": "13:15 CST - pausa de comida, contenido estético",
+        "tarde": "18:00 CST - desconexión y navegación en feed",
+        "noche": "20:45 CST - mayor tiempo de visualización y guardados",
+        "madrugada": "01:30 CST - estética oscura para desvelados"
+    },
+    "facebook": {
+        "multi": "Sábado 18:30 CST - pico de lectura y participación en carruseles de fotos",
+        "manana": "08:30 CST - inicio de jornada",
+        "mediodia": "13:00 CST - break de comida",
+        "tarde": "17:30 CST - tarde de interacción",
+        "noche": "20:00 CST - debate nocturno",
+        "madrugada": "00:30 CST - insomnio"
+    },
+    "instagram": {
+        "multi": "Miércoles o Domingo 20:00 CST - día de mayor retención para carruseles de fotos (guardar y compartir)",
+        "manana": "09:00 CST - historias de mañana",
+        "mediodia": "13:30 CST - navegación en break",
+        "tarde": "18:15 CST - tarde de relax",
+        "noche": "20:30 CST - prime time para carruseles",
+        "madrugada": "01:00 CST - historias nocturnas"
+    },
+    "youtube_community": {
+        "multi": "Martes o Jueves 18:00 CST - mayor votación en encuestas y comentarios de la pestaña Comunidad",
+        "manana": "08:00 CST - votación matutina",
+        "mediodia": "12:30 CST - encuesta de mediodía",
+        "tarde": "17:00 CST - previa de la tarde",
+        "noche": "19:30 CST - comunidad activa antes de videos largos",
+        "madrugada": "23:30 CST - debate nocturno"
+    }
 }
 
 def aplicar_ruteo(ep):
@@ -1099,9 +1170,14 @@ def exportar_historia_md(h, carpeta):
         f.write(f"# 📸 {h.get('titulo', '')}\n\n")
         f.write(f"**Serie / Parte:** {h.get('serie', '')} {h.get('parte', '')}\n\n")
         f.write(f"**Tier:** {h.get('tier', '')}\n\n")
+        momento_sel = h.get("momento_dia") or "multi"
         for red in ["facebook", "instagram", "youtube_community"]:
             if red in meta:
-                f.write(f"## {red.upper().replace('_', ' ')}\n**Copy:** {meta[red].get('copy', '')}\n**Hashtags:** {meta[red].get('hashtags', '')}\n**🕒 Hora ideal de publicación:** {meta[red].get('hora_publicacion', '')}\n\n")
+                hora_pub = meta[red].get("hora_publicacion")
+                if not hora_pub:
+                    dict_red = HORARIOS_RECOMENDADOS_DEFECTO.get(red, {})
+                    hora_pub = dict_red.get(momento_sel) or dict_red.get("multi", "20:00 CST - horario de alta interacción")
+                f.write(f"## {red.upper().replace('_', ' ')}\n**Copy:** {meta[red].get('copy', '')}\n**Hashtags:** {meta[red].get('hashtags', '')}\n**🕒 Hora recomendada de publicación:** {hora_pub}\n\n")
         
         horarios = meta.get("estrategia_horaria", {})
         if horarios:
