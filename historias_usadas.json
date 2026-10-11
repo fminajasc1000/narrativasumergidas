@@ -49,6 +49,19 @@
     "archivo_salida": "lecumberri_el_panóptico_que_nunca_dejó_d.mp4"
   },
   {
+    "titulo": "Los Graniceros: elegidos por el rayo",
+    "fecha": "2026-10-11 16:07:05",
+    "ultima_actualizacion": "2026-10-11 16:07:05",
+    "tipo": "video",
+    "slug": "los_graniceros_elegidos_por_el_rayo",
+    "estado": "video_ensamblado",
+    "tier": "FOLCLORE",
+    "duracion_audio_s": 102.2,
+    "num_imagenes": 24,
+    "carpeta": "los_graniceros_elegidos_por_el_rayo",
+    "archivo_salida": "los_graniceros_elegidos_por_el_rayo.mp4"
+  },
+  {
     "titulo": "San Juan Parangaricutiro: El pueblo que se tragó un volcán",
     "fecha": "2026-10-11 15:14",
     "tipo": "video",
