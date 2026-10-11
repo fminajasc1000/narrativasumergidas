@@ -131,6 +131,18 @@ def registrar_historia_usada(titulo, tipo="video"):
                 json.dump(lista_ordenada, f, ensure_ascii=False, indent=2)
         except Exception: pass
 
+    # Versionar en Git automáticamente cada historia procesada
+    try:
+        msg_commit = f"historia({tipo}): registrar '{titulo_limpio}' en historial permanente"
+        subprocess.run(["git", "add", "historias_usadas.json"], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", capture_output=True, text=True, check=False)
+        res_commit = subprocess.run(["git", "commit", "-m", msg_commit], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", capture_output=True, text=True, check=False)
+        if res_commit.returncode == 0:
+            print(f"   🔖 [Git] Commit automático: {msg_commit}")
+            # Intentar push en segundo plano sin bloquear si hay conexión
+            subprocess.Popen(["git", "push", "origin", "main"], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        pass
+
 # ---------------------------------------------------------------------------
 # UTILIDADES
 # ---------------------------------------------------------------------------

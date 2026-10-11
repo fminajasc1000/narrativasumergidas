@@ -32,6 +32,7 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 *   **Cámara Cinematográfica Dinámica:** `mover_clip` soporta 7 movimientos fluidos: `zoom_in` (+8%), `zoom_out` (-8%), `pan_left`, `pan_right`, `tilt_up`, `tilt_down` y `slow_drift` diagonal orgánico.
 *   **Cuota Visual Calibrada:** Se calcula automáticamente entre 18 y 25 escenas (~4.5 s por imagen) para que el espectador aprecie los detalles de SDXL sin saturarse ni generar excesos absurdos como 64 imágenes.
 *   **Flexibilidad 24 Horas (Videos e Historias):** Selector de momento del día (Mañana, Mediodía, Tarde, Noche Prime, Madrugada/Insomnio, o Multi-horario completo). La iluminación de las imágenes se adapta al momento (niebla matutina, sol duro de mediodía, hora dorada crepuscular o penumbra nocturna) y `metadata.md` incluye la estrategia de publicación y copys para cualquier hora (tanto para videos como para carruseles de fotos).
+*   **Historial Permanente y Git Commit por Historia:** Seguimiento atómico en `historias_usadas.json` y respaldo en `~/.narrativas_historias_usadas.json`. Cada historia procesada genera automáticamente un commit en Git (`historia(tipo): registrar '...' en historial permanente`), asegurando que nunca se repita contenido aunque el usuario borre carpetas multimedia para liberar disco.
 
 ---
 
