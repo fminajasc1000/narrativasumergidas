@@ -55,10 +55,22 @@ Agrega en "metadata" el bloque "estrategia_horaria" con un gancho breve adaptado
 - "noche": (20:00-23:00 CST) Gancho prime time para ver a oscuras.
 - "madrugada": (00:00-04:00 CST) Gancho de insomnio ("Si estás despierto a las 3 a.m...").
 
+═══ ESTRATEGIA EN SERIE Y CALENDARIO DE PUBLICACIÓN (v4.5) ═══
+Si el tema o la historia es extensa o forma parte de una serie de N entregas (Parte X de N):
+1. **Identidad:** Incluye en el JSON del episodio:
+   - "serie": nombre de la saga general (ej: "Misterios del Popocatépetl", "Hospitales Malditos de México").
+   - "parte": número y total (ej: "Parte 1 de 2", "Parte 2 de 2" o null si es autoconclusivo).
+   - "gancho_siguiente_parte": frase de gancho al final del video y en el copy que obligue a ver la siguiente entrega (ej: "En la Parte 2: la entidad que encontraron sellada en el piso 3...").
+2. **Calendario y Días de Publicación Escalada:** En "metadata.calendario_publicacion", define los días exactos recomendados de la semana para espaciar las partes y maximizar el algoritmo (ej: Parte 1: Viernes 19:30 CST para captar tráfico de inicio de fin de semana; Parte 2: Domingo 20:00 CST para cerrar el misterio con máxima retención). Si es video único, sugiere el día y ventana semanal óptima según el tier.
+
+
 ═══ SALIDA JSON ESTRICTA ═══
 {
   "episodio": {
     "titulo": "Título Interno",
+    "serie": "Nombre de la Saga / Serie (o null)",
+    "parte": "Parte 1 de 2 (o null)",
+    "gancho_siguiente_parte": "Frase de gancho para la próxima entrega (o null)",
     "tier": "ABSURDO | ARQUITECTURA | FOLCLORE | MORBO",
     "enrutamiento": {"publicar": ["facebook_reels", "tiktok"], "omitir": ["youtube_shorts", "instagram_reels"]},
     "locucion_elevenlabs": {
@@ -78,6 +90,10 @@ Agrega en "metadata" el bloque "estrategia_horaria" con un gancho breve adaptado
         "tarde": "Gancho de tarde...",
         "noche": "Gancho nocturno...",
         "madrugada": "Gancho de insomnio..."
+      },
+      "calendario_publicacion": {
+        "dias_recomendados": "Viernes (Parte 1) y Domingo (Parte 2)",
+        "estrategia_escalonada": "Explicación de por qué espaciar las publicaciones de esta manera para forzar retroalimentación algorítmica..."
       }
     }
   }

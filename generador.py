@@ -219,8 +219,22 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     tema = peticion["texto"] or f"Evento real o leyenda urbana oscura sobre: {random.choice(TEMAS_AZAR)}"
     msg = f"{prefijo}: {tema}"
     if peticion.get("de", 1) > 1:
-        msg += (f"\n\nEs el caso {peticion['variante']} de {peticion['de']} sobre el MISMO tema. Debe ser un caso, lugar, personaje o ángulo "
-                f"DISTINTO a los demás de esta serie, con su propio gancho y título; no repitas datos ni final.")
+        v = peticion['variante']
+        total = peticion['de']
+        msg += (f"\n\nESTRATEGIA EN SERIE (Parte {v} de {total}):\n"
+                f"- Este video es la PARTE {v} de una serie de {total} entregas sobre este gran caso.\n"
+                f"- Duración estricta de la locución: 85 a 115 segundos (≈215-280 palabras).\n")
+        if v < total:
+            msg += (f"- Como es la Parte {v}, termina con un CLIFFHANGER / LOOP ABIERTO brutal y un gancho claro hacia la Parte {v+1} ('En la siguiente parte verás...').\n"
+                    f"- En 'metadata.calendario_publicacion', define los días específicos de la semana recomendados para publicar la Parte {v} y la Parte {v+1} (ej. Parte 1 el Viernes para captar tráfico, Parte 2 el Domingo para cerrar).\n")
+        else:
+            msg += (f"- Como es la Parte final ({v} de {total}), da la resolución y clímax definitivo del misterio.\n"
+                    f"- En 'metadata.calendario_publicacion', sugiere el día óptimo para el desenlace de la saga.\n")
+        msg += f"- Rellena los campos 'serie', 'parte' ('Parte {v} de {total}'), y 'gancho_siguiente_parte'.\n"
+    else:
+        msg += ("\n\nCALENDARIO DE PUBLICACIÓN:\n"
+                "- En 'metadata.calendario_publicacion', indica qué día de la semana y qué ventana de horario son ideales para este contenido según su tier.\n"
+                "- Si consideras que el caso es tan amplio que debería convertirse en serie de 2 o 3 partes para no saturar al espectador, señálalo en 'calendario_publicacion.estrategia_escalonada'.\n")
 
     momento = peticion.get("momento_dia")
     if momento and momento != "multi":
@@ -553,9 +567,20 @@ def exportar_metadata(datos, ruta):
         with open(os.path.join(ruta, "metadata.md"), "w", encoding="utf-8") as f:
             f.write(f"# 🎬 {datos.get('titulo', 'Video')}\n\n")
             f.write(f"**Tier:** {datos.get('tier', '')}\n")
+            if datos.get("serie"): f.write(f"**🎬 Serie / Saga:** {datos.get('serie')}\n")
+            if datos.get("parte"): f.write(f"**🔢 Entrega:** {datos.get('parte')}\n")
+            if datos.get("gancho_siguiente_parte"): f.write(f"**🔗 Gancho siguiente parte:** {datos.get('gancho_siguiente_parte')}\n")
             ruteo = datos.get("enrutamiento", {})
             f.write(f"**🚦 Publicar en (prioridad):** {', '.join(ruteo.get('publicar', []))}\n")
             f.write(f"**⛔ Omitir:** {', '.join(ruteo.get('omitir', []))}\n\n")
+            
+            cal = meta.get("calendario_publicacion", {})
+            if cal:
+                f.write("## 📅 CALENDARIO Y DÍAS DE PUBLICACIÓN RECOMENDADOS\n")
+                if cal.get("dias_recomendados"): f.write(f"- **Días ideales:** {cal['dias_recomendados']}\n")
+                if cal.get("estrategia_escalonada"): f.write(f"- **Estrategia algorítmica:** {cal['estrategia_escalonada']}\n")
+                f.write("\n---\n")
+
             f.write(f"## 📜 GUION\n{datos.get('locucion_elevenlabs', {}).get('texto_completo', '')}\n\n---\n")
             f.write("## 📱 COPY PARA REDES SOCIALES\n")
             meta = datos.get("metadata", {})

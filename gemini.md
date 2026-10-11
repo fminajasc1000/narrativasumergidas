@@ -33,6 +33,7 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 *   **Cuota Visual Calibrada:** Se calcula automáticamente entre 18 y 25 escenas (~4.5 s por imagen) para que el espectador aprecie los detalles de SDXL sin saturarse ni generar excesos absurdos como 64 imágenes.
 *   **Flexibilidad 24 Horas (Videos e Historias):** Selector de momento del día (Mañana, Mediodía, Tarde, Noche Prime, Madrugada/Insomnio, o Multi-horario completo). La iluminación de las imágenes se adapta al momento (niebla matutina, sol duro de mediodía, hora dorada crepuscular o penumbra nocturna) y `metadata.md` incluye la estrategia de publicación y copys para cualquier hora (tanto para videos como para carruseles de fotos).
 *   **Historial Permanente y Git Commit por Historia:** Seguimiento atómico en `historias_usadas.json` y respaldo en `~/.narrativas_historias_usadas.json`. Cada historia procesada genera automáticamente un commit en Git (`historia(tipo): registrar '...' en historial permanente`), asegurando que nunca se repita contenido aunque el usuario borre carpetas multimedia para liberar disco.
+*   **Estrategia en Serie y Calendario de Publicación:** Para temas o historias extensas divididas en N entregas (Parte 1 de N, Parte 2 de N), `metadata.md` refleja automáticamente la identidad de la saga, el cliffhanger/gancho a la siguiente entrega (`gancho_siguiente_parte`) y los días exactos recomendados de la semana (`calendario_publicacion`) para espaciar las publicaciones de forma escalonada e impulsar la retroalimentación algorítmica.
 
 ---
 
