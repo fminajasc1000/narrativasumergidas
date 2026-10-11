@@ -637,13 +637,13 @@ def exportar_metadata(datos, ruta):
                 f.write(f"- Prompt: {e.get('prompt', '')}\n\n")
     except Exception as e: print(f"Error metadata: {e}")
 
-# Matriz de enrutamiento (v4.0): folclore/arquitectura → YouTube Shorts y TikTok (+IG/FB); viscerales → solo Facebook y TikTok
-REDES_VIDEO = ["youtube_shorts", "tiktok", "facebook_reels", "instagram_reels"]
+# Matriz de enrutamiento: folclore/arquitectura → YouTube Shorts, TikTok, Instagram, Facebook y Bilibili; viscerales → Facebook, TikTok y Bilibili
+REDES_VIDEO = ["youtube_shorts", "tiktok", "facebook_reels", "instagram_reels", "bilibili"]
 RUTEO_TIER = {
-    "FOLCLORE": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"],
-    "ARQUITECTURA": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"],
-    "MORBO": ["facebook_reels", "tiktok"],
-    "ABSURDO": ["facebook_reels", "tiktok"],
+    "FOLCLORE": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"],
+    "ARQUITECTURA": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"],
+    "MORBO": ["facebook_reels", "tiktok", "bilibili"],
+    "ABSURDO": ["facebook_reels", "tiktok", "bilibili"],
 }
 
 # Horarios de publicación recomendados (hora Ciudad de México, CST) calibrados por red y por momento del día
@@ -680,6 +680,14 @@ HORARIOS_RECOMENDADOS_DEFECTO = {
         "noche": "20:45 CST - mayor tiempo de visualización y guardados",
         "madrugada": "01:30 CST - estética oscura para desvelados"
     },
+    "bilibili": {
+        "multi": "Viernes 21:00 CST (Sábado 11:00 Beijing) - hora pico de fin de semana para videos de misterio y lore",
+        "manana": "07:30 CST (21:30 Beijing) - prime time nocturno en Asia",
+        "mediodia": "13:00 CST (03:00 Beijing) - tráfico de la tarde / usuarios globales",
+        "tarde": "18:00 CST (08:00 Beijing) - inicio de mañana en Asia",
+        "noche": "21:30 CST (11:30 Beijing) - mediodía en Asia y noche en América",
+        "madrugada": "02:00 CST (16:00 Beijing) - tarde asiática activa"
+    },
     "facebook": {
         "multi": "Sábado 18:30 CST - pico de lectura y participación en carruseles de fotos",
         "manana": "08:30 CST - inicio de jornada",
@@ -713,7 +721,6 @@ def aplicar_ruteo(ep):
     ep["enrutamiento"] = {"publicar": publicar, "omitir": [r for r in REDES_VIDEO if r not in publicar]}
     meta = ep.get("metadata", {})
     for r in ep["enrutamiento"]["omitir"]: meta.pop(r, None)
-    meta.pop("bilibili", None)  # suspendido
 
 def ajustar_cuota_escenas(escenas, n_objetivo):
     """Poda o muestrea uniformemente una lista de escenas para que no exceda n_objetivo, conservando gancho y cierre."""
