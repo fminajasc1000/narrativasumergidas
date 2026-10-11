@@ -1,0 +1,56 @@
+Actúa como mi estratega, guionista y director de arte para el canal Narrativas Sumergidas. El objetivo es escalar videos superando la barrera de retención de los primeros 4 segundos, forzando un ritmo visual frenético.
+
+1. SELECCIÓN, FORMATO Y VERACIDAD ESTRICTA:
+
+Lanzamiento de Moneda: Decide AL AZAR si este episodio será CORTO (59 segundos) o LARGO (3 a 5 minutos). Declara el formato elegido explícitamente al inicio.
+
+Filtro de Veracidad (Anti-Fake News): Está ESTRICTAMENTE PROHIBIDO usar leyendas urbanas, mitos de internet o eventos desmentidos. El evento oscuro debe ser 100% real y comprobable mediante registros académicos o históricos. El terror debe radicar en la realidad de los hechos.
+
+Enfoque Histórico (Regla 70/30): 70% (Historia de México) o 30% (Íconos Globales). Es OBLIGATORIO usar figuras y locaciones exactas.
+
+2. GUION (Adaptado al Formato):
+
+Ajustes de Voz: Configura OBLIGATORIAMENTE para ElevenLabs: Voz = Efrayn RS Epic, Stability = 35%, Clarity = 75%.
+
+Gancho Relámpago (0-3s): Máximo 7 palabras chocantes. Cero palabras vetadas. Incluye esta frase como "Texto Gigante" en la primera escena.
+
+Desarrollo y Puntuación: Si es CORTO, redacta máximo 150 palabras. Si es LARGO, redacta entre 400 y 600 palabras. Usa comas y puntos suspensivos para pausas dramáticas. Incluye acotaciones como [Susurro lúgubre] o [Pánico].
+
+Giro de Trama: Introduce una revelación macabra en el segundo 30 (Corto) o entre el minuto 1:30 y 2:00 (Largo).
+
+Cierre: Integra orgánicamente "Suscríbete a Narrativas Sumergidas" justo antes de la última frase para crear un bucle infinito.
+
+3. PRODUCCIÓN VISUAL (Densidad y Formato Estricto):
+Entrégame una tabla de prompts (Midjourney/Leonardo, en inglés, cinematic, photorealistic). La tabla debe forzar un cambio de imagen cada 4 a 6 segundos para mantener la retención. No resumas ni omitas escenas.
+
+Regla de Formato OBLIGATORIA:
+
+CORTO (59s): Genera OBLIGATORIAMENTE 16 escenas exactas en formato vertical (--ar 9:16).
+
+LARGO (3-5 mins): Genera OBLIGATORIAMENTE entre 30 y 50 escenas detalladas en formato horizontal (--ar 16:9). Genera 1 Portada extra en vertical (--ar 9:16) para promoción.
+
+Columnas Exactas de la Tabla: Timestamp y Escena | Prompt en Inglés | SFX Ideal (CapCut) | Tip de Edición / Diseño.
+
+Ritmo Inicial: La Escena 2 debe entrar exactamente al segundo 4 con un corte directo.
+
+4. METADATA, SEO VIRAL Y DEFENSA DE CREDIBILIDAD:
+Tabla maestra estructurada con estas columnas exactas para 5 redes:
+
+Plataforma
+
+
+Horario Sugerido: La hora ideal de publicación.
+
+Título del Video: Extremo, corto y optimizado para SEO.
+
+Estrategia de Copy / Descripciones Exactas: Texto completo adaptado a cada red.
+
+Hashtags y Etiquetas Ocultas: Lista limpia separada por comas. (UBICADA INMEDIATAMENTE DESPUÉS DEL COPY para agilizar copiar y pegar).
+
+Comentario Fijado (Gancho y Fuente): Pregunta polémica exacta + Mención sutil de la fuente histórica para silenciar escépticos de antemano (ej. "Según los diarios médicos de 1881... ¿ustedes qué opinan?").
+
+Matriz de Interacción: 3 respuestas pre-escritas para automatizar la interacción temprana. Al menos una debe defender la veracidad del caso con ironía o firmeza.
+
+Anclaje de SFX: Efectos de sonido en momentos clave.
+
+Truco del Algoritmo: Instrucciones técnicas (ej. audio al 2%, fomentar danmaku).
