@@ -91,10 +91,11 @@ def obtener_historias_previas():
 
     return sorted(list(historias))
 
-def registrar_historia_usada(titulo, tipo="video"):
-    """Guarda un caso o historia en el historial permanente (en repo y en Home) para evitar duplicados futuros."""
+def registrar_historia_usada(titulo, tipo="video", detalles=None):
+    """Guarda una historia en el historial permanente con bitácora detallada de iteración y commit en Git."""
     if not titulo: return
     titulo_limpio = str(titulo).strip()
+    detalles = detalles or {}
     
     # Cargar registros existentes
     registros = {}
@@ -112,15 +113,27 @@ def registrar_historia_usada(titulo, tipo="video"):
                                 registros[t] = {"titulo": t, "fecha": "", "slug": slug(t, 40)}
             except Exception: pass
 
-    # Insertar o actualizar el nuevo registro
+    # Actualizar o insertar registro con bitácora enriquecida
     import datetime
-    fecha_hoy = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    registros[titulo_limpio] = {
+    fecha_hoy = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    previo = registros.get(titulo_limpio, {})
+    
+    nuevo_registro = {
         "titulo": titulo_limpio,
-        "fecha": fecha_hoy,
+        "fecha": previo.get("fecha") or fecha_hoy,
+        "ultima_actualizacion": fecha_hoy,
         "tipo": tipo,
-        "slug": slug(titulo_limpio, 40)
+        "slug": slug(titulo_limpio, 40),
+        "estado": detalles.get("estado", previo.get("estado", "guion_listo")),
+        "tier": detalles.get("tier", previo.get("tier")),
+        "duracion_audio_s": detalles.get("duracion_audio_s", previo.get("duracion_audio_s")),
+        "num_imagenes": detalles.get("num_imagenes", previo.get("num_imagenes")),
+        "carpeta": detalles.get("carpeta", previo.get("carpeta")),
+        "archivo_salida": detalles.get("archivo_salida", previo.get("archivo_salida")),
+        "momento_dia": detalles.get("momento_dia", previo.get("momento_dia"))
     }
+    # Limpiar valores nulos para un JSON limpio y legible
+    registros[titulo_limpio] = {k: v for k, v in nuevo_registro.items() if v is not None}
 
     lista_ordenada = sorted(list(registros.values()), key=lambda x: x["titulo"])
 
@@ -133,11 +146,12 @@ def registrar_historia_usada(titulo, tipo="video"):
 
     # Versionar en Git automáticamente cada historia procesada
     try:
-        msg_commit = f"historia({tipo}): registrar '{titulo_limpio}' en historial permanente"
+        estado_label = nuevo_registro.get("estado", "procesada")
+        msg_commit = f"historia({tipo}): {estado_label} '{titulo_limpio}'"
         subprocess.run(["git", "add", "historias_usadas.json"], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", capture_output=True, text=True, check=False)
         res_commit = subprocess.run(["git", "commit", "-m", msg_commit], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", capture_output=True, text=True, check=False)
         if res_commit.returncode == 0:
-            print(f"   🔖 [Git] Commit automático: {msg_commit}")
+            print(f"   🔖 [Bitácora Git] Commit: {msg_commit}")
             # Intentar push en segundo plano sin bloquear si hay conexión
             subprocess.Popen(["git", "push", "origin", "main"], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:
@@ -970,7 +984,14 @@ def completar_guiones(m, ruta, generar):
         tit = titulo_de(datos)
         if tit:
             tipo_contenido = "historia_foto" if "historia" in ruta else "video"
-            registrar_historia_usada(tit, tipo=tipo_contenido)
+            ep_info = datos.get("episodio", datos) if isinstance(datos, dict) else {}
+            detalles_ini = {
+                "estado": "guion_listo",
+                "tier": ep_info.get("tier"),
+                "carpeta": slug(tit, 40),
+                "momento_dia": pet.get("momento_dia")
+            }
+            registrar_historia_usada(tit, tipo=tipo_contenido, detalles=detalles_ini)
             if tit not in historias_historicas: historias_historicas.append(tit)
 
 def flujo_videos():
@@ -1014,7 +1035,18 @@ def flujo_videos():
         if os.path.exists(mp4): print(f"✔ '{c}' ya estaba ensamblado."); continue
         if not os.path.exists(aud) or lista_imagenes_faltantes(ep, c):
             print(f"⚠ '{c}' tiene audio o imágenes pendientes; se omite el ensamblado."); fallos += 1; continue
-        try: ensamblar(ep.get("escenas", []), aud, c, c, portada=os.path.join(c, "00_portada.png"))
+        try:
+            ensamblar(ep.get("escenas", []), aud, c, c, portada=os.path.join(c, "00_portada.png"))
+            if os.path.exists(mp4):
+                dur_mp4 = duracion_audio(aud)
+                registrar_historia_usada(ep.get("titulo", c), tipo="video", detalles={
+                    "estado": "video_ensamblado",
+                    "duracion_audio_s": round(dur_mp4, 1),
+                    "num_imagenes": len(ep.get("escenas", [])),
+                    "carpeta": c,
+                    "archivo_salida": f"{c}.mp4",
+                    "tier": ep.get("tier")
+                })
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
     completo = fallos == 0 and all(r for r in m["resultados"]) and all(os.path.exists(os.path.join(c, f"{c}.mp4")) for _, c, _ in trabajos)
@@ -1111,6 +1143,15 @@ def flujo_historias_foto():
                                 fontsize=int(tam_final[0] * 0.075), pie=f"{i}/{len(slides)}  ➜ desliza")
                 else:
                     fallos += 1
+
+            if all(os.path.exists(os.path.join(carpeta, s["archivo"])) for s in slides):
+                registrar_historia_usada(h.get("titulo", carpeta), tipo="historia_foto", detalles={
+                    "estado": "carrusel_completo",
+                    "num_imagenes": len(slides),
+                    "carpeta": carpeta,
+                    "tier": h.get("tier"),
+                    "momento_dia": cfg.get("momento_dia")
+                })
     finally:
         detener_sd(p)
 
@@ -1320,6 +1361,13 @@ def reanudar_y_ensamblar_carpeta(ruta_carpeta):
         tam_mb = os.path.getsize(destino_mp4) / (1024 * 1024)
         print(f"\n✅ ¡Video ensamblado exitosamente!")
         print(f"   📁 Archivo: {destino_mp4} ({tam_mb:.1f} MB)")
+        registrar_historia_usada(titulo_limpio, tipo="video", detalles={
+            "estado": "video_ensamblado",
+            "duracion_audio_s": round(dur_aud, 1),
+            "num_imagenes": len(escenas_finales),
+            "carpeta": nombre_carpeta,
+            "archivo_salida": f"{titulo_slug}.mp4"
+        })
         return True
     else:
         print(f"\n✖ Ocurrió un error y no se pudo generar el archivo .mp4.")
