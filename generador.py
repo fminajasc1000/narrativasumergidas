@@ -1,5 +1,5 @@
 import requests, base64, time, json, os, re, subprocess, signal, random
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps, ImageFilter, ImageColor
 import json_repair
 
 rutas_mac = ['/opt/homebrew/bin/magick', '/usr/local/bin/magick']
@@ -71,19 +71,22 @@ def pedir_multilinea(msg):
     return "\n".join(lineas).strip()
 
 def pedir_modo(etiqueta):
-    """Devuelve lista de 'peticiones' (n) con el tema/historia elegido por el usuario."""
+    """Devuelve la lista de 'peticiones'. Opción 2 admite varios temas y N por tema (o N sobre un solo tema)."""
     print(f"\n¿Cómo quieres definir {etiqueta}?")
     print("  1) Aleatorio")
-    print("  2) Yo doy el TEMA (varios temas separados por |)")
+    print("  2) Yo doy el TEMA (uno o varios separados por |; puedo pedir N por tema)")
     print("  3) Yo doy la HISTORIA completa (se adapta tal cual)")
     modo = input("Opción [1]: ").strip() or "1"
-    n = 1 if modo == "3" else pedir_int(f"¿Cuántos {etiqueta} generar?", 1)
     if modo == "3":
         return [{"tipo": "historia", "texto": pedir_multilinea("Pega tu historia")}]
     if modo == "2":
         temas = [t.strip() for t in input("Tema(s): ").split("|") if t.strip()]
         if temas:
-            return [{"tipo": "tema", "texto": temas[i % len(temas)]} for i in range(n)]
+            pregunta = f"¿Cuántos {etiqueta} por cada tema?" if len(temas) > 1 else f"¿Cuántos {etiqueta} sobre este tema?"
+            m = pedir_int(pregunta, 1)
+            print(f"   → {len(temas)} tema(s) × {m} = {len(temas) * m} {etiqueta}" + (" (cada uno con un caso o ángulo distinto)" if m > 1 else ""))
+            return [{"tipo": "tema", "texto": t, "variante": j, "de": m} for t in temas for j in range(1, m + 1)]
+    n = pedir_int(f"¿Cuántos {etiqueta} generar?", 1)
     return [{"tipo": "tema", "texto": None} for _ in range(n)]
 
 def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
@@ -91,25 +94,37 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
         return f"Adapta ESTA historia proporcionada por el creador (no inventes otra):\n\n{peticion['texto']}"
     tema = peticion["texto"] or f"Evento real o leyenda urbana oscura sobre: {random.choice(TEMAS_AZAR)}"
     msg = f"{prefijo}: {tema}"
+    if peticion.get("de", 1) > 1:
+        msg += (f"\n\nEs el caso {peticion['variante']} de {peticion['de']} sobre el MISMO tema. Debe ser un caso, lugar, personaje o ángulo "
+                f"DISTINTO a los demás de esta serie, con su propio gancho y título; no repitas datos ni final.")
     if evitar: msg += "\n\nIMPORTANTE: NO repitas estos casos ya usados en este lote: " + "; ".join(evitar)
     return msg
 
 # ---------------------------------------------------------------------------
 # CLAUDE / ELEVENLABS
 # ---------------------------------------------------------------------------
-def llamar_claude(prompt_sistema, mensaje):
-    try:
-        res = requests.post("https://api.anthropic.com/v1/messages",
-                            json={"model": "claude-sonnet-5-5", "max_tokens": 8192, "system": prompt_sistema,
-                                  "messages": [{"role": "user", "content": mensaje}]},
-                            headers={"x-api-key": API_KEY_ANTHROPIC, "anthropic-version": "2023-06-01"})
-        res.raise_for_status()
-        txt = next((b.get('text') for b in res.json().get('content', []) if b.get('type') == 'text'), "").strip()
-        match = re.search(r'\{[\s\S]*\}', txt)
-        return json.loads(json_repair.repair_json(match.group(0))) if match else None
-    except Exception as e:
-        print(f"Error en API de Claude: {e}")
-        return None
+def llamar_claude(prompt_sistema, mensaje, max_tokens=16000, reintentos=2):
+    for intento in range(1, reintentos + 1):
+        try:
+            res = requests.post("https://api.anthropic.com/v1/messages",
+                                json={"model": "claude-sonnet-5-5", "max_tokens": max_tokens, "system": prompt_sistema,
+                                      "messages": [{"role": "user", "content": mensaje}]},
+                                headers={"x-api-key": API_KEY_ANTHROPIC, "anthropic-version": "2023-06-01"}, timeout=600)
+            res.raise_for_status()
+            cuerpo = res.json()
+            txt = next((b.get('text') for b in cuerpo.get('content', []) if b.get('type') == 'text'), "").strip()
+            if cuerpo.get("stop_reason") == "max_tokens":
+                print("⚠ Respuesta de Claude truncada por límite de tokens; se intenta reparar el JSON.")
+            inicio = txt.find("{")
+            if inicio == -1:
+                print(f"⚠ Claude no devolvió JSON (intento {intento}/{reintentos}). Respuesta: {txt[:300]!r}")
+                continue
+            datos = json.loads(json_repair.repair_json(txt[inicio:]))
+            if isinstance(datos, dict) and datos: return datos
+            print(f"⚠ JSON inválido o vacío (intento {intento}/{reintentos}).")
+        except Exception as e:
+            print(f"Error en API de Claude (intento {intento}/{reintentos}): {e}")
+    return None
 
 def generar_audio(datos, ruta):
     try:
@@ -141,27 +156,32 @@ def iniciar_sd():
 def detener_sd(p):
     if p and p.poll() is None: os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
-def generar_foto(prompt, ruta, ancho=768, alto=1344):
-    try:
-        prompt_low = prompt.lower()
-        negativo_actual = NEGATIVO_BASE
+def generar_foto(prompt, ruta, ancho=768, alto=1344, reintentos=3):
+    prompt_low = prompt.lower()
+    negativo_actual = NEGATIVO_BASE
 
-        # INYECCIONES DINÁMICAS (Anti-Alucinaciones)
-        if "no humans" in prompt_low or "empty scene" in prompt_low:
-            negativo_actual += ", person, human, faces, silhouette, people"
-        if "destroyed" in prompt_low or "fire" in prompt_low or "ruins" in prompt_low:
-            negativo_actual += ", skeleton, bones, skull, zombie, blood, cartoon"
-        if "train" in prompt_low or "boat" in prompt_low or "house" in prompt_low or "tunnel" in prompt_low:
-            negativo_actual += ", floating objects, impossible architecture, text"
+    # INYECCIONES DINÁMICAS (Anti-Alucinaciones)
+    if "no humans" in prompt_low or "empty scene" in prompt_low:
+        negativo_actual += ", person, human, faces, silhouette, people"
+    if "destroyed" in prompt_low or "fire" in prompt_low or "ruins" in prompt_low:
+        negativo_actual += ", skeleton, bones, skull, zombie, blood, cartoon"
+    if "train" in prompt_low or "boat" in prompt_low or "house" in prompt_low or "tunnel" in prompt_low:
+        negativo_actual += ", floating objects, impossible architecture, text"
 
-        # CONFIGURACIÓN SDXL LIGHTNING
-        payload = {"prompt": prompt, "negative_prompt": negativo_actual, "steps": 6, "cfg_scale": 2.0,
-                   "width": ancho, "height": alto, "sampler_name": "DPM++ SDE",
-                   "override_settings": {"sd_model_checkpoint": MODELO_SD}}
-        r = requests.post(URL_API_SD, json=payload, timeout=300)
-        r.raise_for_status()
-        with open(ruta, "wb") as f: f.write(base64.b64decode(r.json()['images'][0]))
-    except Exception as e: print(f"Error en imagen {ruta}: {e}")
+    # CONFIGURACIÓN SDXL LIGHTNING
+    payload = {"prompt": prompt, "negative_prompt": negativo_actual, "steps": 6, "cfg_scale": 2.0,
+               "width": ancho, "height": alto, "sampler_name": "DPM++ SDE",
+               "override_settings": {"sd_model_checkpoint": MODELO_SD}}
+    for intento in range(1, reintentos + 1):
+        try:
+            r = requests.post(URL_API_SD, json=payload, timeout=300)
+            r.raise_for_status()
+            with open(ruta, "wb") as f: f.write(base64.b64decode(r.json()['images'][0]))
+            return True
+        except Exception as e:
+            print(f"Error en imagen {ruta} (intento {intento}/{reintentos}): {e}")
+            time.sleep(3)
+    return False
 
 # ---------------------------------------------------------------------------
 # TEXTO SOBRE IMÁGENES (portadas y diapositivas) - Shadow Stack con PIL
@@ -209,6 +229,137 @@ def poner_texto(ruta_in, ruta_out, texto, tam=(1080, 1920), pos_y=0.20, fontsize
     img.save(ruta_out)
 
 # ---------------------------------------------------------------------------
+# DISEÑO DE PORTADAS (miniaturas competitivas, acordes a la historia)
+# ---------------------------------------------------------------------------
+PALETAS_TIER = {"FOLCLORE": "#FF5A1F", "ARQUITECTURA": "#F2C94C", "MORBO": "#E50914", "ABSURDO": "#FFE600"}
+ETIQUETA_TIER = {"FOLCLORE": "LEYENDA REAL", "ARQUITECTURA": "LUGAR MALDITO", "MORBO": "HISTORIA REAL +18", "ABSURDO": "PARECE MENTIRA"}
+FUENTES_CJK = ["/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc"]
+CANAL_FIRMA = "NARRATIVAS SUMERGIDAS"
+
+def _hex_ok(c, defecto):
+    return c.strip() if isinstance(c, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', c.strip()) else defecto
+
+def _fuente_cjk(tam):
+    for r in FUENTES_CJK:
+        if os.path.exists(r):
+            try: return ImageFont.truetype(r, tam)
+            except Exception: pass
+    return _fuente(tam)
+
+def _gradar(img, acento_rgb):
+    """Color grading + viñeta + degradados arriba/abajo para que el texto siempre se lea."""
+    w, h = img.size
+    img = ImageEnhance.Contrast(img).enhance(1.18)
+    img = ImageEnhance.Color(img).enhance(1.12)
+    negro = Image.new("RGB", (w, h), (0, 0, 0))
+    vig = Image.radial_gradient("L").resize((w, h)).point(lambda v: int(v * 0.7))
+    img = Image.composite(negro, img, vig)
+    lin = Image.linear_gradient("L")  # negro arriba → blanco abajo
+    mask = Image.new("L", (w, h), 0)
+    mask.paste(ImageOps.invert(lin).resize((w, int(h * 0.55))).point(lambda v: int(v * 0.72)), (0, 0))
+    mask.paste(lin.resize((w, int(h * 0.30))).point(lambda v: int(v * 0.6)), (0, h - int(h * 0.30)))
+    img = Image.composite(negro, img, mask)
+    # tinte de acento sutil en la base (da identidad de color a la historia)
+    tinte = Image.new("RGB", (w, h), acento_rgb)
+    m2 = Image.new("L", (w, h), 0)
+    m2.paste(lin.resize((w, int(h * 0.25))).point(lambda v: int(v * 0.22)), (0, h - int(h * 0.25)))
+    return Image.composite(tinte, img, m2)
+
+def _envolver_cjk(draw, texto, fuente, ancho_max):
+    chars = texto.replace(" ", "")
+    lineas, actual = [], ""
+    for ch in chars:
+        if draw.textlength(actual + ch, font=fuente) <= ancho_max: actual += ch
+        else: lineas.append(actual); actual = ch
+    if actual: lineas.append(actual)
+    n = len(lineas)
+    if n <= 1: return lineas
+    por_linea = -(-len(chars) // n)  # reparto equilibrado
+    return [chars[i:i + por_linea] for i in range(0, len(chars), por_linea)]
+
+def disenar_portada(ruta_in, ruta_out, texto, palabra_clave="", etiqueta="", acento="#FFDE00", tam=(1080, 1920),
+                    alinear="centro", cjk=False, subtitulo=""):
+    W, H = tam
+    acento_rgb = ImageColor.getrgb(acento)
+    img = _gradar(encuadrar(Image.open(ruta_in).convert("RGB"), tam), acento_rgb)
+    d = ImageDraw.Draw(img)
+    horizontal = alinear == "izq"
+    margen = int(W * 0.06)
+    ancho_max = int(W * (0.56 if horizontal else 0.88))
+    texto = texto.strip() if cjk else texto.upper().strip()
+
+    # 1) tamaño del título: el más grande que entre en ≤3 líneas
+    size = int(W * (0.085 if horizontal else 0.16))
+    while size > 28:
+        f = _fuente_cjk(size) if cjk else _fuente(size)
+        lineas = _envolver_cjk(d, texto, f, ancho_max) if cjk else _envolver(d, texto, f, ancho_max)
+        if len(lineas) <= 3 and all(d.textlength(l, font=f) <= ancho_max for l in lineas): break
+        size -= 4
+    clave = (palabra_clave or "").upper().strip(" ¡!¿?.,")
+    esp = d.textlength(" ", font=f)
+    if cjk: filas = [[(l, i == len(lineas) - 1 and len(lineas) > 1)] for i, l in enumerate(lineas)]
+    else: filas = [[(w, clave != "" and w.strip(" ¡!¿?.,") == clave) for w in l.split()] for l in lineas]
+
+    # 2) posiciones
+    y0 = int(H * (0.17 if horizontal else 0.16))
+    alto_linea = int(size * 1.08)
+    pos = []
+    for fi, fila in enumerate(filas):
+        ancho = sum(d.textlength(w, font=f) for w, _ in fila) + esp * (len(fila) - 1)
+        x = margen if horizontal else (W - ancho) / 2
+        for w, es_clave in fila:
+            pos.append((x, y0 + fi * alto_linea, w, es_clave))
+            x += d.textlength(w, font=f) + esp
+    fin_y = y0 + len(filas) * alto_linea
+
+    # 3) brillo (glow) del acento detrás de la palabra clave
+    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    for x, y, w, es_clave in pos:
+        if es_clave: gd.text((x, y), w, font=f, fill=acento_rgb + (255,), stroke_width=int(size * 0.08), stroke_fill=acento_rgb + (255,))
+    glow = glow.filter(ImageFilter.GaussianBlur(size * 0.22))
+    img = Image.alpha_composite(img.convert("RGBA"), glow).convert("RGB")
+    d = ImageDraw.Draw(img)
+
+    # 4) texto: sombra dura, contorno negro grueso, relleno blanco / acento
+    for x, y, w, es_clave in pos:
+        d.text((x + size * 0.05, y + size * 0.07), w, font=f, fill="black", stroke_width=int(size * 0.11), stroke_fill="black")
+    for x, y, w, es_clave in pos:
+        d.text((x, y), w, font=f, fill=acento_rgb if es_clave else (255, 255, 255), stroke_width=int(size * 0.07), stroke_fill="black")
+
+    # 5) barra de acento bajo el título + subtítulo opcional (español bajo el chino)
+    ancho_barra = int(W * (0.22 if horizontal else 0.32))
+    bx = margen if horizontal else (W - ancho_barra) // 2
+    d.rectangle([bx, fin_y + int(size * 0.05), bx + ancho_barra, fin_y + int(size * 0.05) + max(8, int(size * 0.07))], fill=acento_rgb)
+    if subtitulo:
+        fs = _fuente(int(size * 0.42))
+        ls = _envolver(d, subtitulo.upper(), fs, ancho_max)
+        ys = fin_y + int(size * 0.25)
+        for l in ls[:2]:
+            xs = margen if horizontal else (W - d.textlength(l, font=fs)) / 2
+            d.text((xs, ys), l, font=fs, fill="white", stroke_width=4, stroke_fill="black")
+            ys += int(size * 0.5)
+
+    # 6) etiqueta tipo badge (arriba) con el color de la historia
+    if etiqueta:
+        fe = _fuente(int(W * (0.026 if horizontal else 0.045)))
+        t = etiqueta.upper()
+        tw, th = d.textlength(t, font=fe), int(fe.size * 1.0)
+        padx, pady = int(fe.size * 0.7), int(fe.size * 0.45)
+        ex = margen if horizontal else (W - tw - 2 * padx) // 2
+        ey = int(H * (0.07 if horizontal else 0.095))
+        d.rounded_rectangle([ex, ey, ex + tw + 2 * padx, ey + th + 2 * pady], radius=int(fe.size * 0.35), fill=acento_rgb, outline="black", width=4)
+        d.text((ex + padx, ey + pady - int(fe.size * 0.08)), t, font=fe, fill="black")
+
+    # 7) firma del canal + marco fino de acento
+    ff = _fuente(int(W * (0.018 if horizontal else 0.034)))
+    xf = margen if horizontal else (W - d.textlength(CANAL_FIRMA, font=ff)) / 2
+    d.text((xf, int(H * (0.92 if horizontal else 0.80))), CANAL_FIRMA, font=ff, fill="white", stroke_width=3, stroke_fill="black")
+    inset = int(min(W, H) * 0.018)
+    d.rectangle([inset, inset, W - inset, H - inset], outline=acento_rgb, width=max(4, int(min(W, H) * 0.006)))
+    img.save(ruta_out)
+
+# ---------------------------------------------------------------------------
 # VIDEO: EXPORT / GUION
 # ---------------------------------------------------------------------------
 def exportar_metadata(datos, ruta):
@@ -231,9 +382,10 @@ def exportar_metadata(datos, ruta):
                     f.write(f"**🕒 Hora ideal de publicación:** {meta[red].get('hora_publicacion', '')}\n\n")
             f.write(f"**Comentario Fijado:** {meta.get('comentario_fijado', '')}\n")
             f.write(f"**Respuestas:** {', '.join(meta.get('respuestas_interaccion', []))}\n\n---\n")
-            for clave, arch, uso in (("portada", "00_portada.png", "YouTube / Instagram"), ("portada_b", "00_portada_tiktok.png", "TikTok / Facebook")):
+            for clave, arch, uso in (("portada", "00_portada.png", "YouTube / Instagram"), ("portada_b", "00_portada_tiktok.png", "TikTok / Facebook"),
+                                     ("portada_bilibili", "00_portada_bilibili.png", "Bilibili 16:9 (suspendido, lista para cuando se reactive)")):
                 p = datos.get(clave, {})
-                if p: f.write(f"## 🖼 PORTADA ({uso})\n- Archivo: {arch}\n- Texto: {p.get('texto_portada', '')}\n- Prompt: {p.get('prompt', '')}\n\n")
+                if p: f.write(f"## 🖼 PORTADA ({uso})\n- Archivo: {arch}\n- Texto: {p.get('texto_portada', '')} {p.get('texto_portada_zh', '')}\n- Palabra clave: {p.get('palabra_clave', '')} | Etiqueta: {p.get('etiqueta', '')} | Acento: {p.get('color_acento', '')}\n- Prompt: {p.get('prompt', '')}\n\n")
             f.write("---\n")
             f.write("## 🖼 ESCENAS Y SFX CAPCUT\n")
             for i, e in enumerate(datos.get('escenas', []), 1):
@@ -262,15 +414,20 @@ def aplicar_ruteo(ep):
     for r in ep["enrutamiento"]["omitir"]: meta.pop(r, None)
     meta.pop("bilibili", None)  # suspendido
 
-def generar_datos_completos(peticion, evitar=()):
-    print("\n--- FASE 1: GUION Y ESTRATEGIA ---")
+def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=None):
     sys_guion = open("prompt_guion.md", encoding="utf-8").read()
-    datos_guion = llamar_claude(sys_guion, construir_mensaje(peticion, evitar))
-    if not datos_guion: return None
+    if guion_previo:
+        print("\n--- FASE 1: GUION (reutilizado del intento anterior) ---")
+        datos_guion = guion_previo
+    else:
+        print("\n--- FASE 1: GUION Y ESTRATEGIA ---")
+        datos_guion = llamar_claude(sys_guion, construir_mensaje(peticion, evitar))
+        if not datos_guion: return None
 
     ep = datos_guion.get("episodio", {})
     aplicar_ruteo(ep)
     print(f"   Tier: {ep.get('tier')} → publicar en: {', '.join(ep['enrutamiento']['publicar'])}")
+    if on_guion and not guion_previo: on_guion(datos_guion)
 
     print("--- FASE 2: DIRECCIÓN DE ARTE ---")
     sys_escenas = open("prompt_escenas.md", encoding="utf-8").read()
@@ -281,6 +438,7 @@ def generar_datos_completos(peticion, evitar=()):
     ep["estilo_visual_global"] = datos_escenas.get("estilo_visual_global", "")
     ep["portada"] = datos_escenas.get("portada", {})
     ep["portada_b"] = datos_escenas.get("portada_b", {})
+    ep["portada_bilibili"] = datos_escenas.get("portada_bilibili", {})
     ep["escenas"] = datos_escenas.get("escenas", [])
     return datos_guion
 
@@ -324,7 +482,10 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
         clips.insert(0, ImageClip(portada).set_duration(DURACION_PORTADA).resize((1080, 1920)))
 
     vid = concatenate_videoclips(clips, method="compose").set_audio(audio.audio_fadeout(0.5))
-    vid.write_videofile(os.path.join(ruta_carpeta, f"{titulo}.mp4"), fps=24, codec="libx264", audio_codec="aac", preset="ultrafast", logger=None)
+    destino = os.path.join(ruta_carpeta, f"{titulo}.mp4")
+    temporal = os.path.join(ruta_carpeta, f"{titulo}.parcial.mp4")
+    vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="ultrafast", logger=None)
+    os.replace(temporal, destino)
 
 # ---------------------------------------------------------------------------
 # FLUJO 1: LOTE DE VIDEOS
@@ -359,64 +520,141 @@ def preparar_video(ep, titulo):
     exportar_metadata(ep, titulo)
     return ruta_aud
 
+# Portadas: (clave en JSON, archivo, tamaño final, tamaño SDXL, alineación, sufijo de composición)
+SUFIJO_HORIZONTAL = ", wide cinematic horizontal composition, main subject on the right third, negative space on the left"
+COVERS = [
+    ("portada", "00_portada", (1080, 1920), (768, 1344), "centro", ""),                       # A: YouTube / Instagram
+    ("portada_b", "00_portada_tiktok", (1080, 1920), (768, 1344), "centro", ""),               # B: TikTok / Facebook
+    ("portada_bilibili", "00_portada_bilibili", (1920, 1080), (1344, 768), "izq", SUFIJO_HORIZONTAL),  # 16:9 Bilibili
+]
+
 def lista_imagenes_faltantes(ep, titulo):
-    """Devuelve [(prompt_completo, ruta_base, texto_portada|None, ruta_final)] de lo que falta por generar."""
+    """Devuelve la cola de trabajos pendientes (portadas y escenas). Es la base de la reanudación."""
     estilo = ep.get("estilo_visual_global", "")
     cola = []
-    # Portada A (arquitectura/ambiente: YouTube e Instagram) y B (rostro desgastado/perturbadora: TikTok y Facebook)
-    for clave, nombre in (("portada", "00_portada"), ("portada_b", "00_portada_tiktok")):
-        por = ep.get(clave) or {}
+    for clave, nombre, tam_final, tam_sd, alin, sufijo in COVERS:
+        por = ep.get(clave) or (ep.get("portada") if clave == "portada_bilibili" else None) or {}
         final = os.path.join(titulo, f"{nombre}.png")
         if por.get("prompt") and not os.path.exists(final):
-            cola.append((f"{estilo}, {por['prompt']}, {PROMPT_BASE}", os.path.join(titulo, f"{nombre}_base.png"),
-                         por.get("texto_portada", ep.get("titulo", "")), final))
+            cola.append({"prompt": f"{estilo}, {por['prompt']}{sufijo}, {PROMPT_BASE}", "base": os.path.join(titulo, f"{nombre}_base.png"),
+                         "final": final, "tam_sd": tam_sd, "tam_final": tam_final, "alinear": alin, "portada": por, "clave": clave})
     for e in ep.get("escenas", []):
-        if not os.path.exists(os.path.join(titulo, e["archivo"])):
-            cola.append((f"{estilo}, {e.get('prompt', '')}, {PROMPT_BASE}", os.path.join(titulo, e["archivo"]), None, None))
+        ruta = os.path.join(titulo, e["archivo"])
+        if not os.path.exists(ruta):
+            cola.append({"prompt": f"{estilo}, {e.get('prompt', '')}, {PROMPT_BASE}", "base": ruta, "final": ruta,
+                         "tam_sd": (768, 1344), "portada": None})
     return cola
 
-def flujo_videos():
-    peticiones = pedir_modo("videos")
-    lote, titulos_usados = [], []
+def renderizar_portada(it, ep):
+    p, tier = it["portada"], str(ep.get("tier", "")).upper()
+    horizontal = it["alinear"] == "izq"
+    zh = (p.get("texto_portada_zh") or "").strip() if horizontal else ""
+    es = (p.get("texto_portada") or ep.get("titulo", "")).strip()
+    disenar_portada(it["base"], it["final"], zh or es, palabra_clave=("" if zh else p.get("palabra_clave", "")),
+                    etiqueta=p.get("etiqueta") or ETIQUETA_TIER.get(tier, ""),
+                    acento=_hex_ok(p.get("color_acento"), PALETAS_TIER.get(tier, "#FFDE00")),
+                    tam=it["tam_final"], alinear=it["alinear"], cjk=bool(zh), subtitulo=(es if zh else ""))
 
-    if input("¿Reanudar el último lote guardado (ultimo_lote.json)? [s/N]: ").strip().lower() == "s" and os.path.exists("ultimo_lote.json"):
-        lote = json.load(open("ultimo_lote.json", encoding="utf-8"))
-    else:
-        for i, pet in enumerate(peticiones, 1):
-            print(f"\n=========== VIDEO {i}/{len(peticiones)} ===========")
-            datos = generar_datos_completos(pet, titulos_usados)
-            if not datos:
-                print("✖ Falló este video, continúo con el siguiente."); continue
-            titulos_usados.append(datos.get("episodio", {}).get("titulo", ""))
-            lote.append(datos)
-            with open("ultimo_lote.json", "w", encoding="utf-8") as f: json.dump(lote, f, ensure_ascii=False, indent=2)
+def procesar_item(it, ep):
+    """Genera (si falta) la imagen base y diseña la portada. Devuelve True si quedó lista."""
+    if not os.path.exists(it["base"]): generar_foto(it["prompt"], it["base"], *it["tam_sd"])
+    if not os.path.exists(it["base"]): return False
+    if it.get("portada") is not None:
+        try: renderizar_portada(it, ep)
+        except Exception as e: print(f"Error diseñando portada {it['final']}: {e}"); return False
+    return os.path.exists(it["final"])
+
+# ---------------------------------------------------------------------------
+# LOTES CON REANUDACIÓN (si algo falla, se continúa donde se quedó)
+# ---------------------------------------------------------------------------
+MANIFEST_VIDEOS = "lote_videos_actual.json"
+MANIFEST_HISTORIAS = "lote_historias_actual.json"
+
+def cargar_manifest(ruta):
+    try: return json.load(open(ruta, encoding="utf-8")) if os.path.exists(ruta) else None
+    except Exception: return None
+
+def guardar_manifest(ruta, m):
+    with open(ruta, "w", encoding="utf-8") as f: json.dump(m, f, ensure_ascii=False, indent=2)
+
+def titulo_de(d):
+    return (d.get("episodio", d) or {}).get("titulo", "")
+
+def elegir_lote(ruta, etiqueta, pedir_config=None):
+    m = cargar_manifest(ruta)
+    if m and not m.get("terminado"):
+        hechos = sum(1 for r in m.get("resultados", []) if r)
+        if input(f"⏯ Hay un lote de {etiqueta} sin terminar ({hechos}/{len(m.get('resultados', []))} guiones listos). ¿Reanudarlo? [S/n]: ").strip().lower() != "n":
+            return m
+    peticiones = pedir_modo(etiqueta)
+    m = {"peticiones": peticiones, "resultados": [None] * len(peticiones), "parciales": {}, "terminado": False,
+         "config": pedir_config() if pedir_config else {}}
+    guardar_manifest(ruta, m)
+    return m
+
+def completar_guiones(m, ruta, generar):
+    """Genera los guiones que falten. generar(peticion, usados, i) -> datos|None. Guarda tras cada paso."""
+    for i, pet in enumerate(m["peticiones"]):
+        if m["resultados"][i]: continue
+        usados = [titulo_de(r) for r in m["resultados"] if r]
+        print(f"\n=========== {i + 1}/{len(m['peticiones'])} ===========")
+        datos = None
+        for _ in range(2):
+            datos = generar(pet, usados, i)
+            if datos: break
+        if not datos:
+            print("✖ Falló este guion (el progreso parcial quedó guardado; se reanuda en la próxima ejecución). Continúo con el siguiente.")
+            continue
+        m["resultados"][i] = datos
+        m["parciales"].pop(str(i), None)
+        guardar_manifest(ruta, m)
+
+def flujo_videos():
+    m = elegir_lote(MANIFEST_VIDEOS, "videos")
+
+    def gen(pet, usados, i):
+        def guardar_parcial(g):  # fase 1 lista: si falla la fase 2 no se repite el guion
+            m["parciales"][str(i)] = g; guardar_manifest(MANIFEST_VIDEOS, m)
+        return generar_datos_completos(pet, usados, guion_previo=m["parciales"].get(str(i)), on_guion=guardar_parcial)
+    completar_guiones(m, MANIFEST_VIDEOS, gen)
+    lote = [r for r in m["resultados"] if r]
     if not lote: return
 
     trabajos = []  # (ep, carpeta, ruta_audio)
     for datos in lote:
         ep = datos.get("episodio", {})
         carpeta = slug(ep.get("titulo", "Video"))
-        trabajos.append((ep, carpeta, preparar_video(ep, carpeta)))
+        try: trabajos.append((ep, carpeta, preparar_video(ep, carpeta)))
+        except Exception as e: print(f"✖ Falló la preparación de '{carpeta}': {e}")
 
+    fallos = 0
     pendientes = [(ep, c) for ep, c, _ in trabajos if lista_imagenes_faltantes(ep, c)]
     if pendientes:
         p = iniciar_sd()
         try:
             for ep, c in pendientes:
                 cola = lista_imagenes_faltantes(ep, c)
-                print(f"\nGenerando {len(cola)} imágenes para '{c}' en SDXL Lightning...")
-                for prompt, ruta, texto_portada, ruta_final in cola:
-                    generar_foto(prompt, ruta)
-                    if texto_portada is not None and os.path.exists(ruta):  # es una portada (A o B)
-                        poner_texto(ruta, ruta_final, texto_portada, pos_y=0.15, fontsize=120)
+                print(f"\nGenerando {len(cola)} imágenes pendientes para '{c}' en SDXL Lightning...")
+                for it in cola:
+                    if not procesar_item(it, ep): fallos += 1
         finally:
             detener_sd(p)
 
-    print("\n🎬 Imágenes listas. Ensamblando videos automáticamente (sin pausa)...")
+    print("\n🎬 Ensamblando videos automáticamente (sin pausa)...")
     for ep, c, aud in trabajos:
-        if os.path.exists(aud):
-            ensamblar(ep.get("escenas", []), aud, c, c, portada=os.path.join(c, "00_portada.png"))
-    print("\n✅ Lote de videos terminado.")
+        mp4 = os.path.join(c, f"{c}.mp4")
+        if os.path.exists(mp4): print(f"✔ '{c}' ya estaba ensamblado."); continue
+        if not os.path.exists(aud) or lista_imagenes_faltantes(ep, c):
+            print(f"⚠ '{c}' tiene audio o imágenes pendientes; se omite el ensamblado."); fallos += 1; continue
+        try: ensamblar(ep.get("escenas", []), aud, c, c, portada=os.path.join(c, "00_portada.png"))
+        except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
+
+    completo = fallos == 0 and all(r for r in m["resultados"]) and all(os.path.exists(os.path.join(c, f"{c}.mp4")) for _, c, _ in trabajos)
+    if completo:
+        m["terminado"] = True; guardar_manifest(MANIFEST_VIDEOS, m)
+        print("\n✅ Lote de videos terminado.")
+    else:
+        print("\n⚠ Lote incompleto. Vuelve a ejecutar la opción 1 y elige reanudar: continuará solo con lo que falta.")
 
 # ---------------------------------------------------------------------------
 # FLUJO 2: HISTORIAS FOTOGRÁFICAS (carruseles FB / IG / YouTube Community)
@@ -445,23 +683,26 @@ def exportar_historia_md(h, carpeta):
         for i, s in enumerate(h.get("diapositivas", []), 1):
             f.write(f"### {i}: {s.get('archivo', '')}\n- Texto: {s.get('texto_pantalla', '')}\n- Narración: {s.get('narracion', '')}\n- Prompt: {s.get('prompt', '')}\n\n")
 
-def flujo_historias_foto():
-    peticiones = pedir_modo("historias fotográficas")
+def pedir_config_historias():
     n_slides = pedir_int("¿Diapositivas por historia?", 8, 3, 15)
     print("\nFormato de imagen:")
     for k, (nombre, _, _) in FORMATOS_FOTO.items(): print(f"  {k}) {nombre}")
-    nombre_f, tam_sd, tam_final = FORMATOS_FOTO.get(input("Opción [1]: ").strip() or "1", FORMATOS_FOTO["1"])
+    op = input("Opción [1]: ").strip() or "1"
+    return {"n_slides": n_slides, "formato": op if op in FORMATOS_FOTO else "1"}
 
-    historias, usados = [], []
-    for i, pet in enumerate(peticiones, 1):
-        print(f"\n=========== HISTORIA {i}/{len(peticiones)} ===========")
-        h = generar_historia_foto(pet, usados, n_slides)
-        h = h.get("historia", h) if h else None
-        if not h: print("✖ Falló, continúo."); continue
-        usados.append(h.get("titulo", ""))
-        historias.append(h)
+def flujo_historias_foto():
+    m = elegir_lote(MANIFEST_HISTORIAS, "historias fotográficas", pedir_config_historias)
+    cfg = m.get("config") or {"n_slides": 8, "formato": "1"}
+    _, tam_sd, tam_final = FORMATOS_FOTO.get(cfg.get("formato", "1"), FORMATOS_FOTO["1"])
+
+    def gen(pet, usados, i):
+        h = generar_historia_foto(pet, usados, cfg.get("n_slides", 8))
+        return h.get("historia", h) if h else None
+    completar_guiones(m, MANIFEST_HISTORIAS, gen)
+    historias = [r for r in m["resultados"] if r]
     if not historias: return
 
+    fallos = 0
     p = iniciar_sd()
     try:
         for h in historias:
@@ -470,21 +711,28 @@ def flujo_historias_foto():
             exportar_historia_md(h, carpeta)
             estilo = h.get("estilo_visual_global", "")
             slides = h.get("diapositivas", [])
-            print(f"\nGenerando {len(slides)} diapositivas para '{carpeta}'...")
+            print(f"\nDiapositivas de '{carpeta}' ({len(slides)})...")
             for i, s in enumerate(slides, 1):
                 base = os.path.join(carpeta, f"base_{s['archivo']}")
                 final = os.path.join(carpeta, s["archivo"])
-                if os.path.exists(final): continue
+                if os.path.exists(final): continue  # ya lista: se reanuda donde se quedó
                 if not os.path.exists(base):
                     generar_foto(f"{estilo}, {s.get('prompt', '')}, {PROMPT_BASE}", base, *tam_sd)
                 if os.path.exists(base):
                     poner_texto(base, final, s.get("texto_pantalla", ""), tam=tam_final, pos_y=0.08,
                                 fontsize=int(tam_final[0] * 0.075), pie=f"{i}/{len(slides)}  ➜ desliza")
+                else:
+                    fallos += 1
     finally:
         detener_sd(p)
 
-    print("✅ Historias fotográficas listas (sin pausa). Textos, copys y hora ideal de publicación en metadata.md de cada carpeta.")
-    print("   Las imágenes limpias sin texto están en base_*.png por si quieres re-rotular.")
+    completo = fallos == 0 and all(r for r in m["resultados"])
+    if completo:
+        m["terminado"] = True; guardar_manifest(MANIFEST_HISTORIAS, m)
+        print("✅ Historias fotográficas listas. Textos, copys y hora ideal de publicación en metadata.md de cada carpeta.")
+        print("   Las imágenes limpias sin texto están en base_*.png por si quieres re-rotular.")
+    else:
+        print(f"⚠ Lote incompleto ({fallos} diapositivas o guiones fallaron). Ejecuta la opción 2 y elige reanudar: continuará solo con lo que falta.")
 
 # ---------------------------------------------------------------------------
 # MENÚ

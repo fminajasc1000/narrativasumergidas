@@ -43,5 +43,5 @@ Motor de automatización semi-asistida de contenido multiplataforma: videos vert
    ```
 
 ## Flujo
-Tras generar las imágenes, el video se ensambla **automáticamente** (sin pausa). Cada video se clasifica por *tier* (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO, TRAGEDIA) y su `metadata.md` indica en qué redes publicar, cuáles omitir y la hora ideal. Bilibili está suspendido temporalmente.
+Tras generar las imágenes, el video se ensambla **automáticamente** (sin pausa). Cada video se clasifica por *tier* (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO) y su `metadata.md` indica en qué redes publicar, cuáles omitir y la hora ideal. Si la locución excede 120 s, el guion se reedita. Bilibili está suspendido temporalmente.
 

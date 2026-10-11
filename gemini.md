@@ -28,6 +28,13 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 
 ---
 
+## 1.3 NOVEDADES v4.1 (`generador.py`)
+*   **Reanudación tras fallos:** cada lote se guarda en `lote_videos_actual.json` / `lote_historias_actual.json` (reemplazan a `ultimo_lote.json`). Al abrir una opción, si hay un lote sin terminar el sistema ofrece **reanudarlo**: solo regenera guiones que faltan (y si la fase 2 de arte falló reutiliza el guion ya hecho), audio, imágenes o diapositivas ausentes, y ensambla solo los videos sin `.mp4` (el render se escribe como `.parcial.mp4` y se renombra al terminar). Cada imagen de SDXL reintenta 3 veces. Un video o historia que falla no detiene el resto del lote.
+*   **N videos por tema:** en el modo "Tema" se pueden dar uno o varios temas (`|`) y cuántos videos/historias **por tema**; con N>1 sobre el mismo tema, Claude recibe "caso X de N" y debe aportar un caso/ángulo distinto sin repetir títulos.
+*   **Portadas diseñadas por historia** (`disenar_portada`): color grading, viñeta, degradados de legibilidad, título con **palabra clave resaltada en color de acento con brillo**, badge/etiqueta, barra de acento, marco y firma del canal. Claude define por portada `texto_portada`, `palabra_clave`, `etiqueta` y `color_acento` (hex; si falta se usa la paleta del tier). Tres portadas: `00_portada.png` (A, arquitectura, YouTube/IG), `00_portada_tiktok.png` (B, rostro/elemento perturbador, TikTok/FB) y `00_portada_bilibili.png` (C, **horizontal 16:9, 1920x1080**, título en chino simplificado `texto_portada_zh` + español; Bilibili sigue suspendido pero la portada queda lista).
+
+---
+
 ## 1.2 CALIBRACIÓN ALGORÍTMICA v4.0 (MÉTRICAS REALES)
 **Datos de YouTube Shorts (7 videos):** La Casa de las Brujas (1m53s) 1,003 vistas · Lecumberri (1m26s) 673 · Mansión Winchester (1m27s) 604 · Faro abandonado (1m08s) 167 · Pelayo (2m56s) 69 · Kaprun (1m11s) 14. Facebook viraliza lo absurdo/escatológico (58k con "El pedo más letal", pero 144 en YouTube); TikTok premia morbo visual y leyendas locales (600-850); Instagram solo sobrevive con estética gótica/arquitectónica; Bilibili sin tracción (envíos suspendidos).
 

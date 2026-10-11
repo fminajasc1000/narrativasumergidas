@@ -22,3 +22,7 @@ historia_foto_*/
 # Carpetas de episodios generados (se crean con el título del video)
 */00_locucion.mp3
 
+lote_videos_actual.json
+lote_historias_actual.json
+*.parcial.mp4
+*/metadata.md
