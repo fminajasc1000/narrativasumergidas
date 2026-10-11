@@ -464,6 +464,41 @@ def aplicar_ruteo(ep):
     for r in ep["enrutamiento"]["omitir"]: meta.pop(r, None)
     meta.pop("bilibili", None)  # suspendido
 
+def ajustar_cuota_escenas(escenas, n_objetivo):
+    """Poda o muestrea uniformemente una lista de escenas para que no exceda n_objetivo, conservando gancho y cierre."""
+    if not escenas or len(escenas) <= n_objetivo:
+        return escenas
+    if n_objetivo <= 1:
+        return escenas[:1]
+
+    paso = (len(escenas) - 1) / (n_objetivo - 1)
+    indices = [int(round(i * paso)) for i in range(n_objetivo)]
+
+    vistos = set()
+    indices_unicos = []
+    for idx in indices:
+        if idx not in vistos:
+            vistos.add(idx)
+            indices_unicos.append(idx)
+
+    if len(indices_unicos) < n_objetivo:
+        for idx in range(len(escenas)):
+            if idx not in vistos:
+                indices_unicos.append(idx)
+                vistos.add(idx)
+                if len(indices_unicos) == n_objetivo:
+                    break
+        indices_unicos.sort()
+
+    escenas_podadas = [escenas[i] for i in indices_unicos]
+
+    for num, esc in enumerate(escenas_podadas, 1):
+        arch_orig = esc.get("archivo", "")
+        nombre_base = re.sub(r'^\d+_', '', arch_orig) or f"escena_{num}.png"
+        esc["archivo"] = f"{num:02d}_{nombre_base}"
+
+    return escenas_podadas
+
 def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=None):
     sys_guion = open("prompt_guion.md", encoding="utf-8").read()
     if guion_previo:
@@ -482,14 +517,35 @@ def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=Non
     print("--- FASE 2: DIRECCIÓN DE ARTE ---")
     sys_escenas = open("prompt_escenas.md", encoding="utf-8").read()
     historia = ep.get("locucion_elevenlabs", {}).get("texto_completo", "")
-    datos_escenas = llamar_claude(sys_escenas, f"Título: {ep.get('titulo', '')}\nTIER: {ep.get('tier', '')}\n\nVisuales para:\n\n{historia}")
+
+    # Cuota visual calibrada: ~4.5 segundos por escena (rango 4.0 a 5.0 s para dinamismo cinematográfico sin saturar)
+    palabras = len(re.findall(r'\b\w+\b', re.sub(r'\[.*?\]', '', historia)))
+    duracion_est_s = max(20.0, palabras / 2.3)
+    n_escenas_objetivo = max(12, min(26, round(duracion_est_s / 4.5)))
+    print(f"   ⏱ Duración estimada: {duracion_est_s:.0f}s ({palabras} palabras) → Cuota visual: {n_escenas_objetivo} escenas (~{duracion_est_s/n_escenas_objetivo:.1f}s/imagen)")
+
+    mensaje_escenas = (
+        f"Título: {ep.get('titulo', '')}\n"
+        f"TIER: {ep.get('tier', '')}\n"
+        f"Duración estimada de locución: {duracion_est_s:.0f} segundos ({palabras} palabras).\n"
+        f"CANTIDAD OBLIGATORIA: Genera EXACTAMENTE {n_escenas_objetivo} escenas (ritmo cinematográfico de ~4.5s por imagen; NUNCA más de {n_escenas_objetivo}).\n\n"
+        f"Visuales para:\n\n{historia}"
+    )
+
+    datos_escenas = llamar_claude(sys_escenas, mensaje_escenas)
     if not datos_escenas: return None
 
     ep["estilo_visual_global"] = datos_escenas.get("estilo_visual_global", "")
     ep["portada"] = datos_escenas.get("portada", {})
     ep["portada_b"] = datos_escenas.get("portada_b", {})
     ep["portada_bilibili"] = datos_escenas.get("portada_bilibili", {})
-    ep["escenas"] = datos_escenas.get("escenas", [])
+
+    escenas = datos_escenas.get("escenas", [])
+    if len(escenas) > n_escenas_objetivo:
+        print(f"   ℹ Claude devolvió {len(escenas)} escenas; ajustando a {n_escenas_objetivo} escenas para mantener ritmo óptimo (~4.5s/imagen).")
+        escenas = ajustar_cuota_escenas(escenas, n_escenas_objetivo)
+
+    ep["escenas"] = escenas
     return datos_guion
 
 def mover_clip(clip, mov, factor=0.12):
@@ -591,6 +647,12 @@ def preparar_video(ep, titulo):
         os.remove(ruta_aud)
     else:
         print("⚠ No se logró bajar de la duración máxima; se usa la última versión.")
+
+    dur = duracion_audio(ruta_aud)
+    n_max_escenas = max(12, min(26, round(dur / 4.2)))
+    if len(ep.get("escenas", [])) > n_max_escenas:
+        print(f"   ℹ Ajustando {len(ep['escenas'])} escenas a {n_max_escenas} según la duración real del MP3 ({dur:.1f}s).")
+        ep["escenas"] = ajustar_cuota_escenas(ep["escenas"], n_max_escenas)
 
     # Calibrar marcas de tiempo exactas segundo a segundo sobre el MP3 definitivo
     ep["escenas"] = alinear_escenas_con_audio(ep.get("escenas", []), ruta_aud, ep.get("locucion_elevenlabs", {}).get("texto_completo", ""))
@@ -970,6 +1032,18 @@ def reanudar_y_ensamblar_carpeta(ruta_carpeta):
     else:
         escenas_finales = [{"archivo": img, "movimiento_camara": "zoom_in" if idx % 2 == 0 else "pan", "tip_texto_pantalla": ""}
                            for idx, img in enumerate(imgs_disco)]
+
+    # Si hay un exceso de imágenes para la duración del audio, ofrecer optimización de ritmo
+    if dur_aud > 0:
+        n_optimo = max(12, min(26, round(dur_aud / 4.5)))
+        if len(escenas_finales) > n_optimo + 4:
+            print(f"   ℹ La carpeta tiene {len(escenas_finales)} escenas ({dur_aud/len(escenas_finales):.1f}s/escena; ritmo acelerado).")
+            print(f"     1) Optimizar a {n_optimo} escenas (~{dur_aud/n_optimo:.1f}s/imagen, ritmo cinematográfico recomendado)")
+            print(f"     2) Ensamblar con todas las {len(escenas_finales)} escenas")
+            op_ritmo = input("   Opción [1]: ").strip() or "1"
+            if op_ritmo == "1":
+                escenas_finales = ajustar_cuota_escenas(escenas_finales, n_optimo)
+                print(f"   ✔ Escenas ajustadas a {len(escenas_finales)} imágenes seleccionadas a lo largo de la narración.")
 
     # 3. Portada
     ruta_portada = os.path.join(ruta_carpeta, "00_portada.png")
