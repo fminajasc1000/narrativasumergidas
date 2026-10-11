@@ -50,6 +50,43 @@ TEMAS_AZAR = [
     "procedimiento médico o castigo histórico macabro (morbo médico)", "hecho histórico absurdo, bizarro e indignante que parece mentira",
     "ritual folclórico que aún se practica en secreto", "caso de supervivencia extrema olvidado"]
 
+ARCHIVO_HISTORIAS_USADAS = "historias_usadas.json"
+
+def obtener_historias_previas():
+    """Recopila todas las historias/casos ya generados para que Claude jamás los repita."""
+    historias = set()
+    # 1. Cargar archivo persistente si existe
+    if os.path.exists(ARCHIVO_HISTORIAS_USADAS):
+        try:
+            with open(ARCHIVO_HISTORIAS_USADAS, encoding="utf-8") as f:
+                datos = json.load(f)
+                if isinstance(datos, list): historias.update(str(x).strip() for x in datos if x)
+        except Exception: pass
+
+    # 2. Escaneo de carpetas de días (viernes, sabado, domingo, etc.) o locales con metadata.md
+    for r, _, archivos in os.walk("."):
+        if any(p in r for p in ["venv", ".git", "stable-diffusion-webui", "__pycache__"]): continue
+        if "metadata.md" in archivos:
+            try:
+                with open(os.path.join(r, "metadata.md"), encoding="utf-8", errors="ignore") as f:
+                    for linea in f:
+                        if linea.startswith("# "):
+                            tit = re.sub(r"^#\s*[🎬📸]?\s*", "", linea).strip()
+                            if tit: historias.add(tit)
+                            break
+            except Exception: pass
+    return sorted(list(historias))
+
+def registrar_historia_usada(titulo):
+    """Guarda un caso o historia en el historial permanente para evitar duplicados futuros."""
+    if not titulo: return
+    previas = set(obtener_historias_previas())
+    previas.add(str(titulo).strip())
+    try:
+        with open(ARCHIVO_HISTORIAS_USADAS, "w", encoding="utf-8") as f:
+            json.dump(sorted(list(previas)), f, ensure_ascii=False, indent=2)
+    except Exception: pass
+
 # ---------------------------------------------------------------------------
 # UTILIDADES
 # ---------------------------------------------------------------------------
@@ -128,7 +165,12 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     else:
         msg += "\n\nMOMENTO DEL DÍA: Flexible / Cualquier momento. Incluye en la metadata la tabla 'estrategia_horaria' adaptada para mañana, mediodía, tarde, noche y madrugada."
 
-    if evitar: msg += "\n\nIMPORTANTE: NO repitas estos casos ya usados en este lote: " + "; ".join(evitar)
+    if evitar:
+        # Tomar los últimos 40 para no saturar el prompt pero garantizar cobertura absoluta
+        lista_evitar = evitar[-40:] if len(evitar) > 40 else evitar
+        msg += ("\n\n⛔ REGLA ESTRICTA DE NO REPETICIÓN: El canal YA produjo contenido sobre los siguientes casos/títulos. "
+                "Está TERMINANTEMENTE PROHIBIDO repetir cualquiera de estos casos, eventos, leyendas o títulos; "
+                "debes elegir un caso, lugar o suceso completamente NUEVO y no explorado:\n- " + "\n- ".join(lista_evitar))
     return msg
 
 # ---------------------------------------------------------------------------
@@ -182,7 +224,6 @@ def iniciar_sd():
     env["OPENBLAS_NUM_THREADS"] = "4"
     env["VECLIB_MAXIMUM_THREADS"] = "4"
     env["NUMEXPR_NUM_THREADS"] = "4"
-    env["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.7"
     comandos = ["nice", "-n", "10", "./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
     p = subprocess.Popen(comandos, cwd=RUTA_SD, env=env, preexec_fn=os.setsid)
     for _ in range(60):
@@ -853,9 +894,12 @@ def elegir_lote(ruta, etiqueta, pedir_config=None):
 
 def completar_guiones(m, ruta, generar):
     """Genera los guiones que falten. generar(peticion, usados, i) -> datos|None. Guarda tras cada paso."""
+    historias_historicas = obtener_historias_previas()
     for i, pet in enumerate(m["peticiones"]):
         if m["resultados"][i]: continue
-        usados = [titulo_de(r) for r in m["resultados"] if r]
+        usados_lote = [titulo_de(r) for r in m["resultados"] if r]
+        # Unir historias históricas del canal con las ya generadas en el lote actual
+        usados = sorted(list(set(historias_historicas + [u for u in usados_lote if u])))
         print(f"\n=========== {i + 1}/{len(m['peticiones'])} ===========")
         datos = None
         for _ in range(2):
@@ -867,6 +911,10 @@ def completar_guiones(m, ruta, generar):
         m["resultados"][i] = datos
         m["parciales"].pop(str(i), None)
         guardar_manifest(ruta, m)
+        tit = titulo_de(datos)
+        if tit:
+            registrar_historia_usada(tit)
+            if tit not in historias_historicas: historias_historicas.append(tit)
 
 def flujo_videos():
     m = elegir_lote(MANIFEST_VIDEOS, "videos", pedir_config_videos)
