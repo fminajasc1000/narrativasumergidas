@@ -940,6 +940,17 @@ def exportar_historia_md(h, carpeta):
         for red in ["facebook", "instagram", "youtube_community"]:
             if red in meta:
                 f.write(f"## {red.upper().replace('_', ' ')}\n**Copy:** {meta[red].get('copy', '')}\n**Hashtags:** {meta[red].get('hashtags', '')}\n**🕒 Hora ideal de publicación:** {meta[red].get('hora_publicacion', '')}\n\n")
+        
+        horarios = meta.get("estrategia_horaria", {})
+        if horarios:
+            f.write("## ⏰ ESTRATEGIA PARA CUALQUIER MOMENTO DEL DÍA\n")
+            if horarios.get("manana"): f.write(f"- 🌅 **Mañana (07:00 - 10:00 CST):** {horarios['manana']}\n")
+            if horarios.get("mediodia"): f.write(f"- ☀️ **Mediodía (12:00 - 15:00 CST):** {horarios['mediodia']}\n")
+            if horarios.get("tarde"): f.write(f"- 🌇 **Tarde (16:00 - 19:00 CST):** {horarios['tarde']}\n")
+            if horarios.get("noche"): f.write(f"- 🌙 **Noche Prime (20:00 - 23:00 CST):** {horarios['noche']}\n")
+            if horarios.get("madrugada"): f.write(f"- 🕯️ **Madrugada / Insomnio (00:00 - 04:00 CST):** {horarios['madrugada']}\n")
+            f.write("\n---\n")
+
         f.write(f"## 💬 COMUNIDAD\n**Comentario fijado:** {meta.get('comentario_fijado', '')}\n")
         f.write(f"**Encuesta:** {meta.get('encuesta', '')}\n**Gancho próxima parte:** {h.get('gancho_siguiente', '')}\n")
         f.write(f"**Respuestas:** {', '.join(meta.get('respuestas_interaccion', []))}\n\n---\n## 🖼 DIAPOSITIVAS\n")
@@ -951,11 +962,20 @@ def pedir_config_historias():
     print("\nFormato de imagen:")
     for k, (nombre, _, _) in FORMATOS_FOTO.items(): print(f"  {k}) {nombre}")
     op = input("Opción [1]: ").strip() or "1"
-    return {"n_slides": n_slides, "formato": op if op in FORMATOS_FOTO else "1"}
+
+    print("\n¿Para qué momento del día deseas enfocar la historia fotográfica?")
+    for k, (nombre, _) in FRANJAS_DIA.items(): print(f"  {k}) {nombre}")
+    op_hora = input("Opción [1]: ").strip() or "1"
+    _, clave_hora = FRANJAS_DIA.get(op_hora, FRANJAS_DIA["1"])
+
+    return {"n_slides": n_slides, "formato": op if op in FORMATOS_FOTO else "1", "momento_dia": clave_hora}
 
 def flujo_historias_foto():
     m = elegir_lote(MANIFEST_HISTORIAS, "historias fotográficas", pedir_config_historias)
-    cfg = m.get("config") or {"n_slides": 8, "formato": "1"}
+    cfg = m.get("config") or {"n_slides": 8, "formato": "1", "momento_dia": "multi"}
+    momento = cfg.get("momento_dia", "multi")
+    for pet in m.get("peticiones", []):
+        pet.setdefault("momento_dia", momento)
     _, tam_sd, tam_final = FORMATOS_FOTO.get(cfg.get("formato", "1"), FORMATOS_FOTO["1"])
 
     def gen(pet, usados, i):

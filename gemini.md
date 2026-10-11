@@ -31,7 +31,7 @@ Este proyecto es un motor de automatización semi-asistida para crear videos ver
 *   **Transiciones Ópticas Suaves:** Eliminados los cortes planos o destellos negros con `CompositeVideoClip` layering. Disolvencia óptica suave (`crossfade` de 0.35 s) donde la escena saliente se funde suavemente con la entrante sin huecos. Soporte para `fade_black` (fundido a negro teatral para saltos de época o muerte) y `cut` (corte directo para gancho inicial).
 *   **Cámara Cinematográfica Dinámica:** `mover_clip` soporta 7 movimientos fluidos: `zoom_in` (+8%), `zoom_out` (-8%), `pan_left`, `pan_right`, `tilt_up`, `tilt_down` y `slow_drift` diagonal orgánico.
 *   **Cuota Visual Calibrada:** Se calcula automáticamente entre 18 y 25 escenas (~4.5 s por imagen) para que el espectador aprecie los detalles de SDXL sin saturarse ni generar excesos absurdos como 64 imágenes.
-*   **Flexibilidad 24 Horas:** Selector de momento del día (Mañana, Mediodía, Tarde, Noche Prime, Madrugada/Insomnio, o Multi-horario completo). La iluminación de las imágenes se adapta al momento (niebla matutina, sol duro de mediodía, hora dorada crepuscular o penumbra nocturna) y `metadata.md` incluye la estrategia de publicación para cualquier hora.
+*   **Flexibilidad 24 Horas (Videos e Historias):** Selector de momento del día (Mañana, Mediodía, Tarde, Noche Prime, Madrugada/Insomnio, o Multi-horario completo). La iluminación de las imágenes se adapta al momento (niebla matutina, sol duro de mediodía, hora dorada crepuscular o penumbra nocturna) y `metadata.md` incluye la estrategia de publicación y copys para cualquier hora (tanto para videos como para carruseles de fotos).
 
 ---
 

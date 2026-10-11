@@ -22,12 +22,23 @@ REGLAS DE PROMPTS DE IMAGEN (SDXL, en inglés):
 5. Si es objeto o paisaje: "no humans, empty scene".
 6. CERO estilos en las diapositivas; van solo en "estilo_visual_global".
 7. Mantén continuidad visual (mismo lugar/personaje descrito igual) entre diapositivas.
+8. ILUMINACIÓN PARA CUALQUIER MOMENTO DEL DÍA (v4.4): no limites todas las fotos a la noche oscura. Adapta la luz y hora del día al momento y ritmo de la historia:
+   - Mañana / Amanecer: "pale cold dawn light, morning ground fog, chilly mist over cobblestones, desaturated blue tones"
+   - Mediodía / Tarde: "harsh stark midday sun, sharp dramatic shadows pouring through arches, dusty shafts of light"
+   - Crepúsculo / Atardecer: "cinematic golden hour, deep amber and blood-orange sunset light, long eerie shadows"
+   - Noche / Madrugada: "pitch darkness, dramatic single candlelight or lantern chiaroscuro, pale moonlit mist"
+9. RITMO Y DINÁMICA DE PLANOS: alterna la escala de planos para que el carrusel sea dinámico al deslizar:
+   - Diapositiva 1 (Portada): Plano general imponente o fachada con contraste extremo (punto focal claro).
+   - Diapositivas intermedias: Alterna primer plano de detalle (objeto misterioso, documento, retrato desgastado de época) y planos medios del entorno.
+   - Penúltima (Clímax): El encuadre más tenso o perturbador.
+   - Última (Comunidad): Composición abierta que acompañe el reto o votación final.
 
 REGLAS DE METADATA:
 - facebook: ángulo polémico/dilema moral, clickbait ético ("¿Qué opinas de esta atrocidad?"), pide etiquetar a alguien. instagram: visual, estético, dato curioso GUARDABLE ("guarda esto"), invita a compartir. youtube_community: pregunta directa + encuesta.
 - CALIBRACIÓN REAL: Facebook premia lo absurdo/indignante; YouTube y Instagram premian arquitectura maldita y folclore de México/Latinoamérica. PROHIBIDAS las tragedias internacionales sin componente sobrenatural. Usa jerga y términos locales de México/Latinoamérica en copys y hashtags. Clasifica la historia en "tier" (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO) y adapta el cierre: ABSURDO → indignación/burla; ARQUITECTURA/FOLCLORE → invitar a explorar el lugar real. Viscerales (MORBO/ABSURDO) solo para Facebook.
 - La diapositiva 1 debe tener un gancho de curiosidad máximo (texto ≤8 palabras) porque decide si se desliza.
 - Cada red lleva "hora_publicacion": mejor día y hora local de Ciudad de México (CST) con razón breve. Referencias: Facebook 18:00-21:00 (mié-dom); Instagram carrusel 19:00-21:00 (lun-mié, vie) ; YouTube Community 12:00-14:00 o 18:00-20:00 (mar-jue).
+- ESTRATEGIA PARA CUALQUIER MOMENTO DEL DÍA (v4.4): el carrusel puede subirse a cualquier hora. Agrega en "metadata" el bloque "estrategia_horaria" con un gancho breve adaptado para: "manana", "mediodia", "tarde", "noche", "madrugada".
 
 Salida JSON estricta:
 {
@@ -52,7 +63,14 @@ Salida JSON estricta:
       "youtube_community": {"copy": "...", "hashtags": "...", "hora_publicacion": "..."},
       "comentario_fijado": "Pregunta polémica general",
       "encuesta": "A) ... / B) ...",
-      "respuestas_interaccion": ["R1", "R2"]
+      "respuestas_interaccion": ["R1", "R2"],
+      "estrategia_horaria": {
+        "manana": "Gancho matutino para deslizar...",
+        "mediodia": "Gancho de almuerzo para deslizar...",
+        "tarde": "Gancho de tarde para deslizar...",
+        "noche": "Gancho nocturno para deslizar...",
+        "madrugada": "Gancho de insomnio para deslizar..."
+      }
     }
   }
 }
