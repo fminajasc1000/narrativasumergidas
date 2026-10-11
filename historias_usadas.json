@@ -38,8 +38,15 @@
   {
     "titulo": "Lecumberri: El Panóptico que Nunca Dejó de Vigilar",
     "fecha": "2026-10-11 15:14",
+    "ultima_actualizacion": "2026-10-11 15:19:14",
     "tipo": "video",
-    "slug": "lecumberri_el_panóptico_que_nunca_dejó_d"
+    "slug": "lecumberri_el_panóptico_que_nunca_dejó_d",
+    "estado": "video_ensamblado",
+    "tier": "ARQUITECTURA",
+    "duracion_audio_s": 86.4,
+    "num_imagenes": 20,
+    "carpeta": "lecumberri_el_panóptico_que_nunca_dejó_d",
+    "archivo_salida": "lecumberri_el_panóptico_que_nunca_dejó_d.mp4"
   },
   {
     "titulo": "San Juan Parangaricutiro: El pueblo que se tragó un volcán",
