@@ -52,6 +52,7 @@ Salida JSON estricta:
   "escenas": [
     {
       "archivo": "01_gancho.png",
+      "frase_guion_asociada": "Frase o fragmento exacto del guion que suena mientras se muestra esta imagen",
       "movimiento_camara": "zoom_in",
       "prompt": "massive flat sinkhole in desert ground filled with orange flames, (no volcano:1.5), (no lava:1.5), night, no humans, empty scene",
       "sfx_capcut": "Low frequency boom",

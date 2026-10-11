@@ -145,7 +145,14 @@ def iniciar_sd():
     except: pass
     env = os.environ.copy()
     env.pop("VIRTUAL_ENV", None)
-    comandos = ["./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
+    # Control de uso de CPU: evitar que sature los 10 núcleos y desconecte periféricos en Mac mini M4
+    env["OMP_NUM_THREADS"] = "4"
+    env["MKL_NUM_THREADS"] = "4"
+    env["OPENBLAS_NUM_THREADS"] = "4"
+    env["VECLIB_MAXIMUM_THREADS"] = "4"
+    env["NUMEXPR_NUM_THREADS"] = "4"
+    env["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.7"
+    comandos = ["nice", "-n", "10", "./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
     p = subprocess.Popen(comandos, cwd=RUTA_SD, env=env, preexec_fn=os.setsid)
     for _ in range(60):
         try:
@@ -362,6 +369,44 @@ def disenar_portada(ruta_in, ruta_out, texto, palabra_clave="", etiqueta="", ace
 # ---------------------------------------------------------------------------
 # VIDEO: EXPORT / GUION
 # ---------------------------------------------------------------------------
+def alinear_escenas_con_audio(escenas, ruta_audio, texto_completo=""):
+    """Calcula las marcas de tiempo exactas (inicio, fin, duracion) de cada escena con respecto al MP3 real."""
+    try:
+        a = AudioFileClip(ruta_audio)
+        duracion_total = float(a.duration)
+        a.close()
+    except Exception:
+        duracion_total = 0.0
+
+    imgs_validas = [e for e in escenas if e.get("archivo")]
+    if not imgs_validas or duracion_total <= 0:
+        return escenas
+
+    # 1. Ponderación por palabras de la frase asociada o tamaño de la escena
+    pesos = []
+    for e in imgs_validas:
+        frase = (e.get("frase_guion_asociada") or e.get("tip_texto_pantalla") or "").strip()
+        num_palabras = len(re.findall(r'\b\w+\b', frase))
+        pesos.append(max(num_palabras, 4)) # mínimo equivalente a 4 palabras
+
+    peso_total = sum(pesos)
+    tiempo_acumulado = 0.0
+
+    for i, e in enumerate(imgs_validas):
+        # Duración proporcional exacta a su fragmento narrado
+        if i == len(imgs_validas) - 1:
+            dur = max(0.5, duracion_total - tiempo_acumulado)
+        else:
+            dur = (pesos[i] / peso_total) * duracion_total
+            dur = max(1.5, dur) # al menos 1.5s por imagen para apreciarse
+
+        e["segundo_inicio"] = round(tiempo_acumulado, 2)
+        e["duracion_calculada"] = round(dur, 2)
+        tiempo_acumulado += dur
+        e["segundo_fin"] = round(tiempo_acumulado, 2)
+
+    return escenas
+
 def exportar_metadata(datos, ruta):
     try:
         with open(os.path.join(ruta, "metadata.md"), "w", encoding="utf-8") as f:
@@ -387,9 +432,15 @@ def exportar_metadata(datos, ruta):
                 p = datos.get(clave, {})
                 if p: f.write(f"## 🖼 PORTADA ({uso})\n- Archivo: {arch}\n- Texto: {p.get('texto_portada', '')} {p.get('texto_portada_zh', '')}\n- Palabra clave: {p.get('palabra_clave', '')} | Etiqueta: {p.get('etiqueta', '')} | Acento: {p.get('color_acento', '')}\n- Prompt: {p.get('prompt', '')}\n\n")
             f.write("---\n")
-            f.write("## 🖼 ESCENAS Y SFX CAPCUT\n")
+            f.write("## 🖼 ESCENAS, CRONOMETRAJE (.MP3) Y SFX CAPCUT\n")
             for i, e in enumerate(datos.get('escenas', []), 1):
-                f.write(f"### Escena {i}: {e.get('archivo', '')}\n")
+                t_ini = e.get("segundo_inicio", 0)
+                t_fin = e.get("segundo_fin", 0)
+                m_ini, s_ini = divmod(int(t_ini), 60)
+                m_fin, s_fin = divmod(int(t_fin), 60)
+                stamp = f"[{m_ini:02d}:{s_ini:02d} - {m_fin:02d}:{s_fin:02d}]"
+                f.write(f"### Escena {i}: {e.get('archivo', '')} {stamp}\n")
+                if e.get("frase_guion_asociada"): f.write(f"- Frase audio: \"{e.get('frase_guion_asociada')}\"\n")
                 f.write(f"- Movimiento: {e.get('movimiento_camara', '')}\n")
                 f.write(f"- SFX: {e.get('sfx_capcut', '')}\n")
                 f.write(f"- Texto en Pantalla: {e.get('tip_texto_pantalla', '')}\n")
@@ -451,15 +502,26 @@ def mover_clip(clip, mov, factor=0.12):
 
 def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     print(f"\n--- ENSAMBLANDO: {titulo} ---")
-    try: audio = AudioFileClip(ruta_audio)
-    except: return
-    imgs = [e for e in escenas if os.path.exists(os.path.join(ruta_carpeta, e.get("archivo", "")))]
+    try:
+        audio = AudioFileClip(ruta_audio)
+    except Exception as e:
+        print(f"Error cargando audio {ruta_audio}: {e}")
+        return
+
+    # Sincronización exacta con respecto al archivo MP3 generado
+    escenas_sincronizadas = alinear_escenas_con_audio(escenas, ruta_audio)
+    imgs = [e for e in escenas_sincronizadas if os.path.exists(os.path.join(ruta_carpeta, e.get("archivo", "")))]
     if not imgs: return
-    duracion_base = audio.duration / len(imgs)
+
     clips = []
+    duracion_defecto = audio.duration / len(imgs)
 
     for i, esc in enumerate(imgs):
-        duracion_clip = duracion_base + 1.2 if i == len(imgs) - 1 else duracion_base
+        # Duración calibrada con el audio MP3
+        duracion_clip = esc.get("duracion_calculada", duracion_defecto)
+        if i == len(imgs) - 1:
+            duracion_clip += 0.5  # breve margen final para rematar audio
+
         base_clip = mover_clip(ImageClip(os.path.join(ruta_carpeta, esc.get("archivo"))).set_duration(duracion_clip), esc.get("movimiento_camara")).crossfadein(0.1)
         capas_escena = [base_clip.set_position(('center', 'center'))]
 
@@ -484,7 +546,10 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     vid = concatenate_videoclips(clips, method="compose").set_audio(audio.audio_fadeout(0.5))
     destino = os.path.join(ruta_carpeta, f"{titulo}.mp4")
     temporal = os.path.join(ruta_carpeta, f"{titulo}.parcial.mp4")
-    vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="ultrafast", logger=None)
+
+    # Limitación de CPU a 4 threads y preset mediano para evitar 100% de CPU y desconexión de periféricos
+    num_threads = min(4, max(1, (os.cpu_count() or 4) // 2))
+    vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast", threads=num_threads, logger=None)
     os.replace(temporal, destino)
 
 # ---------------------------------------------------------------------------
@@ -517,6 +582,9 @@ def preparar_video(ep, titulo):
         os.remove(ruta_aud)
     else:
         print("⚠ No se logró bajar de la duración máxima; se usa la última versión.")
+
+    # Calibrar marcas de tiempo exactas segundo a segundo sobre el MP3 definitivo
+    ep["escenas"] = alinear_escenas_con_audio(ep.get("escenas", []), ruta_aud, ep.get("locucion_elevenlabs", {}).get("texto_completo", ""))
     exportar_metadata(ep, titulo)
     return ruta_aud
 
