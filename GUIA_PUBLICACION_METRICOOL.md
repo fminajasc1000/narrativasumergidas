@@ -112,3 +112,4 @@ Si elegiste la opción 2 de `generador.py`:
 
 ---
 *Con esta guía tienes el control total, cero posibilidad de errores y una operación de menos de 3 minutos por entrega.*
+

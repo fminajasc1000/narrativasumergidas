@@ -29,7 +29,11 @@ lote_historias_actual.json
 
 # Credenciales de Google Drive y YouTube
 credentials.json
+credencial.json
+youtube_credencials.json
+*credential*.json
 client_secret*.json
 token.json
 token_youtube.json
 service_account.json
+

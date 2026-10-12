@@ -1,0 +1,81 @@
+{
+  "fecha_analisis": "2026-10-11 19:51:17",
+  "total_videos_analizados": 10,
+  "promedio_vistas": 337.3,
+  "top_videos": [
+    {
+      "id": "vCQpGZ_6pjM",
+      "titulo": "La CASA DE LAS BRUJAS de la colonia Roma 👁️ El edificio que te mira #shorts",
+      "vistas": 1004,
+      "likes": 49,
+      "comentarios": 0,
+      "ratio_engagement": 4.88,
+      "publicado": "2026-10-02"
+    },
+    {
+      "id": "9J4hK5JSIP4",
+      "titulo": "Lecumberri: la cárcel panóptica de México y sus leyendas | Palacio Negro",
+      "vistas": 815,
+      "likes": 34,
+      "comentarios": 0,
+      "ratio_engagement": 4.17,
+      "publicado": "2026-10-10"
+    },
+    {
+      "id": "Xk3g_1QC3ak",
+      "titulo": "La Mansión Winchester: Historia Real de la Casa Construida para Engañar a los Muertos.",
+      "vistas": 651,
+      "likes": 24,
+      "comentarios": 0,
+      "ratio_engagement": 3.69,
+      "publicado": "2026-10-10"
+    },
+    {
+      "id": "QhFuYd71qMg",
+      "titulo": "Los ABANDONARON en medio del océano 🌊 Caso REAL #peliculas #narrativassumergidas #terrorymisterio",
+      "vistas": 506,
+      "likes": 22,
+      "comentarios": 0,
+      "ratio_engagement": 4.35,
+      "publicado": "2026-10-07"
+    }
+  ],
+  "videos_bajos": [
+    {
+      "id": "crXsfXOjPZE",
+      "titulo": "La leyenda de Pelayo #caracoles #tlalnepantladebaz  #tlalnepantla  #peliculas #terrorymisterio #cine",
+      "vistas": 69,
+      "likes": 5,
+      "comentarios": 0,
+      "ratio_engagement": 7.25,
+      "publicado": "2026-10-02"
+    },
+    {
+      "id": "396CEtH2Csw",
+      "titulo": "Subieron para salvarse… y el humo los sigúió. Trajedia de Kaprun.",
+      "vistas": 14,
+      "likes": 0,
+      "comentarios": 0,
+      "ratio_engagement": 0.0,
+      "publicado": "2026-10-08"
+    },
+    {
+      "id": "x4zbwLrDPak",
+      "titulo": "Los Graniceros del Popocatépetl: el ritual secreto de México que aún se practica.  #leyendas",
+      "vistas": 2,
+      "likes": 0,
+      "comentarios": 0,
+      "ratio_engagement": 0.0,
+      "publicado": "2026-10-12"
+    },
+    {
+      "id": "QL5rshWHz90",
+      "titulo": "La Isla de las Muñecas: la leyenda de Xochimilco que nadie quiere visitar de noche",
+      "vistas": 1,
+      "likes": 0,
+      "comentarios": 0,
+      "ratio_engagement": 0.0,
+      "publicado": "2026-10-12"
+    }
+  ]
+}

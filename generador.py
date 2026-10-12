@@ -1,4 +1,4 @@
-import requests, base64, time, json, os, re, subprocess, signal, random, shutil, mimetypes
+import sys, requests, base64, time, json, os, re, subprocess, signal, random, shutil, mimetypes
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps, ImageFilter, ImageColor
 import json_repair
 
@@ -420,6 +420,234 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
         print(f"✖ Error subiendo a YouTube Shorts: {e}")
         return None
 
+def obtener_metricas_meta():
+    """Consulta métricas de Facebook e Instagram si existen credenciales en token_meta.json o .env."""
+    token_meta = os.getenv("META_ACCESS_TOKEN")
+    archivo_token = "token_meta.json"
+    if os.path.exists(archivo_token) and not token_meta:
+        try:
+            with open(archivo_token, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                token_meta = d.get("access_token")
+        except Exception:
+            pass
+
+    if not token_meta:
+        return None
+
+    page_id = os.getenv("META_PAGE_ID", "")
+    ig_id = os.getenv("META_IG_ACCOUNT_ID", "")
+    reporte_meta = {"facebook": [], "instagram": []}
+
+    try:
+        # Facebook Page Posts Insights
+        if page_id:
+            url_fb = f"https://graph.facebook.com/v19.0/{page_id}/published_posts"
+            params = {
+                "access_token": token_meta,
+                "fields": "id,message,created_time,shares",
+                "limit": 10
+            }
+            res = requests.get(url_fb, params=params, timeout=15)
+            if res.ok:
+                posts = res.json().get("data", [])
+                for p in posts:
+                    reporte_meta["facebook"].append({
+                        "id": p.get("id"),
+                        "texto": (p.get("message") or "")[:40],
+                        "fecha": p.get("created_time", "")[:10]
+                    })
+
+        # Instagram Business Media Insights
+        if ig_id:
+            url_ig = f"https://graph.facebook.com/v19.0/{ig_id}/media"
+            params = {
+                "access_token": token_meta,
+                "fields": "id,caption,media_type,like_count,comments_count,timestamp",
+                "limit": 10
+            }
+            res = requests.get(url_ig, params=params, timeout=15)
+            if res.ok:
+                media = res.json().get("data", [])
+                for m in media:
+                    reporte_meta["instagram"].append({
+                        "id": m.get("id"),
+                        "caption": (m.get("caption") or "")[:40],
+                        "likes": m.get("like_count", 0),
+                        "comentarios": m.get("comments_count", 0),
+                        "fecha": m.get("timestamp", "")[:10]
+                    })
+        return reporte_meta
+    except Exception as e:
+        print(f"   ℹ Meta API no disponible o expiró el token: {e}")
+        return None
+
+def obtener_metricas_tiktok():
+    """Consulta métricas de TikTok si existe token en token_tiktok.json o .env."""
+    token_tiktok = os.getenv("TIKTOK_ACCESS_TOKEN")
+    archivo_token = "token_tiktok.json"
+    if os.path.exists(archivo_token) and not token_tiktok:
+        try:
+            with open(archivo_token, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                token_tiktok = d.get("access_token")
+        except Exception:
+            pass
+
+    if not token_tiktok:
+        return None
+
+    try:
+        # TikTok Display / Creator API
+        url = "https://open.tiktokapis.com/v2/video/list/"
+        headers = {
+            "Authorization": f"Bearer {token_tiktok}",
+            "Content-Type": "application/json"
+        }
+        body = {
+            "max_count": 10,
+            "fields": ["id", "title", "view_count", "like_count", "comment_count", "share_count"]
+        }
+        res = requests.post(url, headers=headers, json=body, timeout=15)
+        if res.ok:
+            data = res.json().get("data", {}).get("videos", [])
+            reporte_tt = []
+            for v in data:
+                reporte_tt.append({
+                    "id": v.get("id"),
+                    "titulo": v.get("title", "")[:40],
+                    "vistas": v.get("view_count", 0),
+                    "likes": v.get("like_count", 0),
+                    "comentarios": v.get("comment_count", 0)
+                })
+            return reporte_tt
+    except Exception as e:
+        print(f"   ℹ TikTok API no disponible o expiró el token: {e}")
+    return None
+
+def analizar_rendimiento_canal(max_videos=15):
+    """Analiza las métricas reales de los videos de YouTube Shorts del canal y de otras redes,
+    calcula patrones ganadores y actualiza el contexto para retroalimentar a Claude."""
+    service = obtener_servicio_youtube()
+    if not service:
+        print("✖ No se pudo conectar a YouTube para extraer métricas.")
+        return None
+
+    print(f"\n📊 Analizando métricas de los últimos {max_videos} videos de Narrativas Sumergidas...")
+    try:
+        res = service.search().list(channelId='UCATQH4An6atNNAtZYXMNkoQ', part='snippet',
+                                    maxResults=max_videos, order='date', type='video').execute()
+        items = res.get('items', [])
+        if not items:
+            print("No se encontraron videos en el canal.")
+            return None
+
+        vids = [it['id']['videoId'] for it in items]
+        detalles = service.videos().list(id=','.join(vids), part='snippet,statistics,contentDetails').execute().get('items', [])
+
+        reporte = []
+        for v in detalles:
+            stats = v.get('statistics', {})
+            snip = v.get('snippet', {})
+            vistas = int(stats.get('viewCount', 0))
+            likes = int(stats.get('likeCount', 0))
+            comentarios = int(stats.get('commentCount', 0))
+            reporte.append({
+                "id": v['id'],
+                "titulo": snip.get('title', ''),
+                "vistas": vistas,
+                "likes": likes,
+                "comentarios": comentarios,
+                "ratio_engagement": round((likes + comentarios) / max(1, vistas) * 100, 2),
+                "publicado": snip.get('publishedAt', '')[:10]
+            })
+
+        reporte.sort(key=lambda x: x["vistas"], reverse=True)
+
+        print("\n" + "═" * 70)
+        print("📈 REPORTE DE RENDIMIENTO DEL CANAL (YOUTUBE SHORTS)")
+        print("═" * 70)
+        print(f"{'Vistas':<8} | {'Likes':<6} | {'Engage%':<8} | Título")
+        print("─" * 70)
+        for r in reporte:
+            print(f"{r['vistas']:<8} | {r['likes']:<6} | {r['ratio_engagement']:<7}% | {r['titulo'][:45]}")
+        print("═" * 70)
+
+        tops = [r for r in reporte if r["vistas"] >= 500]
+        medios = [r for r in reporte if 100 <= r["vistas"] < 500]
+        bajos = [r for r in reporte if r["vistas"] < 100]
+
+        print(f"\n💡 CONCLUSIONES ALGORÍTMICAS (YOUTUBE):")
+        print(f"   🔥 Éxitos virales (≥500 vistas): {len(tops)} videos")
+        for t in tops: print(f"      ✔ '{t['titulo']}' ({t['vistas']} vistas)")
+
+        print(f"   ⚡ Rendimiento medio (100-500 vistas): {len(medios)} videos")
+        print(f"   ⚠️ Bajo rendimiento (<100 vistas): {len(bajos)} videos")
+        for b in bajos: print(f"      ✖ '{b['titulo']}' ({b['vistas']} vistas)")
+
+        # Chequeo multi-plataforma (Meta & TikTok)
+        print("\n🌐 ESTADO DE CONEXIÓN MULTIPLATAFORMA:")
+        meta_data = obtener_metricas_meta()
+        if meta_data:
+            print(f"   ✔ Meta conectado: FB ({len(meta_data.get('facebook', []))} posts), IG ({len(meta_data.get('instagram', []))} media)")
+        else:
+            print("   ℹ Meta (Facebook / Instagram): Sin token configurado (ver GUIA_CONEXION_METRICAS.md)")
+
+        tt_data = obtener_metricas_tiktok()
+        if tt_data:
+            print(f"   ✔ TikTok conectado: {len(tt_data)} videos analizados")
+        else:
+            print("   ℹ TikTok: Sin token configurado (ver GUIA_CONEXION_METRICAS.md)")
+
+        resumen_analisis = {
+            "fecha_analisis": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "total_videos_analizados": len(reporte),
+            "promedio_vistas": round(sum(r["vistas"] for r in reporte) / max(1, len(reporte)), 1),
+            "top_videos": tops,
+            "videos_bajos": bajos,
+            "multiplataforma": {
+                "meta": meta_data if meta_data else "no_configurado",
+                "tiktok": tt_data if tt_data else "no_configurado"
+            }
+        }
+        with open("metricas_canal.json", "w", encoding="utf-8") as f:
+            json.dump(resumen_analisis, f, ensure_ascii=False, indent=2)
+        print("\n✔ Archivo 'metricas_canal.json' actualizado para retroalimentar la generación de guiones.")
+        return resumen_analisis
+    except Exception as e:
+        print(f"✖ Error analizando el canal: {e}")
+        return None
+
+def obtener_feedback_metricas():
+    """Lee metricas_canal.json si existe y construye directrices para Claude
+    basadas en lo que realmente funciona en el canal y lo que fracasó."""
+    if not os.path.exists("metricas_canal.json"):
+        return ""
+    try:
+        with open("metricas_canal.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        top = data.get("top_videos", [])
+        bajos = data.get("videos_bajos", [])
+        if not top and not bajos:
+            return ""
+
+        feedback = "\n\n📊 RETROALIMENTACIÓN DE AUDIENCIA REAL (MÉTRICAS DEL CANAL):\n"
+        feedback += "El sistema analizó los videos reales con mejor y peor desempeño de la audiencia:\n"
+        if top:
+            feedback += "🔥 PATRONES GANADORES (Más de 500-1,000 reproducciones - EMULAR ESTE ESTILO):\n"
+            for t in top[:4]:
+                feedback += f"  - '{t.get('titulo')}' ({t.get('vistas')} vistas, {t.get('ratio_engagement')}% retención/likes)\n"
+            feedback += "  -> Clave: Arquitectura maldita con historia real, leyendas urbanas con ubicación física reconocible, supervivencia extrema claustrofóbica o misterios sin resolver.\n"
+        if bajos:
+            feedback += "⚠️ PATRONES QUE NO FUNCIONARON (Menos de 100 reproducciones - EVITAR ESTE ENFOQUE):\n"
+            for b in bajos[:3]:
+                feedback += f"  - '{b.get('titulo')}' ({b.get('vistas')} vistas)\n"
+            feedback += "  -> Clave a evitar: No uses desastres mecánicos o accidentes técnicos sin componente humano/sobrenatural. Evita títulos genéricos sin gancho de intriga.\n"
+        feedback += "👉 Aplica estas lecciones de audiencia en el gancho inicial (0-3s), el título para YouTube Shorts y la atmósfera del guion.\n"
+        return feedback
+    except Exception:
+        return ""
+
 # ---------------------------------------------------------------------------
 # UTILIDADES
 # ---------------------------------------------------------------------------
@@ -526,6 +754,12 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
         msg += ("\n\n⛔ REGLA ESTRICTA DE NO REPETICIÓN: El canal YA produjo contenido sobre los siguientes casos/títulos. "
                 "Está TERMINANTEMENTE PROHIBIDO repetir cualquiera de estos casos, eventos, leyendas o títulos; "
                 "debes elegir un caso, lugar o suceso completamente NUEVO y no explorado:\n- " + "\n- ".join(lista_evitar))
+
+    # Inyección inteligente de patrones basados en métricas reales de la audiencia
+    feedback_met = obtener_feedback_metricas()
+    if feedback_met:
+        msg += feedback_met
+
     return msg
 
 # ---------------------------------------------------------------------------
@@ -1882,11 +2116,17 @@ def iniciar():
         print("  1) Videos verticales (uno o varios)")
         print("  2) Historias fotográficas (carruseles FB / IG / YouTube)")
         print(f"  3) Reanudar / Ensamblar carpeta existente (MP3 + imágenes){aviso}")
+        print("  4) Analizar rendimiento del canal (YouTube Analytics & Feedback IA)")
         print("  0) Salir")
         op = input("Opción: ").strip()
         if op == "1": flujo_videos()
         elif op == "2": flujo_historias_foto()
         elif op == "3": menu_reanudar_carpeta(carpetas)
+        elif op == "4": analizar_rendimiento_canal()
         elif op == "0": break
 
-if __name__ == "__main__": iniciar()
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("--analizar", "-a", "analizar"):
+        analizar_rendimiento_canal()
+        sys.exit(0)
+    iniciar()
