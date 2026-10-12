@@ -593,52 +593,39 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
         res_init = None
         modo_directo = False
 
-        # Intentar Direct Post (video.publish) si está en el scope
-        if "video.publish" in scopes_str:
-            privacidad = "SELF_ONLY"
-            try:
-                r_cr = requests.post(
-                    "https://open.tiktokapis.com/v2/post/publish/creator_info/query/",
-                    headers=headers_init,
-                    timeout=10
-                )
-                if r_cr.ok:
-                    opts = r_cr.json().get("data", {}).get("privacy_level_options", [])
-                    if "PUBLIC_TO_EVERYONE" in opts:
-                        privacidad = "PUBLIC_TO_EVERYONE"
-            except Exception:
-                pass
-
-            for priv_intento in ([privacidad, "SELF_ONLY"] if privacidad != "SELF_ONLY" else ["SELF_ONLY"]):
-                body_direct = {
-                    "post_info": {
-                        "title": caption_tt,
-                        "privacy_level": priv_intento,
-                        "disable_duet": False,
-                        "disable_comment": False,
-                        "disable_stitch": False
-                    },
-                    "source_info": {
-                        "source": "FILE_UPLOAD",
-                        "video_size": tam_archivo,
-                        "chunk_size": tam_archivo,
-                        "total_chunk_count": 1
-                    }
+        # Usar Inbox Draft (/v2/post/publish/inbox/video/init/) por defecto para dejar el borrador
+        # listo en la app de TikTok (permite programar o publicar en público sin requerir auditoría de app).
+        usar_direct_post = os.getenv("TIKTOK_DIRECT_POST", "0") == "1"
+        if usar_direct_post and "video.publish" in scopes_str:
+            privacidad = "PUBLIC_TO_EVERYONE"
+            body_direct = {
+                "post_info": {
+                    "title": caption_tt,
+                    "privacy_level": privacidad,
+                    "disable_duet": False,
+                    "disable_comment": False,
+                    "disable_stitch": False
+                },
+                "source_info": {
+                    "source": "FILE_UPLOAD",
+                    "video_size": tam_archivo,
+                    "chunk_size": tam_archivo,
+                    "total_chunk_count": 1
                 }
-                r_dir = requests.post(
-                    "https://open.tiktokapis.com/v2/post/publish/video/init/",
-                    headers=headers_init,
-                    json=body_direct,
-                    timeout=20
-                )
-                rj = r_dir.json()
-                if "data" in rj and "upload_url" in rj["data"]:
-                    res_init = rj
-                    modo_directo = True
-                    print(f"   🚀 Modo Direct Post activado (privacidad: {priv_intento})")
-                    break
+            }
+            r_dir = requests.post(
+                "https://open.tiktokapis.com/v2/post/publish/video/init/",
+                headers=headers_init,
+                json=body_direct,
+                timeout=20
+            )
+            rj = r_dir.json()
+            if "data" in rj and "upload_url" in rj["data"]:
+                res_init = rj
+                modo_directo = True
+                print(f"   🚀 Modo Direct Post activado (privacidad: {privacidad})")
 
-        # Fallback a Inbox Draft (video.upload) si Direct Post no está activo
+        # Subida a Bandeja de Entrada / Borradores de la app (video.upload)
         if not res_init:
             url_init = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
             body_init = {
@@ -677,14 +664,18 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
                 if modo_directo or "PUBLISH_COMPLETE" in txt:
                     print(f"✅ ¡Video PUBLICADO directamente en tu perfil de TikTok con su copy y hashtags! (ID: {publish_id})")
                 else:
-                    print("✅ ¡Video subido y procesado exitosamente por TikTok!")
-                    print("   📲 Notificación enviada a tu app de TikTok: El video ya está listo en tus Borradores.")
+                    print(f"✅ ¡Video enviado exitosamente a tus Borradores de TikTok! (ID: {publish_id})")
+                    print("   📲 Abre la Bandeja de entrada en tu app de TikTok para publicarlo o programarlo.")
+                    if caption_tt:
+                        print(f"   📋 Copy listo para pegar en TikTok:\n      {caption_tt}")
                 return publish_id
             elif "FAILED" in txt:
                 print(f"✖ TikTok reportó fallo al procesar el video: {txt}")
                 return None
 
-        print("ℹ Video transferido a TikTok (en procesamiento final en la nube).")
+        print(f"ℹ Video transferido a tus Borradores de TikTok (ID: {publish_id}).")
+        if caption_tt:
+            print(f"   📋 Copy listo para pegar en TikTok:\n      {caption_tt}")
         return publish_id
     except Exception as e:
         print(f"✖ Error subiendo a TikTok: {e}")
