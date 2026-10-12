@@ -564,20 +564,25 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
 def obtener_metricas_meta():
     """Consulta métricas de Facebook e Instagram si existen credenciales en token_meta.json o .env."""
     token_meta = os.getenv("META_ACCESS_TOKEN")
+    page_id = os.getenv("META_PAGE_ID", "")
+    ig_id = os.getenv("META_IG_ACCOUNT_ID", "")
     archivo_token = "token_meta.json"
-    if os.path.exists(archivo_token) and not token_meta:
+    if os.path.exists(archivo_token):
         try:
             with open(archivo_token, "r", encoding="utf-8") as f:
                 d = json.load(f)
-                token_meta = d.get("access_token")
+                if not token_meta:
+                    token_meta = d.get("facebook", {}).get("access_token") or d.get("access_token")
+                if not page_id:
+                    page_id = d.get("facebook", {}).get("page_id") or d.get("page_id", "")
+                if not ig_id:
+                    ig_id = d.get("instagram", {}).get("account_id") or d.get("ig_account_id", "")
         except Exception:
             pass
 
     if not token_meta:
         return None
 
-    page_id = os.getenv("META_PAGE_ID", "")
-    ig_id = os.getenv("META_IG_ACCOUNT_ID", "")
     reporte_meta = {"facebook": [], "instagram": []}
 
     try:
@@ -587,7 +592,7 @@ def obtener_metricas_meta():
             params = {
                 "access_token": token_meta,
                 "fields": "id,message,created_time,shares",
-                "limit": 10
+                "limit": 15
             }
             res = requests.get(url_fb, params=params, timeout=15)
             if res.ok:
@@ -595,8 +600,9 @@ def obtener_metricas_meta():
                 for p in posts:
                     reporte_meta["facebook"].append({
                         "id": p.get("id"),
-                        "texto": (p.get("message") or "")[:40],
-                        "fecha": p.get("created_time", "")[:10]
+                        "texto": (p.get("message") or "")[:60].replace("\n", " "),
+                        "fecha": p.get("created_time", "")[:10],
+                        "compartidos": p.get("shares", {}).get("count", 0) if p.get("shares") else 0
                     })
 
         # Instagram Business Media Insights
@@ -855,16 +861,28 @@ def mostrar_estado_conexiones():
 
     # Meta (FB / IG)
     token_m = os.getenv("META_ACCESS_TOKEN")
+    page_nombre = None
+    page_seguidores = 0
     if os.path.exists("token_meta.json"):
         try:
             with open("token_meta.json", encoding="utf-8") as f:
-                token_m = json.load(f).get("access_token", token_m)
+                d = json.load(f)
+                token_m = d.get("facebook", {}).get("access_token") or d.get("access_token", token_m)
+                p_id = d.get("facebook", {}).get("page_id") or d.get("page_id", "1158791430643856")
+                if token_m and p_id:
+                    r_p = requests.get(f"https://graph.facebook.com/v19.0/{p_id}?fields=name,followers_count&access_token={token_m}", timeout=6)
+                    if r_p.ok:
+                        dt = r_p.json()
+                        page_nombre = dt.get("name")
+                        page_seguidores = dt.get("followers_count", 0)
         except: pass
 
-    if token_m:
+    if page_nombre:
+        print(f"  ✅ Facebook: CONECTADO (Página: '{page_nombre}' | {page_seguidores} seguidores)")
+    elif token_m:
         print(f"  ✅ Meta (Facebook / Instagram): CONECTADO (Token configurado)")
     else:
-        print("  ⏳ Meta (Facebook / Instagram): Pendiente de conectar (Opción 5 en este menú)")
+        print("  ⏳ Meta (Facebook / Instagram): Pendiente de conectar (Opción 6 en este menú)")
     print("═" * 65)
 
 def mostrar_patrones_ia():
@@ -1019,12 +1037,27 @@ def conectar_o_probar_meta():
         if op == "1":
             print("\n🔄 Probando conexión a Meta Graph API...")
             try:
-                r = requests.get(f"https://graph.facebook.com/v19.0/me?access_token={token_actual}", timeout=10)
-                if r.ok:
-                    data = r.json()
-                    print(f"✅ ¡Conexión exitosa con Meta! Cuenta: {data.get('name', '')} (ID: {data.get('id', '')})")
+                p_id = "1158791430643856"
+                if os.path.exists("token_meta.json"):
+                    with open("token_meta.json") as f:
+                        d = json.load(f)
+                        p_id = d.get("facebook", {}).get("page_id") or d.get("page_id", p_id)
+                r_p = requests.get(f"https://graph.facebook.com/v19.0/{p_id}?fields=id,name,fan_count,followers_count&access_token={token_actual}", timeout=10)
+                if r_p.ok:
+                    data = r_p.json()
+                    print(f"✅ ¡Conexión exitosa con Facebook!")
+                    print(f"   Página: '{data.get('name', '')}' (ID: {data.get('id', '')})")
+                    print(f"   Seguidores: {data.get('followers_count', 0)}")
+                    r_posts = requests.get(f"https://graph.facebook.com/v19.0/{p_id}/published_posts?fields=id,message,created_time,shares&limit=5&access_token={token_actual}", timeout=10)
+                    if r_posts.ok:
+                        posts = r_posts.json().get("data", [])
+                        print(f"   Posts recientes detectados: {len(posts)}")
+                        for p in posts[:3]:
+                            msg = (p.get("message") or "")[:50].replace("\n", " ")
+                            sh = p.get("shares", {}).get("count", 0) if p.get("shares") else 0
+                            print(f"   - [{p.get('created_time', '')[:10]}] \"{msg}...\" ({sh} compartidos)")
                 else:
-                    print(f"✖ Meta respondió con error ({r.status_code}): {r.text[:200]}")
+                    print(f"✖ Meta respondió con error ({r_p.status_code}): {r_p.text[:200]}")
             except Exception as e:
                 print(f"✖ Error conectando a Meta: {e}")
             return
