@@ -554,8 +554,10 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
         print(f"✖ Error subiendo a YouTube Shorts: {e}")
         return None
 
-def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
-    """Sube un video vertical a TikTok vía API oficial como borrador listo en la bandeja de entrada (inbox)."""
+def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None):
+    """Sube y publica un video vertical en TikTok vía API oficial.
+    Si el token cuenta con el permiso 'video.publish' (Direct Post), lo publica directamente en el perfil
+    con su copy y hashtags. De lo contrario, lo envía a los Borradores de la app (inbox)."""
     if not os.path.exists(ruta_video):
         return None
 
@@ -567,30 +569,91 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
         with open(archivo_token, "r", encoding="utf-8") as f:
             d = json.load(f)
             token = d.get("access_token") or d.get("data", {}).get("access_token")
-        if not token: return None
+            scopes_str = d.get("scope", "") or d.get("data", {}).get("scope", "")
+        if not token:
+            return None
 
         tam_archivo = os.path.getsize(ruta_video)
         print(f"\n🎵 Subiendo video a TikTok: '{os.path.basename(ruta_video)}' ({tam_archivo / (1024*1024):.1f} MB)...")
 
-        # 1. Init upload
-        url_init = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
         headers_init = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json; charset=UTF-8"
         }
-        body_init = {
-            "source_info": {
-                "source": "FILE_UPLOAD",
-                "video_size": tam_archivo,
-                "chunk_size": tam_archivo,
-                "total_chunk_count": 1
+
+        partes_texto = []
+        if titulo:
+            partes_texto.append(titulo.strip())
+        if descripcion:
+            partes_texto.append(descripcion.strip())
+        if hashtags:
+            partes_texto.append(hashtags.strip())
+        caption_tt = " ".join(partes_texto).strip()[:2100] or os.path.splitext(os.path.basename(ruta_video))[0]
+
+        res_init = None
+        modo_directo = False
+
+        # Intentar Direct Post (video.publish) si está en el scope
+        if "video.publish" in scopes_str:
+            privacidad = "SELF_ONLY"
+            try:
+                r_cr = requests.post(
+                    "https://open.tiktokapis.com/v2/post/publish/creator_info/query/",
+                    headers=headers_init,
+                    timeout=10
+                )
+                if r_cr.ok:
+                    opts = r_cr.json().get("data", {}).get("privacy_level_options", [])
+                    if "PUBLIC_TO_EVERYONE" in opts:
+                        privacidad = "PUBLIC_TO_EVERYONE"
+            except Exception:
+                pass
+
+            for priv_intento in ([privacidad, "SELF_ONLY"] if privacidad != "SELF_ONLY" else ["SELF_ONLY"]):
+                body_direct = {
+                    "post_info": {
+                        "title": caption_tt,
+                        "privacy_level": priv_intento,
+                        "disable_duet": False,
+                        "disable_comment": False,
+                        "disable_stitch": False
+                    },
+                    "source_info": {
+                        "source": "FILE_UPLOAD",
+                        "video_size": tam_archivo,
+                        "chunk_size": tam_archivo,
+                        "total_chunk_count": 1
+                    }
+                }
+                r_dir = requests.post(
+                    "https://open.tiktokapis.com/v2/post/publish/video/init/",
+                    headers=headers_init,
+                    json=body_direct,
+                    timeout=20
+                )
+                rj = r_dir.json()
+                if "data" in rj and "upload_url" in rj["data"]:
+                    res_init = rj
+                    modo_directo = True
+                    print(f"   🚀 Modo Direct Post activado (privacidad: {priv_intento})")
+                    break
+
+        # Fallback a Inbox Draft (video.upload) si Direct Post no está activo
+        if not res_init:
+            url_init = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
+            body_init = {
+                "source_info": {
+                    "source": "FILE_UPLOAD",
+                    "video_size": tam_archivo,
+                    "chunk_size": tam_archivo,
+                    "total_chunk_count": 1
+                }
             }
-        }
-        r_init = requests.post(url_init, headers=headers_init, json=body_init, timeout=20)
-        res_init = r_init.json()
-        if "data" not in res_init or "upload_url" not in res_init["data"]:
-            print(f"✖ Error iniciando subida a TikTok: {res_init}")
-            return None
+            r_init = requests.post(url_init, headers=headers_init, json=body_init, timeout=20)
+            res_init = r_init.json()
+            if "data" not in res_init or "upload_url" not in res_init["data"]:
+                print(f"✖ Error iniciando subida a TikTok: {res_init}")
+                return None
 
         upload_url = res_init["data"]["upload_url"]
         publish_id = res_init["data"]["publish_id"]
@@ -602,18 +665,24 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
             "Content-Type": "video/mp4"
         }
         with open(ruta_video, "rb") as f_vid:
-            requests.put(upload_url, data=f_vid, headers=headers_upload, timeout=120)
+            requests.put(upload_url, data=f_vid, headers=headers_upload, timeout=180)
 
         # 3. Check status
         url_status = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
-        for i in range(15):
-            time.sleep(3)
+        for _ in range(18):
+            time.sleep(4)
             r_stat = requests.post(url_status, headers=headers_init, json={"publish_id": publish_id}, timeout=15)
             txt = r_stat.text
-            if "SEND_TO_USER_INBOX" in txt or "SUCCESS" in txt:
-                print("✅ ¡Video subido y procesado exitosamente por TikTok!")
-                print("   📲 Notificación enviada a tu app de TikTok: El video ya está listo en tus Borradores.")
+            if "PUBLISH_COMPLETE" in txt or "SEND_TO_USER_INBOX" in txt or "SUCCESS" in txt:
+                if modo_directo or "PUBLISH_COMPLETE" in txt:
+                    print(f"✅ ¡Video PUBLICADO directamente en tu perfil de TikTok con su copy y hashtags! (ID: {publish_id})")
+                else:
+                    print("✅ ¡Video subido y procesado exitosamente por TikTok!")
+                    print("   📲 Notificación enviada a tu app de TikTok: El video ya está listo en tus Borradores.")
                 return publish_id
+            elif "FAILED" in txt:
+                print(f"✖ TikTok reportó fallo al procesar el video: {txt}")
+                return None
 
         print("ℹ Video transferido a TikTok (en procesamiento final en la nube).")
         return publish_id
@@ -1340,7 +1409,7 @@ def conectar_o_probar_tiktok():
     client_key = os.getenv("TIKTOK_CLIENT_KEY", "sbawaqizbhzrfa2vz5")
     client_secret = os.getenv("TIKTOK_CLIENT_SECRET", "OvSs9yhXEfTVFVj9yCoRNntCC06NO9Rk")
     redirect_uri = os.getenv("TIKTOK_REDIRECT_URI", "https://localhost:8080/callback")
-    scopes = "user.info.basic,user.info.stats,video.list,video.upload"
+    scopes = "user.info.basic,user.info.stats,video.list,video.upload,video.publish"
     state = str(int(time.time()))
 
     verifier = "narrativas_sumergidas_tiktok_oauth_verification_token_m4_2026"
@@ -2670,7 +2739,8 @@ def flujo_videos():
                 if meta_tt or os.path.exists("token_tiktok.json"):
                     tit_tt = (meta_tt or {}).get("titulo")
                     desc_tt = (meta_tt or {}).get("descripcion")
-                    subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt)
+                    tags_tt = (meta_tt or {}).get("hashtags")
+                    subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
 
                 # 3. Subida automática a Facebook Page e Instagram Reels (si están conectadas las cuentas)
                 meta_fb = ep.get("metadata", {}).get("facebook_reels", {})
