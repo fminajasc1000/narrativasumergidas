@@ -667,7 +667,12 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
                     print(f"✅ ¡Video enviado exitosamente a tus Borradores de TikTok! (ID: {publish_id})")
                     print("   📲 Abre la Bandeja de entrada en tu app de TikTok para publicarlo o programarlo.")
                     if caption_tt:
-                        print(f"   📋 Copy listo para pegar en TikTok:\n      {caption_tt}")
+                        try:
+                            subprocess.run(["pbcopy"], input=caption_tt.encode("utf-8"), check=True)
+                            print("   📋 Copy copiado automáticamente a tu Portapapeles (Universal Clipboard Mac/iPhone):")
+                        except Exception:
+                            print("   📋 Copy listo para pegar en TikTok:")
+                        print(f"      {caption_tt}")
                 return publish_id
             elif "FAILED" in txt:
                 print(f"✖ TikTok reportó fallo al procesar el video: {txt}")
@@ -675,7 +680,12 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
 
         print(f"ℹ Video transferido a tus Borradores de TikTok (ID: {publish_id}).")
         if caption_tt:
-            print(f"   📋 Copy listo para pegar en TikTok:\n      {caption_tt}")
+            try:
+                subprocess.run(["pbcopy"], input=caption_tt.encode("utf-8"), check=True)
+                print("   📋 Copy copiado automáticamente a tu Portapapeles (Universal Clipboard Mac/iPhone):")
+            except Exception:
+                print("   📋 Copy listo para pegar en TikTok:")
+            print(f"      {caption_tt}")
         return publish_id
     except Exception as e:
         print(f"✖ Error subiendo a TikTok: {e}")
