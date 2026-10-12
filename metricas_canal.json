@@ -1,7 +1,144 @@
 {
-  "fecha_analisis": "2026-10-12 15:11:19",
+  "fecha_analisis": "2026-10-12 16:24:18",
   "total_videos_analizados": 15,
   "promedio_vistas": 399.9,
+  "todos_youtube": [
+    {
+      "id": "nUg7UvAfH-Q",
+      "titulo": "La VAMPIRA de la iglesia de San Juan Bosco 🦇 Leyenda de Ciudad Madero #shorts",
+      "vistas": 1252,
+      "likes": 36,
+      "comentarios": 0,
+      "ratio_engagement": 2.88,
+      "publicado": "2026-09-29"
+    },
+    {
+      "id": "vCQpGZ_6pjM",
+      "titulo": "La CASA DE LAS BRUJAS de la colonia Roma 👁️ El edificio que te mira #shorts",
+      "vistas": 1004,
+      "likes": 49,
+      "comentarios": 0,
+      "ratio_engagement": 4.88,
+      "publicado": "2026-10-02"
+    },
+    {
+      "id": "9J4hK5JSIP4",
+      "titulo": "Lecumberri: la cárcel panóptica de México y sus leyendas | Palacio Negro",
+      "vistas": 862,
+      "likes": 34,
+      "comentarios": 0,
+      "ratio_engagement": 3.94,
+      "publicado": "2026-10-10"
+    },
+    {
+      "id": "wjCpHbvBm3s",
+      "titulo": "¿El cuerpo del emperador vendido a pedazos? 💀👑 #fyp #history  #peliculas #terrorymisterio",
+      "vistas": 668,
+      "likes": 41,
+      "comentarios": 2,
+      "ratio_engagement": 6.44,
+      "publicado": "2026-09-26"
+    },
+    {
+      "id": "Xk3g_1QC3ak",
+      "titulo": "La Mansión Winchester: Historia Real de la Casa Construida para Engañar a los Muertos.",
+      "vistas": 659,
+      "likes": 25,
+      "comentarios": 0,
+      "ratio_engagement": 3.79,
+      "publicado": "2026-10-10"
+    },
+    {
+      "id": "QhFuYd71qMg",
+      "titulo": "Los ABANDONARON en medio del océano 🌊 Caso REAL #peliculas #narrativassumergidas #terrorymisterio",
+      "vistas": 506,
+      "likes": 22,
+      "comentarios": 0,
+      "ratio_engagement": 4.35,
+      "publicado": "2026-10-07"
+    },
+    {
+      "id": "x4zbwLrDPak",
+      "titulo": "Los Graniceros del Popocatépetl: el ritual secreto de México que aún se practica.  #leyendas",
+      "vistas": 337,
+      "likes": 23,
+      "comentarios": 0,
+      "ratio_engagement": 6.82,
+      "publicado": "2026-10-12"
+    },
+    {
+      "id": "7kDEAN4rVSM",
+      "titulo": "¿El experimento más mortal de la historia? ☢️ El Núcleo del Demonio #shorts #fyp",
+      "vistas": 169,
+      "likes": 13,
+      "comentarios": 1,
+      "ratio_engagement": 8.28,
+      "publicado": "2026-09-28"
+    },
+    {
+      "id": "2azftRuKwdo",
+      "titulo": "El faro abandonado que guarda cenizas humanas #shorts #fyp #peliculas #terrorymisterio",
+      "vistas": 167,
+      "likes": 15,
+      "comentarios": 0,
+      "ratio_engagement": 8.98,
+      "publicado": "2026-10-08"
+    },
+    {
+      "id": "Qak5JJK0smc",
+      "titulo": "El PEDO más letal de la historia 💨 (sí, es real) #shorts",
+      "vistas": 144,
+      "likes": 14,
+      "comentarios": 1,
+      "ratio_engagement": 10.42,
+      "publicado": "2026-10-01"
+    },
+    {
+      "id": "bR819T_lE2g",
+      "titulo": "¿La madre más cruel de la historia? 🥀 #shorts",
+      "vistas": 127,
+      "likes": 18,
+      "comentarios": 1,
+      "ratio_engagement": 14.96,
+      "publicado": "2026-09-25"
+    },
+    {
+      "id": "crXsfXOjPZE",
+      "titulo": "La leyenda de Pelayo #caracoles #tlalnepantladebaz  #tlalnepantla  #peliculas #terrorymisterio #cine",
+      "vistas": 73,
+      "likes": 5,
+      "comentarios": 0,
+      "ratio_engagement": 6.85,
+      "publicado": "2026-10-02"
+    },
+    {
+      "id": "396CEtH2Csw",
+      "titulo": "Subieron para salvarse… y el humo los sigúió. Trajedia de Kaprun.",
+      "vistas": 14,
+      "likes": 0,
+      "comentarios": 0,
+      "ratio_engagement": 0.0,
+      "publicado": "2026-10-08"
+    },
+    {
+      "id": "m0nA6rr0d3E",
+      "titulo": "Se hizo una CESÁREA a sí misma con un cuchillo… y sobrevivió 😳 #shorts  #narrativassumergidas",
+      "vistas": 10,
+      "likes": 2,
+      "comentarios": 0,
+      "ratio_engagement": 20.0,
+      "publicado": "2026-09-30"
+    },
+    {
+      "id": "QL5rshWHz90",
+      "titulo": "La Isla de las Muñecas: la leyenda de Xochimilco que nadie quiere visitar de noche",
+      "vistas": 6,
+      "likes": 0,
+      "comentarios": 0,
+      "ratio_engagement": 0.0,
+      "publicado": "2026-10-12"
+    }
+  ],
   "top_videos": [
     {
       "id": "nUg7UvAfH-Q",
@@ -56,6 +193,53 @@
       "comentarios": 0,
       "ratio_engagement": 4.35,
       "publicado": "2026-10-07"
+    }
+  ],
+  "videos_medios": [
+    {
+      "id": "x4zbwLrDPak",
+      "titulo": "Los Graniceros del Popocatépetl: el ritual secreto de México que aún se practica.  #leyendas",
+      "vistas": 337,
+      "likes": 23,
+      "comentarios": 0,
+      "ratio_engagement": 6.82,
+      "publicado": "2026-10-12"
+    },
+    {
+      "id": "7kDEAN4rVSM",
+      "titulo": "¿El experimento más mortal de la historia? ☢️ El Núcleo del Demonio #shorts #fyp",
+      "vistas": 169,
+      "likes": 13,
+      "comentarios": 1,
+      "ratio_engagement": 8.28,
+      "publicado": "2026-09-28"
+    },
+    {
+      "id": "2azftRuKwdo",
+      "titulo": "El faro abandonado que guarda cenizas humanas #shorts #fyp #peliculas #terrorymisterio",
+      "vistas": 167,
+      "likes": 15,
+      "comentarios": 0,
+      "ratio_engagement": 8.98,
+      "publicado": "2026-10-08"
+    },
+    {
+      "id": "Qak5JJK0smc",
+      "titulo": "El PEDO más letal de la historia 💨 (sí, es real) #shorts",
+      "vistas": 144,
+      "likes": 14,
+      "comentarios": 1,
+      "ratio_engagement": 10.42,
+      "publicado": "2026-10-01"
+    },
+    {
+      "id": "bR819T_lE2g",
+      "titulo": "¿La madre más cruel de la historia? 🥀 #shorts",
+      "vistas": 127,
+      "likes": 18,
+      "comentarios": 1,
+      "ratio_engagement": 14.96,
+      "publicado": "2026-09-25"
     }
   ],
   "videos_bajos": [
@@ -243,7 +427,7 @@
           "id": "18134208217657674",
           "caption": "Graniceros: los elegidos por el rayo  Cuevas, ofrendas de mo",
           "vistas": 144,
-          "alcance": 134,
+          "alcance": 135,
           "likes": 1,
           "comentarios": 0,
           "guardados": 0,
@@ -336,6 +520,18 @@
           "fecha": "2026-10-07"
         },
         {
+          "id": "17912770995507582",
+          "caption": "La Isla de las Muñecas | Dato guardable  Una chinampa, cient",
+          "vistas": 2,
+          "alcance": 0,
+          "likes": 0,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
+          "fecha": "2026-10-12"
+        },
+        {
           "id": "18011355752969448",
           "caption": "El faro donde nadie vive.. pero está lleno de muertos.  Till",
           "vistas": 2,
@@ -358,18 +554,6 @@
           "compartidos": 0,
           "interacciones": 0,
           "fecha": "2026-10-10"
-        },
-        {
-          "id": "17912770995507582",
-          "caption": "La Isla de las Muñecas | Dato guardable  Una chinampa, cient",
-          "vistas": 0,
-          "alcance": 0,
-          "likes": 0,
-          "comentarios": 0,
-          "guardados": 0,
-          "compartidos": 0,
-          "interacciones": 0,
-          "fecha": "2026-10-12"
         }
       ]
     },
@@ -377,10 +561,10 @@
       {
         "id": "7690803045201972500",
         "titulo": "Dicen que en esta iglesia de Ciudad Madero dormía ",
-        "vistas": 31157,
-        "likes": 1695,
+        "vistas": 31253,
+        "likes": 1703,
         "comentarios": 128,
-        "compartidos": 1216
+        "compartidos": 1219
       },
       {
         "id": "7692184110902594823",
@@ -405,14 +589,6 @@
         "likes": 49,
         "comentarios": 3,
         "compartidos": 1
-      },
-      {
-        "id": "7688805082242010388",
-        "titulo": "Pagaban para sepultar en vida a su propia sangre e",
-        "vistas": 606,
-        "likes": 41,
-        "comentarios": 3,
-        "compartidos": 2
       },
       {
         "id": "7691513309593488660",
@@ -449,7 +625,7 @@
       {
         "id": "7694036230572477717",
         "titulo": "El túnel que se convirtió en chimenea. Tu instinto",
-        "vistas": 539,
+        "vistas": 540,
         "likes": 17,
         "comentarios": 1,
         "compartidos": 0
@@ -473,7 +649,7 @@
       {
         "id": "7694901757172010260",
         "titulo": "Esta escalera no lleva a ningún lado... y su dueña",
-        "vistas": 406,
+        "vistas": 407,
         "likes": 22,
         "comentarios": 1,
         "compartidos": 0
@@ -481,19 +657,47 @@
       {
         "id": "7695551688505052436",
         "titulo": "Un rayo te elige y no puedes negarte. En los puebl",
-        "vistas": 343,
-        "likes": 30,
+        "vistas": 359,
+        "likes": 32,
         "comentarios": 0,
         "compartidos": 1
       },
       {
         "id": "7695049750063680786",
         "titulo": "Esta cárcel te observa… incluso cerrada desde 1976",
-        "vistas": 135,
+        "vistas": 137,
         "likes": 9,
         "comentarios": 0,
         "compartidos": 0
+      },
+      {
+        "id": "7695901508684041492",
+        "titulo": "Colgó muñecas 30 años … y ella cobró.  Está leyend",
+        "vistas": 21,
+        "likes": 1,
+        "comentarios": 0,
+        "compartidos": 0
       }
+    ]
+  },
+  "optimizacion_prompts_ia": {
+    "diagnostico_global": "TikTok depende de un solo outlier: La Vampira de Ciudad Madero suma 31,253 vistas (90% de las vistas de TikTok), con 3.9% de compartidos (1,219) y 1,252 vistas en YT. En YT, IG y FB gana lo que ancla a un lugar físico real, como la Casa de las Brujas (YT 1,004 vistas y 4.88% de engagement; IG con los únicos 4 guardados fuertes) o la fecha y el sitio de Jerusalén en FB (113 compartidos contra 0-2 del resto). Falla todo lo que arranca sin lugar mexicano reconocible (Kaprun 14 vistas, destornillador 0 interacciones, buzos 1 compartido) y falla la conversación: 2 comentarios en los 5 top de YT y 0 comentarios en 6 posts de IG (919 de alcance).",
+    "reglas_guion": [
+      "GANCHO 0-3s + LOOP ABIERTO. Las primeras 8-10 palabras (≈3 s) siguen la fórmula [«Dicen que» o «Frente a»] + [lugar real nombrado] + [una figura o hecho imposible]. Es la estructura de La Vampira («Dicen que en esta iglesia de Ciudad Madero dormía una vampira») y de la Casa de las Brujas («este edificio de la colonia Roma te mira»). Mide lo mismo en cada video: nombre del lugar en las primeras 5 palabras, una sola promesa, ningún dato resuelto. El enigma (quién, qué o por qué) no se revela antes de la palabra ~190 (≈75 s). La última frase debe retomar la primera con un giro, para que el replay cierre el loop. Evita arrancar con el evento o la cifra sin lugar («Un destornillador resbaló…», «Subieron para salvarse…»): esos tres posts sumaron 14 vistas en YT y 0 interacciones en IG. Meta: primera frase ≤ 3 s y gancho con topónimo en el 100% de los guiones.",
+      "TEMÁTICA Y RITMO 215-280 PALABRAS / 85-115 s. Mezcla semanal sugerida: 60% leyendas con sitio visitable en México (iglesia de San Juan Bosco en Cd. Madero, Plaza Río de Janeiro en la Roma, Lecumberri en CDMX), 25% historia macabra icónica con edificio o personaje reconocible (Winchester 659 vistas, Maximiliano 668 con 6.44% de engagement) y 15% experimental. Máximo 1 tragedia técnica o de supervivencia sin sitio mexicano por semana: Kaprun y la cesárea sumaron 24 vistas en YT. Ritmo: 10-13 palabras por escena (≈4.5 s), ninguna oración de más de 14 palabras y un total de 18-25 escenas. RE-GANCHO A MITAD en la palabra ~110-130 (≈45-55 s, escenas 10-12) con una frase giro tipo «Pero lo más perturbador no es eso…» seguida de un dato nuevo y concreto, nunca un recordatorio. Antes de escribir, verifica que el lugar tenga dirección o colonia comprobable.",
+      "REVELACIONES CADA ~5 s Y CIERRE A/B. Cada escena (≈4.5 s) introduce un dato nuevo y verificable: nombre, año, cifra, objeto o testimonio. Nunca dos escenas seguidas sin dato nuevo. Las dos escenas finales (≈9 s, 20-25 palabras) llevan una oración de cierre y una pregunta dicotómica con opciones de 1-3 palabras que se contesten con una letra: «¿Enferma o criatura? Responde A o B». Esto responde al problema de comentarios (2 en los 5 top de YT, 0 en IG). Fija el comentario con las opciones A/B y responde los primeros 5 comentarios en los primeros 60 min. Metas: ≥ 1 comentario por cada 100 vistas en YT y ≥ 1% en TikTok (La Vampira hoy: 0.41%).",
+      "TÍTULOS Y COPYS POR RED. YT (SEO documental): [FIGURA o LUGAR en MAYÚSCULA] + de + [lugar real] + 1 emoji + «Leyenda de [ciudad/colonia]» + #shorts, ≤ 70 caracteres y keyword en los primeros 40. Es el patrón de los 3 mejores. Máximo 3 hashtags relevantes (quita #peliculas, #cine y #fyp en leyendas locales) y revisa ortografía antes de publicar (los títulos de Kaprun tenían «sigúió» y «Trajedia»). Primeras 120 caracteres de la descripción: lugar + año + «leyenda urbana». TIKTOK (shock/curiosidad): primera línea ≤ 90 caracteres con «Dicen que…» o un contraste imposible, el mismo texto del gancho en pantalla en los primeros 2 s, 3 hashtags (1 de ciudad, 1 de nicho como #leyendasdemexico, 1 amplio), y pregunta de comentario en la última línea. Meta: ≥ 2% de compartidos. INSTAGRAM (dato guardable): línea 1 = dirección o ubicación + dato (el post con «Frente a la Plaza Río de Janeiro…» logró 4 guardados y 13 interacciones, el mejor). Siguen 3 datos numerados (año, cifra, nombre), CTA «Guárdalo para tu ruta de leyendas», geotag y ≤ 5 hashtags. Meta: guardados ≥ 2% del alcance (hoy 2.26% el mejor, 0-0.9% el resto). FACEBOOK (ancla histórica + debate moral): línea 1 = «Ciudad, año.» + escena colectiva (el post «Jerusalén, alrededor del año 48 d.C. Miles de peregrinos…» logró 113 compartidos; el de MAYÚSCULAS + 🤯 logró 2). Cierra con un dilema moral de 2 bandos («¿Justicia o venganza?») y evita el clickbait en mayúsculas. Meta: ≥ 10 compartidos por post."
+    ],
+    "reglas_escenas": [
+      "ESCENA 1 (01_gancho.png) Y RETENCIÓN VISUAL 0-3 s. El frame debe mostrar la promesa literal del gancho: si el gancho dice «iglesia donde dormía una vampira», la escena 1 es la fachada de esa iglesia, con un único foco de luz motivado (ventana encendida, puerta entreabierta o farol) que sea el punto más claro del encuadre y ocupe 15-25% del cuadro, ubicado en un tercio. Prompt de arquitectura u objeto: 'no humans, empty scene' obligatorio, más 'negative space at top' porque lleva texto del gancho (≤ 6 palabras en ese espacio, visibles desde el segundo 0.3). Movimiento: zoom_in lento hacia el foco de luz, entrada en cut, sin fade. La escena 2 debe cambiar de escala de plano (de general a detalle, o viceversa) y entrar con cut a los ≈4.5 s para evitar una segunda imagen estática parecida. Sin rostros en la escena 1, salvo un retrato con desgaste de época si el gancho es una figura.",
+      "ESTÉTICA ARQUITECTÓNICA/FOLCLÓRICA E ILUMINACIÓN. Define en estilo_visual_global, una sola vez, la paleta (máx. 3 colores dominantes, p. ej. negro azulado, ámbar sodio, hueso), el contraste bajo-clave y el grano. En los prompts individuales no escribas ninguna palabra de estilo, medio, lente, grano, artista ni calidad. Solo describe contenido: sujeto, materiales, desgaste, fuente de luz física (candle, window light, streetlamp, moonlight), clima y hora. Arquitectura y objetos: 'no humans, empty scene' en el 100% de esas escenas, con texturas verificables (pintura descascarada, estuco agrietado, cantera, tezontle, herrería oxidada, adoquín mojado, niebla baja). Retratos: desgaste contextual de época explícito (ropa de luto de la época, cuello manchado, piel agrietada, polvo en pestañas). Distribución sugerida en 22 escenas: ≈70% arquitectura y espacios, 20% objetos y detalles, 10% retratos. Luz clave motivada por una sola fuente en ≥ 85% de las escenas (evita luz de día plana). Para guardados en IG y reconocimiento en YT, el lugar real reconocible (fachada, plaza, torre central de Lecumberri) aparece en ≥ 3 escenas. Reserva 1-2 escenas diurnas o sepia solo para los datos históricos.",
+      "ALTERNANCIA DE PLANOS, MOVIMIENTOS Y TRANSICIONES (18-25 escenas, ≈4.5 s cada una, 4-5 s de rango). Distribución orientativa en 22 escenas: ≈6 generales (zoom_in o slow_drift), ≈8 medios (pan_left y pan_right alternados), ≈5 detalles (zoom_in) y ≈3 revelaciones verticales (tilt_up en torres, campanarios y fachadas). Nunca dos escenas consecutivas con el mismo plano ni con el mismo movimiento. Máximo 2 slow_drift seguidos. Alterna la dirección de los pan. Transiciones: ≈60-65% cut (cada dato nuevo), ≈25-30% crossfade (saltos de tiempo y contemplación), máx. 2 fade_black por video (antes del re-gancho en las escenas 10-12 y antes de la escena final). Las escenas 10-12 (≈45-55 s) llevan el cambio visual más fuerte: detalle extremo de un objeto o rostro desgastado en cut. La última escena reencuadra la escena 1 en otro momento (amanecer, luz apagada) con 'negative space at top' para colocar la pregunta A/B.",
+      "PORTADAS A Y B. PORTADA A (YT Shorts / IG, arquitectura): 'no humans, empty scene' + 'negative space at top' para un título de ≤ 4 palabras en MAYÚSCULAS. El edificio ocupa el tercio central-inferior con silueta clara, un solo punto de luz cálida (ventana o puerta) y el sitio reconocible. Mantén todo lo importante dentro del recuadro central 4:5 para que la rejilla de IG no lo recorte. Es el formato de la Casa de las Brujas (YT 1,004 vistas, 4.88% de engagement; IG con los únicos 4 guardados fuertes). PORTADA B (TikTok / FB, rostro o detalle perturbador): primer plano que ocupe 60-70% del cuadro, con los ojos en el tercio superior, y un desgaste de época explícito (porcelana agrietada, velo de luto manchado, catarata, encaje roto) o un objeto inquietante (muñeca sin ojo, llave oxidada, puerta sellada). Texto de ≤ 3 palabras, solo con 'negative space at top' si lleva texto. Debe ser un frame de la escena 1 o 10-12 para cumplir la promesa. Plan: alternar A y B en los próximos 6 videos y registrar CTR en YT Studio y tasa de reproducción en TikTok. Meta provisional de CTR: ≥ 6% con portada A en YT."
+    ],
+    "reglas_foto": [
+      "DIAPOSITIVA 1 Y RETENCIÓN DE DESLIZAMIENTO (IG y FB). La diapositiva 1 usa la Portada A ('no humans, empty scene' + 'negative space at top'): lugar reconocible, un punto de luz, y un título de ≤ 7 palabras con la fórmula «Dicen que [lugar real]…» o «Frente a [lugar]…». La diapositiva 2 aporta el primer dato nuevo, nunca un repaso. Cada diapositiva lleva un solo dato y ≤ 25 palabras en el espacio superior libre. Usa 7-10 diapositivas, con el indicador «1/8» y una promesa sin resolver que obligue a deslizar. En IG, ubicación geolocalizada desde el primer post. En FB, el texto de apoyo empieza con «Ciudad, año.» más una escena colectiva (patrón de los 113 compartidos de Jerusalén). Metas: ≥ 40% de quienes ven la diapositiva 1 llegan a la 5, y 0 diapositivas sin dato nuevo.",
+      "MAXIMIZAR GUARDADOS EN IG Y COMPARTIDOS EN FB. IG: estructura de «mini-guía de ruta». Incluye una diapositiva con la dirección completa (calle o plaza, colonia, alcaldía o municipio) y el cómo llegar, y otra con una línea de tiempo de 4-5 fechas. Cierra con «Guárdalo para tu ruta de leyendas». La ubicación concreta explica por qué «Frente a la Plaza Río de Janeiro…» fue el post más guardado. Meta: guardados ≥ 2.5% del alcance (el mejor actual es 2.26%) y compartidos ≥ 1%. FB: cada 3 posts, 1 con ancla histórica universal «Ciudad, año» + conflicto moral, como la publicación de Jerusalén (113 compartidos), y los demás con un lugar mexicano. Sin titulares en MAYÚSCULAS con 🤯 (2 compartidos). Cierra con una frase reenviable («Mándaselo a quien defendería al otro bando»). Meta: ≥ 10 compartidos por post.",
+      "DILEMAS MORALES Y ENCUESTAS A/B. La última diapositiva (con 'negative space at top') plantea un dilema de 2 bandos con opciones de 1-3 palabras: «¿Víctima o culpable?», «¿Justicia o venganza?», «¿Leyenda o encubrimiento?». Repite la misma pregunta como primera línea del pie y pide «Responde A o B + una palabra de por qué». Contesta los primeros 5 comentarios en los primeros 60 min y fija el comentario con las opciones. En IG, publica la misma pregunta en Stories con sticker de encuesta en las siguientes 24 h para llevar tráfico al post. Metas: comentarios ≥ 1.5% del alcance en IG (hoy 0 en 6 posts) y ≥ 5 comentarios por post en FB. Mide cada dilema y deja de usar los que queden en 0 tras 3 usos."
     ]
   }
 }

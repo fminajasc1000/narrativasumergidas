@@ -1163,22 +1163,169 @@ def analizar_rendimiento_canal(max_videos=15):
             "fecha_analisis": time.strftime("%Y-%m-%d %H:%M:%S"),
             "total_videos_analizados": len(reporte),
             "promedio_vistas": round(sum(r["vistas"] for r in reporte) / max(1, len(reporte)), 1),
+            "todos_youtube": reporte,
             "top_videos": tops,
+            "videos_medios": medios,
             "videos_bajos": bajos,
             "multiplataforma": {
                 "meta": meta_data if meta_data else "no_configurado",
                 "tiktok": tt_data if tt_data else "no_configurado"
             }
         }
+
+        # Optimizar los 3 prompts maestros usando Claude con las métricas reales de las 4 redes
+        optimizacion_ia = optimizar_prompts_con_ia(resumen_analisis)
+        if optimizacion_ia:
+            resumen_analisis["optimizacion_prompts_ia"] = optimizacion_ia
+
         with open("metricas_canal.json", "w", encoding="utf-8") as f:
             json.dump(resumen_analisis, f, ensure_ascii=False, indent=2)
-        print("\n✔ Archivo 'metricas_canal.json' actualizado con las 4 redes para retroalimentar a Claude.")
+        print("\n✔ Archivo 'metricas_canal.json' y Prompts Maestros actualizados con las estadísticas de las 4 redes.")
         return resumen_analisis
     except Exception as e:
         print(f"✖ Error analizando el canal: {e}")
         return None
 
-def obtener_feedback_metricas():
+def _inyectar_bloque_calibracion(ruta_prompt, titulo_bloque, lineas_reglas, resumen_stats):
+    """Actualiza o añade un bloque de calibración dinámica basado en métricas reales al final de un archivo prompt_*.md."""
+    if not os.path.exists(ruta_prompt):
+        return False
+    try:
+        with open(ruta_prompt, "r", encoding="utf-8") as f:
+            contenido = f.read()
+
+        marca_ini = "═══ 📊 CALIBRACIÓN DINÁMICA MULTIRRED (AUTO-OPTIMIZADA POR IA) ═══"
+        marca_fin = "═══ FIN CALIBRACIÓN DINÁMICA MULTIRRED ═══"
+
+        bloque = f"\n{marca_ini}\n"
+        bloque += f"Última actualización de métricas reales (YT + TikTok + IG + FB): { time.strftime('%Y-%m-%d %H:%M') }\n"
+        if resumen_stats:
+            bloque += f"{resumen_stats}\n"
+        bloque += f"\n🎯 DIRECTRICES DE MEJORA CONTINUA ({titulo_bloque}):\n"
+        for i, reg in enumerate(lineas_reglas, 1):
+            bloque += f"{i}. {reg}\n"
+        bloque += f"{marca_fin}\n"
+
+        if marca_ini in contenido and marca_fin in contenido:
+            patron = re.compile(re.escape(marca_ini) + r".*?" + re.escape(marca_fin) + r"\n?", re.DOTALL)
+            nuevo_contenido = patron.sub(bloque.lstrip("\n"), contenido)
+        else:
+            # Insertar justo antes de '═══ SALIDA JSON' o 'Salida JSON estricta:' para no romper el cierre JSON
+            for ancla in ("═══ SALIDA JSON ESTRICTA ═══", "Salida JSON estricta:"):
+                if ancla in contenido:
+                    nuevo_contenido = contenido.replace(ancla, bloque.lstrip("\n") + "\n" + ancla, 1)
+                    break
+            else:
+                nuevo_contenido = contenido.rstrip() + "\n" + bloque
+
+        with open(ruta_prompt, "w", encoding="utf-8") as f:
+            f.write(nuevo_contenido)
+        return True
+    except Exception as e:
+        print(f"   ⚠ No se pudo actualizar {ruta_prompt}: {e}")
+        return False
+
+def optimizar_prompts_con_ia(resumen_analisis):
+    """Usa Claude para analizar las métricas reales de las 4 redes (YouTube, TikTok, Instagram, Facebook)
+    y mejora automáticamente prompt_guion.md, prompt_escenas.md y prompt_historia_foto.md."""
+    print("\n🧠 Analizando métricas de las 4 redes con Claude para optimizar los Prompts y mejorar la calidad de los videos...")
+    try:
+        yt_top = resumen_analisis.get("top_videos", [])[:5]
+        yt_bajos = resumen_analisis.get("videos_bajos", [])[:4]
+        multi = resumen_analisis.get("multiplataforma", {})
+        tt_list = (multi.get("tiktok") or [])[:6] if isinstance(multi.get("tiktok"), list) else []
+        meta = multi.get("meta") if isinstance(multi.get("meta"), dict) else {}
+        ig_list = (meta.get("instagram") or [])[:6]
+        fb_list = (meta.get("facebook") or [])[:6]
+
+        resumen_stats_lineas = []
+        if yt_top:
+            resumen_stats_lineas.append(
+                "- YouTube Top: " + " | ".join(f"'{v['titulo'][:35]}' ({v['vistas']} vistas, {v['ratio_engagement']}% eng)" for v in yt_top[:3])
+            )
+        if tt_list:
+            resumen_stats_lineas.append(
+                "- TikTok Top: " + " | ".join(f"'{v['titulo'][:35]}' ({v['vistas']} vistas, {v['likes']} likes, {v.get('compartidos',0)} shares)" for v in tt_list[:3])
+            )
+        if ig_list:
+            resumen_stats_lineas.append(
+                "- Instagram Top: " + " | ".join(f"'{v.get('caption','')[:30]}' ({v.get('vistas',0)} vistas, {v.get('guardados',0)} guardados, {v.get('compartidos',0)} shares)" for v in ig_list[:3])
+            )
+        if fb_list:
+            resumen_stats_lineas.append(
+                "- Facebook Top: " + " | ".join(f"'{v.get('texto','')[:30]}' ({v.get('compartidos',0)} compartidos)" for v in fb_list[:3])
+            )
+        resumen_stats_txt = "\n".join(resumen_stats_lineas)
+
+        prompt_sys = (
+            "Eres el Director de Estrategia Algorítmica y Calidad Cinematográfica de 'Narrativas Sumergidas'. "
+            "Analiza las estadísticas reales de las 4 redes sociales del canal (YouTube Shorts, TikTok, Instagram Reels y Facebook Reels) "
+            "y genera reglas ultra-específicas, accionables y medibles para mejorar la calidad de los futuros videos en 3 áreas: "
+            "1) Guion, retención hablada y metadata por red, 2) Dirección de arte visual SDXL, iluminación, movimientos de cámara y portadas, "
+            "y 3) Historias fotográficas (carruseles).\n"
+            "REGLAS INQUEBRANTABLES DEL FORMATO DEL CANAL (NO CONTRADECIR NUNCA):\n"
+            "- Los videos son minidocumentales inmersivos de 85 a 115 segundos (215-280 palabras; los mayores éxitos del canal como La Casa de las Brujas [113s], Lecumberri [86s], Winchester [87s] y La Vampira están en ese rango).\n"
+            "- La cuota visual es de 18 a 25 escenas (~4.5 segundos por imagen).\n"
+            "- En SDXL: 'no humans, empty scene' para arquitectura/objetos, 'negative space at top' cuando lleva texto, desgaste contextual de época en retratos, y cero estilos en los prompts individuales (solo en estilo_visual_global).\n"
+            "Responde ÚNICAMENTE con JSON válido."
+        )
+        mensaje_usr = (
+            f"ESTADÍSTICAS REALES DE LAS 4 REDES:\n"
+            f"- YOUTUBE SHORTS TOP: {json.dumps(yt_top, ensure_ascii=False)}\n"
+            f"- YOUTUBE SHORTS BAJOS: {json.dumps(yt_bajos, ensure_ascii=False)}\n"
+            f"- TIKTOK (@narrativasumergidas): {json.dumps(tt_list, ensure_ascii=False)}\n"
+            f"- INSTAGRAM (@narrativasumergidas): {json.dumps(ig_list, ensure_ascii=False)}\n"
+            f"- FACEBOOK (Narrativas Sumergidas): {json.dumps(fb_list, ensure_ascii=False)}\n\n"
+            "Devuelve exactamente este formato JSON:\n"
+            "{\n"
+            '  "diagnostico_global": "Resumen ejecutivo de 2 líneas sobre qué está funcionando mejor en las 4 redes",\n'
+            '  "reglas_guion": [\n'
+            '    "Regla 1 para mejorar el gancho 0-3s y el loop abierto basada en los videos más vistos (La Vampira 31.2k en TikTok / 1.2k en YT, Casa de las Brujas 1k en YT)",\n'
+            '    "Regla 2 sobre temáticas ganadoras, lugares físicos reales en México y mantenimiento del ritmo en los 85-115s (215-280 palabras) con re-gancho a mitad",\n'
+            '    "Regla 3 sobre estructura de revelaciones cada ~5s y cierre con pregunta dicotómica A/B para comentarios",\n'
+            '    "Regla 4 sobre optimización de títulos y copys para YT (SEO documental), TikTok (shock/curiosidad), IG (dato guardable) y FB (ancla histórica + debate moral para compartidos)"\n'
+            "  ],\n"
+            '  "reglas_escenas": [\n'
+            '    "Regla 1 para la Escena 1 (01_gancho.png) y retención visual en los primeros 3 segundos",\n'
+            '    "Regla 2 sobre estética arquitectónica/folclórica e iluminación cinematográfica que maximiza guardados en IG y vistas en YT (respetando reglas SDXL)",\n'
+            '    "Regla 3 sobre alternancia de planos, movimientos de cámara (zoom_in, tilt_up, pan_left/right, slow_drift) y transiciones (crossfade, fade_black, cut) a lo largo de las 18-25 escenas (~4.5s/escena)",\n'
+            '    "Regla 4 sobre diseño de Portada A (YT/IG arquitectura) y Portada B (TikTok/FB rostro desgastado o detalle perturbador) para elevar el CTR"\n'
+            "  ],\n"
+            '  "reglas_foto": [\n'
+            '    "Regla 1 para la Diapositiva 1 y retención de deslizamiento en IG y FB",\n'
+            '    "Regla 2 para maximizar Guardados en Instagram y Compartidos en Facebook",\n'
+            '    "Regla 3 sobre dilemas morales y encuestas A/B para comentarios"\n'
+            "  ]\n"
+            "}"
+        )
+
+        resultado = llamar_claude(prompt_sys, mensaje_usr, max_tokens=16000, reintentos=2)
+        if not resultado or not isinstance(resultado, dict):
+            return None
+
+        reglas_guion = resultado.get("reglas_guion", [])
+        reglas_escenas = resultado.get("reglas_escenas", [])
+        reglas_foto = resultado.get("reglas_foto", [])
+
+        if reglas_guion:
+            _inyectar_bloque_calibracion("prompt_guion.md", "GUION, RETENCIÓN Y METADATA 4 REDES", reglas_guion, resumen_stats_txt)
+            print("   ✔ 'prompt_guion.md' mejorado con las estadísticas de las 4 redes.")
+        if reglas_escenas:
+            _inyectar_bloque_calibracion("prompt_escenas.md", "DIRECCIÓN DE ARTE, ESCENAS SDXL Y PORTADAS", reglas_escenas, resumen_stats_txt)
+            print("   ✔ 'prompt_escenas.md' mejorado con directrices visuales basadas en retención real.")
+        if reglas_foto:
+            _inyectar_bloque_calibracion("prompt_historia_foto.md", "CARRUSELES E HISTORIAS FOTOGRÁFICAS", reglas_foto, resumen_stats_txt)
+            print("   ✔ 'prompt_historia_foto.md' mejorado con métricas de guardados y compartidos.")
+
+        if resultado.get("diagnostico_global"):
+            print(f"\n🎯 Diagnóstico IA Multiplataforma:\n   {resultado['diagnostico_global']}")
+
+        return resultado
+    except Exception as e:
+        print(f"   ⚠ Error en optimización automática de prompts con IA: {e}")
+        return None
+
+def obtener_feedback_metricas(modo="general"):
     """Lee metricas_canal.json si existe y construye directrices para Claude
     basadas en las métricas reales de las 4 redes: YouTube Shorts, TikTok, Instagram y Facebook."""
     if not os.path.exists("metricas_canal.json"):
@@ -1193,6 +1340,7 @@ def obtener_feedback_metricas():
         meta = multi.get("meta", {}) if isinstance(multi, dict) else {}
         ig_list = meta.get("instagram", []) if isinstance(meta, dict) else []
         fb_list = meta.get("facebook", []) if isinstance(meta, dict) else []
+        opt_ia = data.get("optimizacion_prompts_ia", {})
 
         if not top and not bajos and not tt and not ig_list and not fb_list:
             return ""
@@ -1244,7 +1392,28 @@ def obtener_feedback_metricas():
                 feedback += f"  - '{fb_item.get('texto')}' ({fb_item.get('compartidos', 0)} compartidos, fecha {fb_item.get('fecha', '')})\n"
             feedback += "  -> Clave Facebook: Datos históricos insólitos o escandalosos, leyendas urbanas con dilema moral y preguntas dicotómicas A/B que provoquen debate en comentarios y compartidos masivos.\n"
 
-        feedback += "\n👉 INSTRUCCIÓN OBLIGATORIA: Aplica estas métricas reales de las 4 plataformas al construir el gancho inicial (0-3s), la tensión del guion y los copys/títulos específicos de YouTube Shorts, TikTok, Instagram y Facebook.\n"
+        if isinstance(opt_ia, dict) and opt_ia:
+            if modo == "escenas" and opt_ia.get("reglas_escenas"):
+                feedback += "\n🎨 REGLAS DE DIRECCIÓN DE ARTE APRENDIDAS DE LAS MÉTRICAS:\n"
+                for r in opt_ia["reglas_escenas"]:
+                    feedback += f"  - {r}\n"
+            elif modo == "foto" and opt_ia.get("reglas_foto"):
+                feedback += "\n📸 REGLAS DE CARRUSELES APRENDIDAS DE LAS MÉTRICAS:\n"
+                for r in opt_ia["reglas_foto"]:
+                    feedback += f"  - {r}\n"
+            else:
+                if opt_ia.get("diagnostico_global"):
+                    feedback += f"\n🧠 DIAGNÓSTICO IA MULTIRRED: {opt_ia['diagnostico_global']}\n"
+                if opt_ia.get("reglas_guion"):
+                    feedback += "✍️ REGLAS DE GUION APRENDIDAS DE LAS MÉTRICAS:\n"
+                    for r in opt_ia["reglas_guion"]:
+                        feedback += f"  - {r}\n"
+                if opt_ia.get("reglas_escenas") and modo == "general":
+                    feedback += "🎨 REGLAS VISUALES APRENDIDAS DE LAS MÉTRICAS:\n"
+                    for r in opt_ia["reglas_escenas"]:
+                        feedback += f"  - {r}\n"
+
+        feedback += "\n👉 INSTRUCCIÓN OBLIGATORIA: Aplica estas métricas reales de las 4 plataformas para elevar la calidad narrativa y visual del video.\n"
         return feedback
     except Exception:
         return ""
@@ -1594,10 +1763,10 @@ def menu_rendimiento_redes():
         print("\n" + "═" * 65)
         print("📊 PANEL DE RENDIMIENTO Y REDES SOCIALES")
         print("═" * 65)
-        print("  1) Analizar canal completo (YouTube + TikTok y actualizar IA)")
+        print("  1) Analizar las 4 redes (YT + TikTok + IG + FB) y optimizar Prompts IA")
         print("  2) Ver ranking y estadísticas de videos en TikTok")
         print("  3) Ver estado de conexiones (YouTube, TikTok, Meta / FB / IG)")
-        print("  4) Ver patrones ganadores aprendidos por la IA")
+        print("  4) Ver patrones ganadores y mejoras aplicadas en los Prompts IA")
         print("  5) Conectar / Re-autenticar TikTok")
         print("  6) Conectar / Probar Meta (Facebook e Instagram)")
         print("  7) Probar subir un video a TikTok (enviar a borradores)")
@@ -2326,6 +2495,9 @@ def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=Non
         f"CANTIDAD OBLIGATORIA: Genera EXACTAMENTE {n_escenas_objetivo} escenas (ritmo cinematográfico de ~4.5s por imagen; NUNCA más de {n_escenas_objetivo}).\n\n"
         f"Visuales para:\n\n{historia}"
     )
+    fb_visual = obtener_feedback_metricas(modo="escenas")
+    if fb_visual:
+        mensaje_escenas += fb_visual
 
     datos_escenas = llamar_claude(sys_escenas, mensaje_escenas)
     if not datos_escenas: return None
