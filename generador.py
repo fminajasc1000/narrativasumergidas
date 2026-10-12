@@ -561,6 +561,49 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
         print(f"✖ Error subiendo a TikTok: {e}")
         return None
 
+def subir_video_facebook(ruta_video, titulo=None, descripcion=None):
+    """Sube y publica un video directamente en la Página de Facebook vía Graph API."""
+    if not os.path.exists(ruta_video):
+        return None
+
+    archivo_token = "token_meta.json"
+    if not os.path.exists(archivo_token):
+        return None
+
+    try:
+        with open(archivo_token, "r", encoding="utf-8") as f:
+            d = json.load(f)
+            token = d.get("facebook", {}).get("access_token") or d.get("access_token")
+            page_id = d.get("facebook", {}).get("page_id") or d.get("page_id", "1158791430643856")
+
+        if not token or not page_id:
+            return None
+
+        tam_mb = os.path.getsize(ruta_video) / (1024 * 1024)
+        print(f"\n📘 Subiendo video a Facebook Page: '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
+
+        url = f"https://graph-video.facebook.com/v19.0/{page_id}/videos"
+        payload = {
+            "access_token": token,
+            "title": titulo or os.path.splitext(os.path.basename(ruta_video))[0],
+            "description": descripcion or ""
+        }
+        with open(ruta_video, "rb") as f_vid:
+            files = {"source": f_vid}
+            r = requests.post(url, data=payload, files=files, timeout=300)
+
+        if r.ok:
+            res = r.json()
+            vid_id = res.get("id")
+            print(f"✅ ¡Video publicado exitosamente en Facebook! (ID: {vid_id})")
+            return vid_id
+        else:
+            print(f"✖ Error subiendo a Facebook ({r.status_code}): {r.text}")
+            return None
+    except Exception as e:
+        print(f"✖ Error subiendo a Facebook: {e}")
+        return None
+
 def obtener_metricas_meta():
     """Consulta métricas de Facebook e Instagram si existen credenciales en token_meta.json o .env."""
     token_meta = os.getenv("META_ACCESS_TOKEN")
@@ -1104,6 +1147,7 @@ def menu_rendimiento_redes():
         print("  5) Conectar / Re-autenticar TikTok")
         print("  6) Conectar / Probar Meta (Facebook e Instagram)")
         print("  7) Probar subir un video a TikTok (enviar a borradores)")
+        print("  8) Probar subir un video a Facebook Page (publicar video)")
         print("  0) Volver al menú principal")
         op = input("Elige una opción: ").strip()
         if op == "1":
@@ -1122,6 +1166,12 @@ def menu_rendimiento_redes():
             ruta_v = input("Ruta del archivo .mp4 a subir a TikTok: ").strip().strip('"').strip("'")
             if os.path.exists(ruta_v):
                 subir_video_tiktok(ruta_v)
+            else:
+                print(f"✖ El archivo '{ruta_v}' no existe.")
+        elif op == "8":
+            ruta_v = input("Ruta del archivo .mp4 a subir a Facebook: ").strip().strip('"').strip("'")
+            if os.path.exists(ruta_v):
+                subir_video_facebook(ruta_v)
             else:
                 print(f"✖ El archivo '{ruta_v}' no existe.")
         elif op == "0":
@@ -2195,7 +2245,14 @@ def flujo_videos():
                     desc_tt = (meta_tt or {}).get("descripcion")
                     subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt)
 
-                # 3. Subir carpeta completa a Google Drive y liberar disco en la Mac
+                # 3. Subida automática a Facebook Page (si está conectada la cuenta)
+                meta_fb = ep.get("metadata", {}).get("facebook_reels", {})
+                if os.path.exists("token_meta.json"):
+                    tit_fb = (meta_fb or {}).get("titulo")
+                    desc_fb = (meta_fb or {}).get("descripcion")
+                    subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb)
+
+                # 4. Subir carpeta completa a Google Drive y liberar disco en la Mac
                 subir_carpeta_a_gdrive_y_liberar(c)
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
