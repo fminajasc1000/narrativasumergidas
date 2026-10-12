@@ -573,27 +573,27 @@ def obtener_metricas_tiktok():
 
     try:
         # TikTok Display / Creator API
-        url = "https://open.tiktokapis.com/v2/video/list/"
+        url = "https://open.tiktokapis.com/v2/video/list/?fields=id,title,video_description,like_count,comment_count,share_count,view_count"
         headers = {
             "Authorization": f"Bearer {token_tiktok}",
             "Content-Type": "application/json"
         }
-        body = {
-            "max_count": 10,
-            "fields": ["id", "title", "view_count", "like_count", "comment_count", "share_count"]
-        }
+        body = {"max_count": 15}
         res = requests.post(url, headers=headers, json=body, timeout=15)
         if res.ok:
             data = res.json().get("data", {}).get("videos", [])
             reporte_tt = []
             for v in data:
+                tit = v.get("title") or v.get("video_description") or ""
                 reporte_tt.append({
                     "id": v.get("id"),
-                    "titulo": v.get("title", "")[:40],
+                    "titulo": tit[:50],
                     "vistas": v.get("view_count", 0),
                     "likes": v.get("like_count", 0),
-                    "comentarios": v.get("comment_count", 0)
+                    "comentarios": v.get("comment_count", 0),
+                    "compartidos": v.get("share_count", 0)
                 })
+            reporte_tt.sort(key=lambda x: x["vistas"], reverse=True)
             return reporte_tt
     except Exception as e:
         print(f"   ℹ TikTok API no disponible o expiró el token: {e}")
@@ -717,6 +717,14 @@ def obtener_feedback_metricas():
             for b in bajos[:3]:
                 feedback += f"  - '{b.get('titulo')}' ({b.get('vistas')} vistas)\n"
             feedback += "  -> Clave a evitar: No uses desastres mecánicos o accidentes técnicos sin componente humano/sobrenatural. Evita títulos genéricos sin gancho de intriga.\n"
+
+        tt = data.get("multiplataforma", {}).get("tiktok", [])
+        if isinstance(tt, list) and tt:
+            feedback += "\n🎵 IMPACTO EN TIKTOK (HITS VIRALES EN FORMATO VERTICAL):\n"
+            for t_item in tt[:3]:
+                feedback += f"  - '{t_item.get('titulo')}' ({t_item.get('vistas'):,} vistas, {t_item.get('likes'):,} likes, {t_item.get('compartidos', 0):,} compartidos)\n"
+            feedback += "  -> Clave TikTok: Iniciar con shock visual inmediato, leyendas locales con nombres de pueblos/iglesias específicas y preguntas directas ('¿Tú la conocías?', '¿Te atreverías?').\n"
+
         feedback += "👉 Aplica estas lecciones de audiencia en el gancho inicial (0-3s), el título para YouTube Shorts y la atmósfera del guion.\n"
         return feedback
     except Exception:
@@ -760,11 +768,21 @@ def mostrar_estado_conexiones():
     if os.path.exists("token_tiktok.json"):
         try:
             with open("token_tiktok.json", encoding="utf-8") as f:
-                token_tt = json.load(f).get("access_token", token_tt)
+                d = json.load(f)
+                token_tt = d.get("access_token") or d.get("data", {}).get("access_token", token_tt)
         except: pass
 
     if token_tt:
-        print(f"  ✅ TikTok: CONECTADO (Token configurado)")
+        try:
+            r_u = requests.get("https://open.tiktokapis.com/v2/user/info/?fields=avatar_url,display_name",
+                               headers={"Authorization": f"Bearer {token_tt}"}, timeout=8)
+            nom = r_u.json().get("data", {}).get("user", {}).get("display_name") if r_u.ok else None
+            if nom:
+                print(f"  ✅ TikTok: CONECTADO (Cuenta Oficial: '{nom}')")
+            else:
+                print(f"  ✅ TikTok: CONECTADO (token_tiktok.json activo)")
+        except:
+            print(f"  ✅ TikTok: CONECTADO (token_tiktok.json activo)")
     else:
         print("  ⏳ TikTok: Pendiente de conectar (Opción 4 en este menú)")
 

@@ -1,8 +1,17 @@
 {
-  "fecha_analisis": "2026-10-11 19:51:17",
-  "total_videos_analizados": 10,
-  "promedio_vistas": 337.3,
+  "fecha_analisis": "2026-10-11 23:38:51",
+  "total_videos_analizados": 15,
+  "promedio_vistas": 390.1,
   "top_videos": [
+    {
+      "id": "nUg7UvAfH-Q",
+      "titulo": "La VAMPIRA de la iglesia de San Juan Bosco 🦇 Leyenda de Ciudad Madero #shorts",
+      "vistas": 1252,
+      "likes": 36,
+      "comentarios": 0,
+      "ratio_engagement": 2.88,
+      "publicado": "2026-09-29"
+    },
     {
       "id": "vCQpGZ_6pjM",
       "titulo": "La CASA DE LAS BRUJAS de la colonia Roma 👁️ El edificio que te mira #shorts",
@@ -15,19 +24,28 @@
     {
       "id": "9J4hK5JSIP4",
       "titulo": "Lecumberri: la cárcel panóptica de México y sus leyendas | Palacio Negro",
-      "vistas": 815,
+      "vistas": 828,
       "likes": 34,
       "comentarios": 0,
-      "ratio_engagement": 4.17,
+      "ratio_engagement": 4.11,
       "publicado": "2026-10-10"
+    },
+    {
+      "id": "wjCpHbvBm3s",
+      "titulo": "¿El cuerpo del emperador vendido a pedazos? 💀👑 #fyp #history  #peliculas #terrorymisterio",
+      "vistas": 668,
+      "likes": 41,
+      "comentarios": 2,
+      "ratio_engagement": 6.44,
+      "publicado": "2026-09-26"
     },
     {
       "id": "Xk3g_1QC3ak",
       "titulo": "La Mansión Winchester: Historia Real de la Casa Construida para Engañar a los Muertos.",
-      "vistas": 651,
-      "likes": 24,
+      "vistas": 653,
+      "likes": 25,
       "comentarios": 0,
-      "ratio_engagement": 3.69,
+      "ratio_engagement": 3.83,
       "publicado": "2026-10-10"
     },
     {
@@ -44,10 +62,10 @@
     {
       "id": "crXsfXOjPZE",
       "titulo": "La leyenda de Pelayo #caracoles #tlalnepantladebaz  #tlalnepantla  #peliculas #terrorymisterio #cine",
-      "vistas": 69,
+      "vistas": 72,
       "likes": 5,
       "comentarios": 0,
-      "ratio_engagement": 7.25,
+      "ratio_engagement": 6.94,
       "publicado": "2026-10-02"
     },
     {
@@ -60,22 +78,147 @@
       "publicado": "2026-10-08"
     },
     {
-      "id": "x4zbwLrDPak",
-      "titulo": "Los Graniceros del Popocatépetl: el ritual secreto de México que aún se practica.  #leyendas",
-      "vistas": 2,
-      "likes": 0,
+      "id": "m0nA6rr0d3E",
+      "titulo": "Se hizo una CESÁREA a sí misma con un cuchillo… y sobrevivió 😳 #shorts  #narrativassumergidas",
+      "vistas": 10,
+      "likes": 2,
       "comentarios": 0,
-      "ratio_engagement": 0.0,
-      "publicado": "2026-10-12"
+      "ratio_engagement": 20.0,
+      "publicado": "2026-09-30"
     },
     {
       "id": "QL5rshWHz90",
       "titulo": "La Isla de las Muñecas: la leyenda de Xochimilco que nadie quiere visitar de noche",
-      "vistas": 1,
+      "vistas": 3,
       "likes": 0,
       "comentarios": 0,
       "ratio_engagement": 0.0,
       "publicado": "2026-10-12"
     }
-  ]
+  ],
+  "multiplataforma": {
+    "meta": "no_configurado",
+    "tiktok": [
+      {
+        "id": "7690803045201972500",
+        "titulo": "Dicen que en esta iglesia de Ciudad Madero dormía ",
+        "vistas": 30411,
+        "likes": 1643,
+        "comentarios": 125,
+        "compartidos": 1193
+      },
+      {
+        "id": "7692184110902594823",
+        "titulo": "El pacto oscuro del Señor Pelayo que construyó una",
+        "vistas": 856,
+        "likes": 32,
+        "comentarios": 1,
+        "compartidos": 6
+      },
+      {
+        "id": "7690460518942788884",
+        "titulo": "Se hizo una cesárea a si misma para salvar a su hi",
+        "vistas": 792,
+        "likes": 76,
+        "comentarios": 6,
+        "compartidos": 1
+      },
+      {
+        "id": "7691908313579097364",
+        "titulo": "Dicen que este edificio de la colonia Roma te mira",
+        "vistas": 693,
+        "likes": 48,
+        "comentarios": 3,
+        "compartidos": 1
+      },
+      {
+        "id": "7688805082242010388",
+        "titulo": "Pagaban para sepultar en vida a su propia sangre e",
+        "vistas": 605,
+        "likes": 41,
+        "comentarios": 3,
+        "compartidos": 2
+      },
+      {
+        "id": "7691513309593488660",
+        "titulo": "Un soldado romano se tiró un pedo… y la historia l",
+        "vistas": 581,
+        "likes": 26,
+        "comentarios": 1,
+        "compartidos": 3
+      },
+      {
+        "id": "7690435253810367764",
+        "titulo": "¿Un destello azul que te desintegra vivo? ☢️ El er",
+        "vistas": 579,
+        "likes": 34,
+        "comentarios": 0,
+        "compartidos": 0
+      },
+      {
+        "id": "7689707292572421396",
+        "titulo": "El doctor que debía cuidarlo en la muerte terminó ",
+        "vistas": 558,
+        "likes": 33,
+        "comentarios": 3,
+        "compartidos": 1
+      },
+      {
+        "id": "7689333035010985224",
+        "titulo": "La pudrió en vida por enamorarse del hombre equivo",
+        "vistas": 545,
+        "likes": 42,
+        "comentarios": 3,
+        "compartidos": 0
+      },
+      {
+        "id": "7694036230572477717",
+        "titulo": "El túnel que se convirtió en chimenea. Tu instinto",
+        "vistas": 539,
+        "likes": 17,
+        "comentarios": 1,
+        "compartidos": 0
+      },
+      {
+        "id": "7693973963562667284",
+        "titulo": "Este faro está lleno de muertos… y es real. Lo apa",
+        "vistas": 447,
+        "likes": 21,
+        "comentarios": 1,
+        "compartidos": 0
+      },
+      {
+        "id": "7693741707816488212",
+        "titulo": "La pareja que el océano nunca devolvió. Su último ",
+        "vistas": 434,
+        "likes": 12,
+        "comentarios": 1,
+        "compartidos": 0
+      },
+      {
+        "id": "7694901757172010260",
+        "titulo": "Esta escalera no lleva a ningún lado... y su dueña",
+        "vistas": 406,
+        "likes": 22,
+        "comentarios": 1,
+        "compartidos": 0
+      },
+      {
+        "id": "7695049750063680786",
+        "titulo": "Esta cárcel te observa… incluso cerrada desde 1976",
+        "vistas": 135,
+        "likes": 9,
+        "comentarios": 0,
+        "compartidos": 0
+      },
+      {
+        "id": "7695551688505052436",
+        "titulo": "Un rayo te elige y no puedes negarte. En los puebl",
+        "vistas": 73,
+        "likes": 13,
+        "comentarios": 0,
+        "compartidos": 0
+      }
+    ]
+  }
 }
