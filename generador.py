@@ -228,8 +228,8 @@ def obtener_servicio_drive():
         return None
 
 def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
-    """Sube recursivamente una carpeta y todos sus archivos a Google Drive,
-    verifica la subida exitosa y luego elimina la carpeta local de la Mac para liberar disco."""
+    """Sube recursivamente una carpeta y todos sus archivos a Google Drive como respaldo,
+    conservando siempre la carpeta intacta en la Mac (prohibido eliminar)."""
     if not os.path.exists(ruta_carpeta):
         return False
 
@@ -284,19 +284,13 @@ def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
             else:
                 print(" ✖")
 
-        # 3. Validar integridad antes de eliminar
+        # 3. Validar integridad de subida
         if subidos == len(archivos_locales):
-            print(f"✅ Carpeta '{nombre_carpeta}' subida completa a Google Drive ({subidos}/{len(archivos_locales)} archivos).")
-            print(f"🧹 Eliminando carpeta local '{ruta_carpeta}' para liberar disco en la Mac...")
-            shutil.rmtree(ruta_carpeta, ignore_errors=True)
-            if not os.path.exists(ruta_carpeta):
-                print(f"✔ Espacio en disco liberado con éxito. (El historial y metadata continúan preservados en Git).")
-                return True
-            else:
-                print(f"⚠ Se subió a Drive pero no se pudo eliminar la carpeta local.")
-                return True
+            print(f"✅ Carpeta '{nombre_carpeta}' respaldada completa en Google Drive ({subidos}/{len(archivos_locales)} archivos).")
+            print(f"📁 Conservando carpeta local '{ruta_carpeta}' intacta en la Mac (regla estricta: prohibido eliminar contenido local).")
+            return True
         else:
-            print(f"⚠ Solo se subieron {subidos} de {len(archivos_locales)} archivos. Por seguridad, NO se eliminó la carpeta local.")
+            print(f"⚠ Se subieron {subidos} de {len(archivos_locales)} archivos a Google Drive.")
             return False
 
     except Exception as e:
