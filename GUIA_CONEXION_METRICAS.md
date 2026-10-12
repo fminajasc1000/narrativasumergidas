@@ -108,3 +108,4 @@ Cuando se genera un video o carrusel, el sistema inyecta en el prompt de Claude:
    - *Directriz a Claude:* Bloquear ángulos que el público ignoró (por ejemplo, desastres mecánicos fríos sin aura de misterio folclórico o ganchos genéricos).
 
 Cada vez que subes videos y ejecutas `python generador.py --analizar`, el motor se vuelve más inteligente y preciso.
+

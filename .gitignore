@@ -35,5 +35,7 @@ youtube_credencials.json
 client_secret*.json
 token.json
 token_youtube.json
+token_tiktok.json
+token_meta.json
 service_account.json
 

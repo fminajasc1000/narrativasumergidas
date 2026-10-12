@@ -1,4 +1,20 @@
 import sys, requests, base64, time, json, os, re, subprocess, signal, random, shutil, mimetypes
+
+# ---------------------------------------------------------------------------
+# OPTIMIZACIÓN DE CPU / MULTITAREA EN APPLE SILICON (MAC MINI M4)
+# Limita el uso de hilos a 2 y reduce la prioridad del proceso (nice 15)
+# para que la Mac nunca se congele y puedas navegar o trabajar fluidamente.
+# ---------------------------------------------------------------------------
+os.environ["OMP_NUM_THREADS"] = "2"
+os.environ["MKL_NUM_THREADS"] = "2"
+os.environ["OPENBLAS_NUM_THREADS"] = "2"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "2"
+os.environ["NUMEXPR_NUM_THREADS"] = "2"
+try:
+    os.nice(15)
+except Exception:
+    pass
+
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps, ImageFilter, ImageColor
 import json_repair
 
@@ -359,8 +375,45 @@ def obtener_servicio_youtube():
         print(f"⚠ Error conectando con servicio YouTube: {e}")
         return None
 
-def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, publish_at_iso=None):
-    """Sube un video vertical a YouTube Shorts y lo deja programado o público de forma 100% oficial y automática."""
+def calcular_fecha_programacion(momento_dia=None, hora_especifica=None):
+    """Calcula fecha/hora en formato ISO 8601 UTC (RFC 3339) para programar en YouTube Shorts.
+    Zona horaria de referencia: CST (México, UTC-6)."""
+    from datetime import datetime, timedelta, timezone
+    tz_cst = timezone(timedelta(hours=-6))
+    ahora_cst = datetime.now(tz_cst)
+
+    horas_franja = {
+        "manana": 8,
+        "mediodia": 13,
+        "tarde": 17,
+        "noche": 21,
+        "madrugada": 2,
+    }
+
+    try:
+        if hora_especifica and hora_especifica.strip():
+            he = hora_especifica.strip()
+            if " " in he:
+                dt = datetime.strptime(he, "%Y-%m-%d %H:%M").replace(tzinfo=tz_cst)
+            else:
+                partes = list(map(int, he.split(":")))
+                dt = ahora_cst.replace(hour=partes[0], minute=partes[1], second=0, microsecond=0)
+                if dt <= ahora_cst + timedelta(minutes=15):
+                    dt += timedelta(days=1)
+            return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        if momento_dia and momento_dia in horas_franja:
+            target_h = horas_franja[momento_dia]
+            dt = ahora_cst.replace(hour=target_h, minute=0, second=0, microsecond=0)
+            if dt <= ahora_cst + timedelta(minutes=20):
+                dt += timedelta(days=1)
+            return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception as e:
+        print(f"   ℹ No se pudo calcular fecha de programación ('{e}'); se publicará de inmediato.")
+    return None
+
+def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, publish_at_iso=None, primer_comentario=None):
+    """Sube un video vertical a YouTube Shorts y lo deja programado o público con su primer comentario fijado."""
     if not os.path.exists(ruta_video):
         return None
 
@@ -414,6 +467,27 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
             else:
                 print(f"✅ ¡YouTube Short subido y PUBLICADO exitosamente!")
             print(f"   🔗 Enlace: {url_short}")
+
+            # Publicar primer comentario fijado para forzar debate y aumentar retención
+            if primer_comentario and primer_comentario.strip():
+                try:
+                    service.commentThreads().insert(
+                        part="snippet",
+                        body={
+                            "snippet": {
+                                "videoId": video_id,
+                                "topLevelComment": {
+                                    "snippet": {
+                                        "textOriginal": primer_comentario.strip()
+                                    }
+                                }
+                            }
+                        }
+                    ).execute()
+                    print(f"   💬 Primer comentario fijado publicado: \"{primer_comentario.strip()[:60]}...\"")
+                except Exception as e_comm:
+                    print(f"   ℹ No se pudo insertar el primer comentario automático: {e_comm}")
+
             return video_id
         return None
     except Exception as e:
@@ -648,6 +722,205 @@ def obtener_feedback_metricas():
     except Exception:
         return ""
 
+def mostrar_estado_conexiones():
+    """Muestra el estado detallado de conexión con cada plataforma."""
+    print("\n" + "═" * 65)
+    print("🌐 ESTADO DE CONEXIONES Y CUENTAS OFICIALES")
+    print("═" * 65)
+
+    # YouTube
+    if os.path.exists("token_youtube.json"):
+        try:
+            srv = obtener_servicio_youtube()
+            if srv:
+                ch = srv.channels().list(mine=True, part='snippet,statistics').execute().get('items', [])
+                if ch:
+                    tit = ch[0]['snippet']['title']
+                    subs = ch[0]['statistics'].get('subscriberCount', '0')
+                    vids = ch[0]['statistics'].get('videoCount', '0')
+                    print(f"  ✅ YouTube Shorts: CONECTADO")
+                    print(f"     Canal: '{tit}' | {subs} suscriptores | {vids} videos")
+                else:
+                    print(f"  ✅ YouTube Shorts: CONECTADO (token_youtube.json)")
+            else:
+                print(f"  ⚠️ YouTube Shorts: token_youtube.json existe pero falló la conexión")
+        except Exception as e:
+            print(f"  ⚠️ YouTube Shorts: error verificando token ({e})")
+    else:
+        print("  ✖ YouTube Shorts: No conectado (falta token_youtube.json)")
+
+    # Google Drive
+    if os.path.exists("token.json"):
+        print("  ✅ Google Drive: CONECTADO (token.json activo, subida y respaldo autónomo)")
+    else:
+        print("  ✖ Google Drive: No conectado")
+
+    # TikTok
+    token_tt = os.getenv("TIKTOK_ACCESS_TOKEN")
+    if os.path.exists("token_tiktok.json"):
+        try:
+            with open("token_tiktok.json", encoding="utf-8") as f:
+                token_tt = json.load(f).get("access_token", token_tt)
+        except: pass
+
+    if token_tt:
+        print(f"  ✅ TikTok: CONECTADO (Token configurado)")
+    else:
+        print("  ⏳ TikTok: Pendiente de conectar (Opción 4 en este menú)")
+
+    # Meta (FB / IG)
+    token_m = os.getenv("META_ACCESS_TOKEN")
+    if os.path.exists("token_meta.json"):
+        try:
+            with open("token_meta.json", encoding="utf-8") as f:
+                token_m = json.load(f).get("access_token", token_m)
+        except: pass
+
+    if token_m:
+        print(f"  ✅ Meta (Facebook / Instagram): CONECTADO (Token configurado)")
+    else:
+        print("  ⏳ Meta (Facebook / Instagram): Pendiente de conectar (Opción 5 en este menú)")
+    print("═" * 65)
+
+def mostrar_patrones_ia():
+    """Muestra qué patrones de audiencia está aplicando Claude actualmente."""
+    fb = obtener_feedback_metricas()
+    if fb:
+        print("\n" + "═" * 70)
+        print("🧠 CONOCIMIENTO ACTUAL APRENDIDO POR LA IA:")
+        print(fb)
+        print("═" * 70)
+    else:
+        print("\nℹ Aún no hay métricas guardadas. Ejecuta la opción 1 para analizar el canal.")
+
+def conectar_o_probar_tiktok():
+    """Asistente interactivo para conectar o probar la API de TikTok."""
+    print("\n" + "═" * 65)
+    print("🎵 ASISTENTE DE CONEXIÓN A TIKTOK")
+    print("═" * 65)
+    token_actual = os.getenv("TIKTOK_ACCESS_TOKEN")
+    archivo_token = "token_tiktok.json"
+    if os.path.exists(archivo_token):
+        try:
+            with open(archivo_token, encoding="utf-8") as f:
+                token_actual = json.load(f).get("access_token")
+        except: pass
+
+    if token_actual:
+        print(f"✔ Token actual detectado: {token_actual[:12]}...{token_actual[-6:]}")
+        print("\n¿Qué deseas hacer?")
+        print("  1) Probar conexión actual con la API de TikTok")
+        print("  2) Actualizar / Cambiar Access Token de TikTok")
+        print("  0) Volver")
+        op = input("Opción [1]: ").strip() or "1"
+        if op == "0": return
+        if op == "1":
+            print("\n🔄 Probando conexión a TikTok API...")
+            try:
+                url = "https://open.tiktokapis.com/v2/user/info/?fields=avatar_url,display_name"
+                h = {"Authorization": f"Bearer {token_actual}"}
+                r = requests.get(url, headers=h, timeout=10)
+                if r.ok:
+                    data = r.json().get("data", {}).get("user", {})
+                    print(f"✅ ¡Conexión exitosa con TikTok!")
+                    print(f"   Usuario: {data.get('display_name', 'Creador')}")
+                else:
+                    print(f"✖ TikTok respondió con error ({r.status_code}): {r.text[:200]}")
+            except Exception as e:
+                print(f"✖ Error conectando a TikTok: {e}")
+            return
+
+    print("\nPara conectar TikTok:")
+    print("1. Accede a tu portal de desarrolladores en: https://developers.tiktok.com/")
+    print("2. Crea tu app y genera tu Access Token con permisos 'video.list' y 'user.info.stats'.")
+    print("   (Para más detalles, consulta el archivo GUIA_CONEXION_METRICAS.md)")
+    nuevo_token = input("\nPega aquí tu Access Token de TikTok (o ENTER para cancelar): ").strip()
+    if nuevo_token:
+        with open("token_tiktok.json", "w", encoding="utf-8") as f:
+            json.dump({"access_token": nuevo_token}, f, indent=2)
+        print("✔ Guardado en 'token_tiktok.json'.")
+        print("🔄 Probando el nuevo token...")
+        try:
+            url = "https://open.tiktokapis.com/v2/user/info/?fields=avatar_url,display_name"
+            h = {"Authorization": f"Bearer {nuevo_token}"}
+            r = requests.get(url, headers=h, timeout=10)
+            if r.ok:
+                print("✅ ¡Token verificado y funcionando correctamente!")
+            else:
+                print(f"ℹ Token guardado, pero la API respondió: {r.status_code}")
+        except Exception as e:
+            print(f"ℹ Token guardado. Error en verificación de red: {e}")
+
+def conectar_o_probar_meta():
+    """Asistente interactivo para conectar Meta (Facebook e Instagram)."""
+    print("\n" + "═" * 65)
+    print("📘 ASISTENTE DE CONEXIÓN A META (FACEBOOK & INSTAGRAM)")
+    print("═" * 65)
+    token_actual = os.getenv("META_ACCESS_TOKEN")
+    archivo_token = "token_meta.json"
+    if os.path.exists(archivo_token):
+        try:
+            with open(archivo_token, encoding="utf-8") as f:
+                token_actual = json.load(f).get("access_token")
+        except: pass
+
+    if token_actual:
+        print(f"✔ Token actual detectado: {token_actual[:12]}...{token_actual[-6:]}")
+        print("\n¿Qué deseas hacer?")
+        print("  1) Probar conexión actual con Graph API")
+        print("  2) Actualizar / Cambiar Access Token de Meta")
+        print("  0) Volver")
+        op = input("Opción [1]: ").strip() or "1"
+        if op == "0": return
+        if op == "1":
+            print("\n🔄 Probando conexión a Meta Graph API...")
+            try:
+                r = requests.get(f"https://graph.facebook.com/v19.0/me?access_token={token_actual}", timeout=10)
+                if r.ok:
+                    data = r.json()
+                    print(f"✅ ¡Conexión exitosa con Meta! Cuenta: {data.get('name', '')} (ID: {data.get('id', '')})")
+                else:
+                    print(f"✖ Meta respondió con error ({r.status_code}): {r.text[:200]}")
+            except Exception as e:
+                print(f"✖ Error conectando a Meta: {e}")
+            return
+
+    print("\nPara conectar Facebook e Instagram:")
+    print("1. Ve a https://developers.facebook.com/ y crea una app tipo Negocios.")
+    print("2. Obtén un Token con permisos 'pages_read_engagement' e 'instagram_manage_insights'.")
+    print("   (Para más detalles, consulta el archivo GUIA_CONEXION_METRICAS.md)")
+    nuevo_token = input("\nPega aquí tu Access Token de Meta (o ENTER para cancelar): ").strip()
+    if nuevo_token:
+        with open("token_meta.json", "w", encoding="utf-8") as f:
+            json.dump({"access_token": nuevo_token}, f, indent=2)
+        print("✔ Guardado en 'token_meta.json'.")
+
+def menu_rendimiento_redes():
+    """Menú interactivo para gestionar métricas, conexiones sociales y feedback algorítmico."""
+    while True:
+        print("\n" + "═" * 65)
+        print("📊 PANEL DE RENDIMIENTO Y REDES SOCIALES")
+        print("═" * 65)
+        print("  1) Analizar canal de YouTube Shorts (extraer métricas y actualizar IA)")
+        print("  2) Ver estado de conexiones (YouTube, TikTok, Meta / FB / IG)")
+        print("  3) Ver patrones ganadores aprendidos por la IA")
+        print("  4) Conectar / Probar TikTok")
+        print("  5) Conectar / Probar Meta (Facebook e Instagram)")
+        print("  0) Volver al menú principal")
+        op = input("Elige una opción: ").strip()
+        if op == "1":
+            analizar_rendimiento_canal()
+        elif op == "2":
+            mostrar_estado_conexiones()
+        elif op == "3":
+            mostrar_patrones_ia()
+        elif op == "4":
+            conectar_o_probar_tiktok()
+        elif op == "5":
+            conectar_o_probar_meta()
+        elif op == "0":
+            break
+
 # ---------------------------------------------------------------------------
 # UTILIDADES
 # ---------------------------------------------------------------------------
@@ -707,7 +980,21 @@ def pedir_config_videos(num_peticiones=1):
     defecto = "7" if num_peticiones == 5 else "1"
     op = input(f"Opción [{defecto}]: ").strip() or defecto
     _, clave = FRANJAS_DIA.get(op, FRANJAS_DIA["1"])
-    return {"momento_dia": clave}
+
+    print("\n¿Deseas programar la publicación en YouTube Shorts?")
+    print("  1) Publicar de inmediato al terminar el ensamblaje")
+    print("  2) Programar automáticamente para la hora óptima de la franja (ej. 21:00 CST)")
+    print("  3) Especificar fecha y hora personalizada (ej. 2026-10-15 20:30 o 21:00)")
+    op_prog = input("Opción [1]: ").strip() or "1"
+    modo_prog = "inmediato"
+    hora_pers = None
+    if op_prog == "2":
+        modo_prog = "auto_franja"
+    elif op_prog == "3":
+        modo_prog = "personalizada"
+        hora_pers = input("Ingresa fecha y hora (YYYY-MM-DD HH:MM o HH:MM para hoy/mañana): ").strip()
+
+    return {"momento_dia": clave, "modo_programacion": modo_prog, "hora_personalizada": hora_pers}
 
 def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     if peticion["tipo"] == "historia":
@@ -807,13 +1094,13 @@ def iniciar_sd():
     except: pass
     env = os.environ.copy()
     env.pop("VIRTUAL_ENV", None)
-    # Control de uso de CPU: evitar que sature los 10 núcleos y desconecte periféricos en Mac mini M4
-    env["OMP_NUM_THREADS"] = "4"
-    env["MKL_NUM_THREADS"] = "4"
-    env["OPENBLAS_NUM_THREADS"] = "4"
-    env["VECLIB_MAXIMUM_THREADS"] = "4"
-    env["NUMEXPR_NUM_THREADS"] = "4"
-    comandos = ["nice", "-n", "10", "./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
+    # Control de uso de CPU: limitar a 2 hilos y nice 15 para multitarea fluida en Mac mini M4
+    env["OMP_NUM_THREADS"] = "2"
+    env["MKL_NUM_THREADS"] = "2"
+    env["OPENBLAS_NUM_THREADS"] = "2"
+    env["VECLIB_MAXIMUM_THREADS"] = "2"
+    env["NUMEXPR_NUM_THREADS"] = "2"
+    comandos = ["nice", "-n", "15", "./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
     p = subprocess.Popen(comandos, cwd=RUTA_SD, env=env, preexec_fn=os.setsid)
     for _ in range(60):
         try:
@@ -1449,10 +1736,11 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     destino = os.path.join(ruta_carpeta, f"{titulo}.mp4")
     temporal = os.path.join(ruta_carpeta, f"{titulo}.parcial.mp4")
 
-    # Limitación de CPU a 4 threads y preset mediano para evitar 100% de CPU y desconexión de periféricos
-    num_threads = min(4, max(1, (os.cpu_count() or 4) // 2))
+    # Limitación estricta de CPU: 2 threads y ffmpeg -threads 2 para multitarea fluida en Mac mini M4
+    num_threads = 2
     try:
-        vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast", threads=num_threads, logger=None)
+        vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast",
+                            threads=num_threads, ffmpeg_params=["-threads", "2"], logger=None)
         os.replace(temporal, destino)
         print(f"✔ Video ensamblado: {destino}")
     finally:
@@ -1672,13 +1960,27 @@ def flujo_videos():
                     "archivo_salida": f"{c}.mp4",
                     "tier": ep.get("tier")
                 })
-                # 1. Subida y programación 100% autónoma a YouTube Shorts (si está habilitado)
+                # 1. Subida y programación 100% autónoma a YouTube Shorts (con primer comentario)
                 meta_yt = ep.get("metadata", {}).get("youtube_shorts", {})
+                primer_com = ep.get("metadata", {}).get("comentario_fijado", "")
                 if meta_yt:
                     tit_yt = meta_yt.get("titulo", ep.get("titulo", c))
                     desc_yt = meta_yt.get("descripcion", "") + "\n\n" + meta_yt.get("hashtags", "")
                     tags_yt = meta_yt.get("hashtags", "")
-                    subir_y_programar_youtube_short(mp4, tit_yt, desc_yt, tags=tags_yt)
+
+                    # Calcular fecha/hora de programación si se configuró
+                    modo_prog = cfg.get("modo_programacion", "inmediato")
+                    fecha_prog_iso = None
+                    if modo_prog == "auto_franja":
+                        fecha_prog_iso = calcular_fecha_programacion(momento_dia=ep.get("momento_dia") or cfg.get("momento_dia"))
+                    elif modo_prog == "personalizada":
+                        fecha_prog_iso = calcular_fecha_programacion(hora_especifica=cfg.get("hora_personalizada"))
+
+                    subir_y_programar_youtube_short(
+                        mp4, tit_yt, desc_yt, tags=tags_yt,
+                        publish_at_iso=fecha_prog_iso,
+                        primer_comentario=primer_com
+                    )
 
                 # 2. Subir carpeta completa a Google Drive y liberar disco en la Mac
                 subir_carpeta_a_gdrive_y_liberar(c)
@@ -2116,13 +2418,13 @@ def iniciar():
         print("  1) Videos verticales (uno o varios)")
         print("  2) Historias fotográficas (carruseles FB / IG / YouTube)")
         print(f"  3) Reanudar / Ensamblar carpeta existente (MP3 + imágenes){aviso}")
-        print("  4) Analizar rendimiento del canal (YouTube Analytics & Feedback IA)")
+        print("  4) Rendimiento y Redes Sociales (Métricas, Conexiones & Feedback IA)")
         print("  0) Salir")
         op = input("Opción: ").strip()
         if op == "1": flujo_videos()
         elif op == "2": flujo_historias_foto()
         elif op == "3": menu_reanudar_carpeta(carpetas)
-        elif op == "4": analizar_rendimiento_canal()
+        elif op == "4": menu_rendimiento_redes()
         elif op == "0": break
 
 if __name__ == "__main__":
