@@ -839,12 +839,17 @@ def conectar_o_probar_tiktok():
                 print("✔ Guardado en 'token_tiktok.json'.")
             return
 
-    # Flujo OAuth para generar Token automáticamente
+    # Flujo OAuth con PKCE (code_challenge requerido por TikTok API v2)
+    import hashlib
     client_key = os.getenv("TIKTOK_CLIENT_KEY", "sbawaqizbhzrfa2vz5")
     client_secret = os.getenv("TIKTOK_CLIENT_SECRET", "OvSs9yhXEfTVFVj9yCoRNntCC06NO9Rk")
     redirect_uri = os.getenv("TIKTOK_REDIRECT_URI", "https://localhost:8080/callback")
     scopes = "user.info.basic,user.info.stats,video.list,video.upload"
     state = str(int(time.time()))
+
+    verifier = "narrativas_sumergidas_tiktok_oauth_verification_token_m4_2026"
+    h = hashlib.sha256(verifier.encode("utf-8")).digest()
+    code_challenge = base64.urlsafe_b64encode(h).decode("utf-8").rstrip("=")
 
     auth_url = (
         f"https://www.tiktok.com/v2/auth/authorize/"
@@ -853,6 +858,8 @@ def conectar_o_probar_tiktok():
         f"&response_type=code"
         f"&redirect_uri={redirect_uri}"
         f"&state={state}"
+        f"&code_challenge={code_challenge}"
+        f"&code_challenge_method=S256"
     )
 
     print("\n🔗 PASO 1: Abre el siguiente enlace en tu navegador para autorizar la app:")
@@ -882,7 +889,8 @@ def conectar_o_probar_tiktok():
             "client_secret": client_secret,
             "code": codigo,
             "grant_type": "authorization_code",
-            "redirect_uri": redirect_uri
+            "redirect_uri": redirect_uri,
+            "code_verifier": verifier
         }
         res = requests.post(url_token, data=datos, headers=headers, timeout=20)
         cuerpo = res.json()
