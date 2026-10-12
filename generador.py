@@ -375,38 +375,98 @@ def obtener_servicio_youtube():
         print(f"⚠ Error conectando con servicio YouTube: {e}")
         return None
 
-def calcular_fecha_programacion(momento_dia=None, hora_especifica=None):
-    """Calcula fecha/hora en formato ISO 8601 UTC (RFC 3339) para programar en YouTube Shorts.
-    Zona horaria de referencia: CST (México, UTC-6)."""
+def resolver_fecha_dia(texto_dia=None):
+    """Convierte una entrada como 'hoy', 'mañana', 'viernes', 'sábado', '2026-10-15' o '15/10/2026'
+    en una fecha 'YYYY-MM-DD' en zona horaria CST (México, UTC-6)."""
+    from datetime import datetime, timedelta, timezone
+    tz_cst = timezone(timedelta(hours=-6))
+    ahora_cst = datetime.now(tz_cst)
+    if not texto_dia or not texto_dia.strip():
+        return (ahora_cst + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    t = texto_dia.strip().lower()
+    # Normalizar acentos comunes
+    reemplazos = {"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u"}
+    for k, v in reemplazos.items():
+        t = t.replace(k, v)
+
+    if t in ("hoy", "today"):
+        return ahora_cst.strftime("%Y-%m-%d")
+    if t in ("manana", "mañana", "tomorrow"):
+        return (ahora_cst + timedelta(days=1)).strftime("%Y-%m-%d")
+    if t in ("pasado manana", "pasado mañana"):
+        return (ahora_cst + timedelta(days=2)).strftime("%Y-%m-%d")
+
+    dias_semana = {
+        "lunes": 0, "martes": 1, "miercoles": 2, "jueves": 3,
+        "viernes": 4, "sabado": 5, "domingo": 6
+    }
+    for nombre_dia, num_dia in dias_semana.items():
+        if nombre_dia in t:
+            dias_faltantes = (num_dia - ahora_cst.weekday()) % 7
+            if dias_faltantes == 0:
+                dias_faltantes = 7
+            return (ahora_cst + timedelta(days=dias_faltantes)).strftime("%Y-%m-%d")
+
+    # Intentar formatos YYYY-MM-DD o DD/MM/YYYY
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            dt = datetime.strptime(t, fmt)
+            return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+
+    return (ahora_cst + timedelta(days=1)).strftime("%Y-%m-%d")
+
+def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_base=None):
+    """Calcula fecha/hora en formato ISO 8601 UTC (RFC 3339) para programar en YouTube Shorts y Facebook.
+    Zona horaria de referencia: CST (México, UTC-6).
+    Si se proporciona fecha_base ('YYYY-MM-DD'), programa las 5 franjas dentro de esa jornada."""
     from datetime import datetime, timedelta, timezone
     tz_cst = timezone(timedelta(hours=-6))
     ahora_cst = datetime.now(tz_cst)
 
     horas_franja = {
-        "manana": 8,
-        "mediodia": 13,
-        "tarde": 17,
-        "noche": 21,
-        "madrugada": 2,
+        "manana": (8, 0),
+        "mediodia": (13, 0),
+        "tarde": (17, 0),
+        "noche": (21, 0),
+        "madrugada": (1, 30),
     }
 
     try:
+        base_dt = ahora_cst
+        if fecha_base:
+             fecha_norm = resolver_fecha_dia(fecha_base)
+             y, m, d = map(int, fecha_norm.split("-"))
+             base_dt = ahora_cst.replace(year=y, month=m, day=d, second=0, microsecond=0)
+
         if hora_especifica and hora_especifica.strip():
             he = hora_especifica.strip()
             if " " in he:
                 dt = datetime.strptime(he, "%Y-%m-%d %H:%M").replace(tzinfo=tz_cst)
             else:
                 partes = list(map(int, he.split(":")))
-                dt = ahora_cst.replace(hour=partes[0], minute=partes[1], second=0, microsecond=0)
-                if dt <= ahora_cst + timedelta(minutes=15):
+                dt = base_dt.replace(hour=partes[0], minute=partes[1], second=0, microsecond=0)
+                if not fecha_base and dt <= ahora_cst + timedelta(minutes=15):
                     dt += timedelta(days=1)
             return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         if momento_dia and momento_dia in horas_franja:
-            target_h = horas_franja[momento_dia]
-            dt = ahora_cst.replace(hour=target_h, minute=0, second=0, microsecond=0)
-            if dt <= ahora_cst + timedelta(minutes=20):
-                dt += timedelta(days=1)
+            target_h, target_m = horas_franja[momento_dia]
+            dt = base_dt.replace(hour=target_h, minute=target_m, second=0, microsecond=0)
+            if fecha_base:
+                # En una Jornada 24H del día elegido, la madrugada (01:30 AM) cierra la noche de esa jornada (día + 1)
+                if momento_dia == "madrugada" and dt <= ahora_cst + timedelta(minutes=20):
+                    dt += timedelta(days=1)
+                elif momento_dia == "madrugada":
+                    dt += timedelta(days=1)
+                # Si la hora de esa franja en el día elegido ya pasó, recorrer al día siguiente para no fallar la API
+                while dt <= ahora_cst + timedelta(minutes=20):
+                    dt += timedelta(days=1)
+            else:
+                if dt <= ahora_cst + timedelta(minutes=20):
+                    dt += timedelta(days=1)
             return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     except Exception as e:
         print(f"   ℹ No se pudo calcular fecha de programación ('{e}'); se publicará de inmediato.")
@@ -561,8 +621,8 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
         print(f"✖ Error subiendo a TikTok: {e}")
         return None
 
-def subir_video_facebook(ruta_video, titulo=None, descripcion=None):
-    """Sube y publica un video directamente en la Página de Facebook vía Graph API."""
+def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_iso=None):
+    """Sube y publica (o programa) un video directamente en la Página de Facebook vía Graph API."""
     if not os.path.exists(ruta_video):
         return None
 
@@ -588,6 +648,21 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None):
             "title": titulo or os.path.splitext(os.path.basename(ruta_video))[0],
             "description": descripcion or ""
         }
+
+        programado_fb = False
+        if publish_at_iso:
+            try:
+                from datetime import datetime, timezone
+                dt_utc = datetime.strptime(publish_at_iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                unix_ts = int(dt_utc.timestamp())
+                # Meta Graph API requiere que scheduled_publish_time sea al menos 10 minutos en el futuro
+                if unix_ts > int(time.time()) + 660:
+                    payload["published"] = "false"
+                    payload["scheduled_publish_time"] = str(unix_ts)
+                    programado_fb = True
+            except Exception:
+                pass
+
         with open(ruta_video, "rb") as f_vid:
             files = {"source": f_vid}
             r = requests.post(url, data=payload, files=files, timeout=300)
@@ -595,7 +670,10 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None):
         if r.ok:
             res = r.json()
             vid_id = res.get("id")
-            print(f"✅ ¡Video publicado exitosamente en Facebook! (ID: {vid_id})")
+            if programado_fb:
+                print(f"✅ ¡Video subido y PROGRAMADO exitosamente en Facebook para {publish_at_iso}! (ID: {vid_id})")
+            else:
+                print(f"✅ ¡Video publicado exitosamente en Facebook! (ID: {vid_id})")
             return vid_id
         else:
             print(f"✖ Error subiendo a Facebook ({r.status_code}): {r.text}")
@@ -1550,20 +1628,43 @@ def pedir_config_videos(num_peticiones=1):
     op = input(f"Opción [{defecto}]: ").strip() or defecto
     _, clave = FRANJAS_DIA.get(op, FRANJAS_DIA["1"])
 
-    print("\n¿Deseas programar la publicación en YouTube Shorts?")
+    fecha_liberacion = None
+    if num_peticiones == 5 or clave == "jornada_completa":
+        print("\n📅 ¿En qué DÍA buscas liberar este lote de 5 videos (Jornada 24H Completa)?")
+        print("   (Puedes escribir: 'mañana', 'hoy', un día como 'viernes', 'sábado', 'domingo' o fecha 'YYYY-MM-DD')")
+        dia_in = input("Día de liberación del lote [mañana]: ").strip() or "mañana"
+        fecha_liberacion = resolver_fecha_dia(dia_in)
+        print(f"   ✔ Lote programado para la jornada del día: {fecha_liberacion}")
+        print(f"     • Video 1 (Mañana):      {fecha_liberacion} 08:00 CST")
+        print(f"     • Video 2 (Mediodía):    {fecha_liberacion} 13:00 CST")
+        print(f"     • Video 3 (Tarde):       {fecha_liberacion} 17:00 CST")
+        print(f"     • Video 4 (Noche Prime): {fecha_liberacion} 21:00 CST")
+        print(f"     • Video 5 (Madrugada):   01:30 CST (cierre de madrugada de la jornada)")
+
+    print("\n¿Deseas programar la publicación automática (YouTube Shorts + Facebook Reels)?")
     print("  1) Publicar de inmediato al terminar el ensamblaje")
-    print("  2) Programar automáticamente para la hora óptima de la franja (ej. 21:00 CST)")
+    print("  2) Programar automáticamente cada video en su hora óptima del día elegido (08:00, 13:00, 17:00, 21:00, 01:30 CST)")
     print("  3) Especificar fecha y hora personalizada (ej. 2026-10-15 20:30 o 21:00)")
-    op_prog = input("Opción [1]: ").strip() or "1"
+    defecto_prog = "2" if (num_peticiones == 5 or clave == "jornada_completa") else "1"
+    op_prog = input(f"Opción [{defecto_prog}]: ").strip() or defecto_prog
     modo_prog = "inmediato"
     hora_pers = None
     if op_prog == "2":
         modo_prog = "auto_franja"
+        if not fecha_liberacion:
+            dia_in = input("📅 ¿Para qué DÍA deseas programar la publicación? ('hoy', 'mañana', 'sábado', 'YYYY-MM-DD') [mañana]: ").strip() or "mañana"
+            fecha_liberacion = resolver_fecha_dia(dia_in)
+            print(f"   ✔ Fecha objetivo de programación: {fecha_liberacion}")
     elif op_prog == "3":
         modo_prog = "personalizada"
         hora_pers = input("Ingresa fecha y hora (YYYY-MM-DD HH:MM o HH:MM para hoy/mañana): ").strip()
 
-    return {"momento_dia": clave, "modo_programacion": modo_prog, "hora_personalizada": hora_pers}
+    return {
+        "momento_dia": clave,
+        "modo_programacion": modo_prog,
+        "hora_personalizada": hora_pers,
+        "fecha_liberacion": fecha_liberacion
+    }
 
 def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     if peticion["tipo"] == "historia":
@@ -1589,6 +1690,8 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
                 "- Si consideras que el caso es tan amplio que debería convertirse en serie de 2 o 3 partes para no saturar al espectador, señálalo en 'calendario_publicacion.estrategia_escalonada'.\n")
 
     momento = peticion.get("momento_dia")
+    fecha_lib = peticion.get("fecha_liberacion")
+    txt_dia_lib = f" (DÍA DE LIBERACIÓN OBJETIVO: {fecha_lib})" if fecha_lib else ""
     if momento and momento != "multi":
         descripciones = {
             "manana": "MAÑANA (07:00-10:00 CST: camino al trabajo/estudio, tono intrigante y dato insólito matutino)",
@@ -1597,8 +1700,8 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
             "noche": "NOCHE PRIME (20:00-23:00 CST: máxima oscuridad, terror inmersivo)",
             "madrugada": "MADRUGADA / INSOMNIO (00:00-04:00 CST: atmósfera de paranoia para los que no pueden dormir)",
         }
-        msg += (f"\n\nMOMENTO DEL DÍA OBJETIVO: Diseña el gancho, el tono y la ambientación lumínica específicamente para la franja de {descripciones.get(momento, momento.upper())}.\n"
-                f"- OBLIGATORIO: En la metadata de CADA red social, el campo 'hora_publicacion' DEBE colocar la hora recomendada de publicación dentro de esta franja de {descripciones.get(momento, momento.upper())}.")
+        msg += (f"\n\nMOMENTO DEL DÍA OBJETIVO{txt_dia_lib}: Diseña el gancho, el tono y la ambientación lumínica específicamente para la franja de {descripciones.get(momento, momento.upper())}.\n"
+                f"- OBLIGATORIO: En la metadata de CADA red social, el campo 'hora_publicacion' DEBE colocar la fecha/día{txt_dia_lib} y la hora recomendada de publicación dentro de esta franja de {descripciones.get(momento, momento.upper())}.")
     else:
         msg += ("\n\nMOMENTO DEL DÍA: Flexible / Cualquier momento.\n"
                 "- OBLIGATORIO: En la metadata de CADA red social, incluye en 'hora_publicacion' la mejor ventana horaria y día óptimo para esa plataforma según su tier.\n"
@@ -2469,6 +2572,7 @@ def flujo_videos():
     m = elegir_lote(MANIFEST_VIDEOS, "videos", pedir_config_videos)
     cfg = m.get("config") or {}
     momento = cfg.get("momento_dia", "multi")
+    fecha_lib = cfg.get("fecha_liberacion")
     peticiones = m.get("peticiones", [])
 
     # Si se eligió jornada completa o hay exactamente 5 peticiones y momento es jornada_completa
@@ -2476,12 +2580,16 @@ def flujo_videos():
         for idx, pet in enumerate(peticiones):
             franja = ORDEN_5_FRANJAS[idx % len(ORDEN_5_FRANJAS)]
             pet["momento_dia"] = franja
-        print(f"\n🌅☀️🌇🌙🕯️ Distribución 24H aplicada a los {len(peticiones)} videos:")
+            if fecha_lib:
+                pet["fecha_liberacion"] = fecha_lib
+        print(f"\n🌅☀️🌇🌙🕯️ Distribución 24H aplicada a los {len(peticiones)} videos" + (f" para el día {fecha_lib}:" if fecha_lib else ":"))
         for idx, pet in enumerate(peticiones):
             print(f"   Video {idx + 1}: {pet.get('momento_dia', '').upper()}")
     else:
         for pet in peticiones:
             pet.setdefault("momento_dia", momento)
+            if fecha_lib:
+                pet["fecha_liberacion"] = fecha_lib
 
     def gen(pet, usados, i):
         def guardar_parcial(g):  # fase 1 lista: si falla la fase 2 no se repite el guion
@@ -2529,6 +2637,20 @@ def flujo_videos():
                     "archivo_salida": f"{c}.mp4",
                     "tier": ep.get("tier")
                 })
+                # Calcular fecha/hora de programación si se configuró (compartida entre YouTube y Facebook)
+                modo_prog = cfg.get("modo_programacion", "inmediato")
+                fecha_prog_iso = None
+                if modo_prog == "auto_franja":
+                    fecha_prog_iso = calcular_fecha_programacion(
+                        momento_dia=ep.get("momento_dia") or cfg.get("momento_dia"),
+                        fecha_base=cfg.get("fecha_liberacion")
+                    )
+                elif modo_prog == "personalizada":
+                    fecha_prog_iso = calcular_fecha_programacion(
+                        hora_especifica=cfg.get("hora_personalizada"),
+                        fecha_base=cfg.get("fecha_liberacion")
+                    )
+
                 # 1. Subida y programación 100% autónoma a YouTube Shorts (con primer comentario)
                 meta_yt = ep.get("metadata", {}).get("youtube_shorts", {})
                 primer_com = ep.get("metadata", {}).get("comentario_fijado", "")
@@ -2536,14 +2658,6 @@ def flujo_videos():
                     tit_yt = meta_yt.get("titulo", ep.get("titulo", c))
                     desc_yt = meta_yt.get("descripcion", "") + "\n\n" + meta_yt.get("hashtags", "")
                     tags_yt = meta_yt.get("hashtags", "")
-
-                    # Calcular fecha/hora de programación si se configuró
-                    modo_prog = cfg.get("modo_programacion", "inmediato")
-                    fecha_prog_iso = None
-                    if modo_prog == "auto_franja":
-                        fecha_prog_iso = calcular_fecha_programacion(momento_dia=ep.get("momento_dia") or cfg.get("momento_dia"))
-                    elif modo_prog == "personalizada":
-                        fecha_prog_iso = calcular_fecha_programacion(hora_especifica=cfg.get("hora_personalizada"))
 
                     subir_y_programar_youtube_short(
                         mp4, tit_yt, desc_yt, tags=tags_yt,
@@ -2564,7 +2678,7 @@ def flujo_videos():
                 if os.path.exists("token_meta.json"):
                     tit_fb = (meta_fb or {}).get("titulo")
                     desc_fb = (meta_fb or {}).get("descripcion")
-                    subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb)
+                    subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
 
                     if meta_ig:
                         tit_ig = meta_ig.get("titulo")
@@ -2649,12 +2763,26 @@ def pedir_config_historias(num_peticiones=1):
     op_hora = input(f"Opción [{defecto_hora}]: ").strip() or defecto_hora
     _, clave_hora = FRANJAS_DIA.get(op_hora, FRANJAS_DIA["1"])
 
-    return {"n_slides": n_slides, "formato": op if op in FORMATOS_FOTO else "1", "momento_dia": clave_hora}
+    fecha_liberacion = None
+    if num_peticiones == 5 or clave_hora == "jornada_completa":
+        print("\n📅 ¿En qué DÍA buscas liberar este lote de 5 historias fotográficas (Jornada 24H Completa)?")
+        print("   (Puedes escribir: 'mañana', 'hoy', un día como 'viernes', 'sábado', 'domingo' o fecha 'YYYY-MM-DD')")
+        dia_in = input("Día de liberación del lote [mañana]: ").strip() or "mañana"
+        fecha_liberacion = resolver_fecha_dia(dia_in)
+        print(f"   ✔ Lote enfocado para la jornada del día: {fecha_liberacion}")
+
+    return {
+        "n_slides": n_slides,
+        "formato": op if op in FORMATOS_FOTO else "1",
+        "momento_dia": clave_hora,
+        "fecha_liberacion": fecha_liberacion
+    }
 
 def flujo_historias_foto():
     m = elegir_lote(MANIFEST_HISTORIAS, "historias fotográficas", pedir_config_historias)
     cfg = m.get("config") or {"n_slides": 8, "formato": "1", "momento_dia": "multi"}
     momento = cfg.get("momento_dia", "multi")
+    fecha_lib = cfg.get("fecha_liberacion")
     peticiones = m.get("peticiones", [])
 
     # Si se eligió jornada completa o hay exactamente 5 peticiones y momento es jornada_completa
@@ -2662,12 +2790,16 @@ def flujo_historias_foto():
         for idx, pet in enumerate(peticiones):
             franja = ORDEN_5_FRANJAS[idx % len(ORDEN_5_FRANJAS)]
             pet["momento_dia"] = franja
-        print(f"\n🌅☀️🌇🌙🕯️ Distribución 24H aplicada a las {len(peticiones)} historias fotográficas:")
+            if fecha_lib:
+                pet["fecha_liberacion"] = fecha_lib
+        print(f"\n🌅☀️🌇🌙🕯️ Distribución 24H aplicada a las {len(peticiones)} historias fotográficas" + (f" para el día {fecha_lib}:" if fecha_lib else ":"))
         for idx, pet in enumerate(peticiones):
             print(f"   Historia {idx + 1}: {pet.get('momento_dia', '').upper()}")
     else:
         for pet in peticiones:
             pet.setdefault("momento_dia", momento)
+            if fecha_lib:
+                pet["fecha_liberacion"] = fecha_lib
     _, tam_sd, tam_final = FORMATOS_FOTO.get(cfg.get("formato", "1"), FORMATOS_FOTO["1"])
 
     def gen(pet, usados, i):
