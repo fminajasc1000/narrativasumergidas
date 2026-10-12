@@ -803,14 +803,16 @@ def conectar_o_probar_tiktok():
     if os.path.exists(archivo_token):
         try:
             with open(archivo_token, encoding="utf-8") as f:
-                token_actual = json.load(f).get("access_token")
+                d = json.load(f)
+                token_actual = d.get("access_token") or d.get("data", {}).get("access_token")
         except: pass
 
     if token_actual:
         print(f"✔ Token actual detectado: {token_actual[:12]}...{token_actual[-6:]}")
         print("\n¿Qué deseas hacer?")
         print("  1) Probar conexión actual con la API de TikTok")
-        print("  2) Actualizar / Cambiar Access Token de TikTok")
+        print("  2) Re-autenticar con tu cuenta (Iniciar sesión en TikTok)")
+        print("  3) Pegar un nuevo Access Token manualmente")
         print("  0) Volver")
         op = input("Opción [1]: ").strip() or "1"
         if op == "0": return
@@ -829,27 +831,76 @@ def conectar_o_probar_tiktok():
             except Exception as e:
                 print(f"✖ Error conectando a TikTok: {e}")
             return
+        elif op == "3":
+            nuevo_token = input("\nPega aquí tu Access Token de TikTok (o ENTER para cancelar): ").strip()
+            if nuevo_token:
+                with open("token_tiktok.json", "w", encoding="utf-8") as f:
+                    json.dump({"access_token": nuevo_token}, f, indent=2)
+                print("✔ Guardado en 'token_tiktok.json'.")
+            return
 
-    print("\nPara conectar TikTok:")
-    print("1. Accede a tu portal de desarrolladores en: https://developers.tiktok.com/")
-    print("2. Crea tu app y genera tu Access Token con permisos 'video.list' y 'user.info.stats'.")
-    print("   (Para más detalles, consulta el archivo GUIA_CONEXION_METRICAS.md)")
-    nuevo_token = input("\nPega aquí tu Access Token de TikTok (o ENTER para cancelar): ").strip()
-    if nuevo_token:
-        with open("token_tiktok.json", "w", encoding="utf-8") as f:
-            json.dump({"access_token": nuevo_token}, f, indent=2)
-        print("✔ Guardado en 'token_tiktok.json'.")
-        print("🔄 Probando el nuevo token...")
-        try:
-            url = "https://open.tiktokapis.com/v2/user/info/?fields=avatar_url,display_name"
-            h = {"Authorization": f"Bearer {nuevo_token}"}
-            r = requests.get(url, headers=h, timeout=10)
-            if r.ok:
-                print("✅ ¡Token verificado y funcionando correctamente!")
-            else:
-                print(f"ℹ Token guardado, pero la API respondió: {r.status_code}")
-        except Exception as e:
-            print(f"ℹ Token guardado. Error en verificación de red: {e}")
+    # Flujo OAuth para generar Token automáticamente
+    client_key = os.getenv("TIKTOK_CLIENT_KEY", "sbawaqizbhzrfa2vz5")
+    client_secret = os.getenv("TIKTOK_CLIENT_SECRET", "OvSs9yhXEfTVFVj9yCoRNntCC06NO9Rk")
+    redirect_uri = os.getenv("TIKTOK_REDIRECT_URI", "https://localhost:8080/callback")
+    scopes = "user.info.basic,user.info.stats,video.list,video.upload"
+    state = str(int(time.time()))
+
+    auth_url = (
+        f"https://www.tiktok.com/v2/auth/authorize/"
+        f"?client_key={client_key}"
+        f"&scope={scopes}"
+        f"&response_type=code"
+        f"&redirect_uri={redirect_uri}"
+        f"&state={state}"
+    )
+
+    print("\n🔗 PASO 1: Abre el siguiente enlace en tu navegador para autorizar la app:")
+    print("─" * 65)
+    print(auth_url)
+    print("─" * 65)
+    print("\nPASO 2: Inicia sesión con la cuenta de Narrativas Sumergidas y haz clic en 'Autorizar'.")
+    print("El navegador se redirigirá a una dirección que empieza con: https://localhost:8080/callback?code=...")
+    print("(Aunque la página diga 'No se puede acceder al sitio', copia toda la URL de la barra del navegador).")
+
+    resp_url = input("\nPega aquí la URL completa a la que te redirigió (o el código): ").strip()
+    if not resp_url:
+        print("Operación cancelada.")
+        return
+
+    codigo = resp_url
+    if "code=" in resp_url:
+        m = re.search(r"code=([^&]+)", resp_url)
+        if m: codigo = m.group(1)
+
+    print(f"\n🔄 Canjeando código de autorización por Token de acceso...")
+    try:
+        url_token = "https://open.tiktokapis.com/v2/oauth/token/"
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        datos = {
+            "client_key": client_key,
+            "client_secret": client_secret,
+            "code": codigo,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        }
+        res = requests.post(url_token, data=datos, headers=headers, timeout=20)
+        cuerpo = res.json()
+        if res.ok and "data" in cuerpo and "access_token" in cuerpo["data"]:
+            with open("token_tiktok.json", "w", encoding="utf-8") as f:
+                json.dump(cuerpo["data"], f, indent=2)
+            print("✅ ¡Autenticación con TikTok exitosa!")
+            print(f"✔ Token guardado en 'token_tiktok.json'.")
+            acc_tok = cuerpo["data"]["access_token"]
+            r_user = requests.get("https://open.tiktokapis.com/v2/user/info/?fields=avatar_url,display_name",
+                                  headers={"Authorization": f"Bearer {acc_tok}"}, timeout=10)
+            if r_user.ok:
+                u_info = r_user.json().get("data", {}).get("user", {})
+                print(f"   Cuenta conectada: {u_info.get('display_name', 'TikTok User')}")
+        else:
+            print(f"✖ TikTok devolvió un error al canjear el token: {res.text}")
+    except Exception as e:
+        print(f"✖ Error en la solicitud de token: {e}")
 
 def conectar_o_probar_meta():
     """Asistente interactivo para conectar Meta (Facebook e Instagram)."""
