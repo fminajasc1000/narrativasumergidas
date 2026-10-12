@@ -494,6 +494,73 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
         print(f"✖ Error subiendo a YouTube Shorts: {e}")
         return None
 
+def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
+    """Sube un video vertical a TikTok vía API oficial como borrador listo en la bandeja de entrada (inbox)."""
+    if not os.path.exists(ruta_video):
+        return None
+
+    archivo_token = "token_tiktok.json"
+    if not os.path.exists(archivo_token):
+        return None
+
+    try:
+        with open(archivo_token, "r", encoding="utf-8") as f:
+            d = json.load(f)
+            token = d.get("access_token") or d.get("data", {}).get("access_token")
+        if not token: return None
+
+        tam_archivo = os.path.getsize(ruta_video)
+        print(f"\n🎵 Subiendo video a TikTok: '{os.path.basename(ruta_video)}' ({tam_archivo / (1024*1024):.1f} MB)...")
+
+        # 1. Init upload
+        url_init = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
+        headers_init = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json; charset=UTF-8"
+        }
+        body_init = {
+            "source_info": {
+                "source": "FILE_UPLOAD",
+                "video_size": tam_archivo,
+                "chunk_size": tam_archivo,
+                "total_chunk_count": 1
+            }
+        }
+        r_init = requests.post(url_init, headers=headers_init, json=body_init, timeout=20)
+        res_init = r_init.json()
+        if "data" not in res_init or "upload_url" not in res_init["data"]:
+            print(f"✖ Error iniciando subida a TikTok: {res_init}")
+            return None
+
+        upload_url = res_init["data"]["upload_url"]
+        publish_id = res_init["data"]["publish_id"]
+
+        # 2. Upload video bytes
+        headers_upload = {
+            "Content-Range": f"bytes 0-{tam_archivo - 1}/{tam_archivo}",
+            "Content-Length": str(tam_archivo),
+            "Content-Type": "video/mp4"
+        }
+        with open(ruta_video, "rb") as f_vid:
+            requests.put(upload_url, data=f_vid, headers=headers_upload, timeout=120)
+
+        # 3. Check status
+        url_status = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
+        for _ in range(6):
+            time.sleep(2)
+            r_stat = requests.post(url_status, headers=headers_init, json={"publish_id": publish_id}, timeout=15)
+            txt = r_stat.text
+            if "SUCCESS" in txt or "SEND_TO_USER_INBOX" in txt:
+                print("✅ ¡Video subido exitosamente a TikTok!")
+                print("   📲 Notificación enviada a tu app de TikTok: El video ya está listo en tus Borradores.")
+                return publish_id
+
+        print("ℹ Video transferido a TikTok (en procesamiento en segundo plano).")
+        return publish_id
+    except Exception as e:
+        print(f"✖ Error subiendo a TikTok: {e}")
+        return None
+
 def obtener_metricas_meta():
     """Consulta métricas de Facebook e Instagram si existen credenciales en token_meta.json o .env."""
     token_meta = os.getenv("META_ACCESS_TOKEN")
@@ -983,6 +1050,7 @@ def menu_rendimiento_redes():
         print("  3) Ver patrones ganadores aprendidos por la IA")
         print("  4) Conectar / Probar TikTok")
         print("  5) Conectar / Probar Meta (Facebook e Instagram)")
+        print("  6) Probar subir un video a TikTok (enviar a borradores)")
         print("  0) Volver al menú principal")
         op = input("Elige una opción: ").strip()
         if op == "1":
@@ -995,6 +1063,12 @@ def menu_rendimiento_redes():
             conectar_o_probar_tiktok()
         elif op == "5":
             conectar_o_probar_meta()
+        elif op == "6":
+            ruta_v = input("Ruta del archivo .mp4 a subir a TikTok: ").strip().strip('"').strip("'")
+            if os.path.exists(ruta_v):
+                subir_video_tiktok(ruta_v)
+            else:
+                print(f"✖ El archivo '{ruta_v}' no existe.")
         elif op == "0":
             break
 
@@ -2059,7 +2133,14 @@ def flujo_videos():
                         primer_comentario=primer_com
                     )
 
-                # 2. Subir carpeta completa a Google Drive y liberar disco en la Mac
+                # 2. Subida automática a TikTok (si está conectada la cuenta)
+                meta_tt = ep.get("metadata", {}).get("tiktok", {})
+                if meta_tt or os.path.exists("token_tiktok.json"):
+                    tit_tt = (meta_tt or {}).get("titulo")
+                    desc_tt = (meta_tt or {}).get("descripcion")
+                    subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt)
+
+                # 3. Subir carpeta completa a Google Drive y liberar disco en la Mac
                 subir_carpeta_a_gdrive_y_liberar(c)
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
