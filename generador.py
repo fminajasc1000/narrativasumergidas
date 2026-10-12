@@ -546,16 +546,16 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None):
 
         # 3. Check status
         url_status = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
-        for _ in range(6):
-            time.sleep(2)
+        for i in range(15):
+            time.sleep(3)
             r_stat = requests.post(url_status, headers=headers_init, json={"publish_id": publish_id}, timeout=15)
             txt = r_stat.text
-            if "SUCCESS" in txt or "SEND_TO_USER_INBOX" in txt:
-                print("✅ ¡Video subido exitosamente a TikTok!")
+            if "SEND_TO_USER_INBOX" in txt or "SUCCESS" in txt:
+                print("✅ ¡Video subido y procesado exitosamente por TikTok!")
                 print("   📲 Notificación enviada a tu app de TikTok: El video ya está listo en tus Borradores.")
                 return publish_id
 
-        print("ℹ Video transferido a TikTok (en procesamiento en segundo plano).")
+        print("ℹ Video transferido a TikTok (en procesamiento final en la nube).")
         return publish_id
     except Exception as e:
         print(f"✖ Error subiendo a TikTok: {e}")
