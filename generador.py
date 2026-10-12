@@ -1039,31 +1039,53 @@ def conectar_o_probar_meta():
             json.dump({"access_token": nuevo_token}, f, indent=2)
         print("✔ Guardado en 'token_meta.json'.")
 
+def mostrar_metricas_tiktok():
+    """Muestra una tabla con las estadísticas reales de los videos en TikTok."""
+    datos = obtener_metricas_tiktok()
+    if not datos:
+        print("✖ No se pudieron extraer estadísticas de TikTok (verifica token_tiktok.json).")
+        return
+    print("\n" + "═" * 78)
+    print("📈 RANKING DE RENDIMIENTO EN TIKTOK (NARRATIVAS SUMERGIDAS)")
+    print("═" * 78)
+    print(f"{'Vistas':<9} | {'Likes':<6} | {'Shares':<7} | {'Coment':<6} | Título / Publicación")
+    print("─" * 78)
+    for v in datos:
+        print(f"{v['vistas']:<9} | {v['likes']:<6} | {v.get('compartidos', 0):<7} | {v['comentarios']:<6} | {v['titulo'][:38]}")
+    print("═" * 78)
+    total_v = sum(v["vistas"] for v in datos)
+    total_l = sum(v["likes"] for v in datos)
+    total_s = sum(v.get("compartidos", 0) for v in datos)
+    print(f"📊 Totales analizados: {len(datos)} videos | {total_v:,} vistas | {total_l:,} likes | {total_s:,} compartidos\n")
+
 def menu_rendimiento_redes():
     """Menú interactivo para gestionar métricas, conexiones sociales y feedback algorítmico."""
     while True:
         print("\n" + "═" * 65)
         print("📊 PANEL DE RENDIMIENTO Y REDES SOCIALES")
         print("═" * 65)
-        print("  1) Analizar canal de YouTube Shorts (extraer métricas y actualizar IA)")
-        print("  2) Ver estado de conexiones (YouTube, TikTok, Meta / FB / IG)")
-        print("  3) Ver patrones ganadores aprendidos por la IA")
-        print("  4) Conectar / Probar TikTok")
-        print("  5) Conectar / Probar Meta (Facebook e Instagram)")
-        print("  6) Probar subir un video a TikTok (enviar a borradores)")
+        print("  1) Analizar canal completo (YouTube + TikTok y actualizar IA)")
+        print("  2) Ver ranking y estadísticas de videos en TikTok")
+        print("  3) Ver estado de conexiones (YouTube, TikTok, Meta / FB / IG)")
+        print("  4) Ver patrones ganadores aprendidos por la IA")
+        print("  5) Conectar / Re-autenticar TikTok")
+        print("  6) Conectar / Probar Meta (Facebook e Instagram)")
+        print("  7) Probar subir un video a TikTok (enviar a borradores)")
         print("  0) Volver al menú principal")
         op = input("Elige una opción: ").strip()
         if op == "1":
             analizar_rendimiento_canal()
         elif op == "2":
-            mostrar_estado_conexiones()
+            mostrar_metricas_tiktok()
         elif op == "3":
-            mostrar_patrones_ia()
+            mostrar_estado_conexiones()
         elif op == "4":
-            conectar_o_probar_tiktok()
+            mostrar_patrones_ia()
         elif op == "5":
-            conectar_o_probar_meta()
+            conectar_o_probar_tiktok()
         elif op == "6":
+            conectar_o_probar_meta()
+        elif op == "7":
             ruta_v = input("Ruta del archivo .mp4 a subir a TikTok: ").strip().strip('"').strip("'")
             if os.path.exists(ruta_v):
                 subir_video_tiktok(ruta_v)
