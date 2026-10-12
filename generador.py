@@ -703,7 +703,8 @@ def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=No
         return None
 
 def obtener_metricas_meta():
-    """Consulta métricas de Facebook e Instagram si existen credenciales en token_meta.json o .env."""
+    """Consulta métricas de Facebook e Instagram (vistas, alcance, guardados, compartidos, likes, comentarios)
+    si existen credenciales en token_meta.json o .env."""
     token_fb = os.getenv("META_ACCESS_TOKEN")
     token_ig = os.getenv("INSTAGRAM_ACCESS_TOKEN")
     page_id = os.getenv("META_PAGE_ID", "")
@@ -727,11 +728,39 @@ def obtener_metricas_meta():
     if not token_fb and not token_ig:
         return None
 
+    # Cargar caché previo de Facebook/Instagram por si un token temporal caducó
+    cache_fb = []
+    cache_ig = []
+    if os.path.exists("metricas_canal.json"):
+        try:
+            with open("metricas_canal.json", "r", encoding="utf-8") as f:
+                prev_meta = json.load(f).get("multiplataforma", {}).get("meta", {})
+                if isinstance(prev_meta, dict):
+                    cache_fb = prev_meta.get("facebook", [])
+                    cache_ig = prev_meta.get("instagram", [])
+        except Exception:
+            pass
+
     reporte_meta = {"facebook": [], "instagram": []}
 
     try:
-        # Facebook Page Posts Insights
+        # 1. Facebook Page Posts & Videos Insights
         if page_id and token_fb:
+            vistas_videos_fb = {}
+            try:
+                r_vids = requests.get(
+                    f"https://graph.facebook.com/v19.0/{page_id}/videos",
+                    params={"access_token": token_fb, "fields": "id,title,description,views,created_time", "limit": 15},
+                    timeout=15
+                )
+                if r_vids.ok:
+                    for v in r_vids.json().get("data", []):
+                        desc_k = (v.get("description") or v.get("title") or "")[:40].replace("\n", " ").strip()
+                        if desc_k:
+                            vistas_videos_fb[desc_k] = v.get("views", 0)
+            except Exception:
+                pass
+
             url_fb = f"https://graph.facebook.com/v19.0/{page_id}/published_posts"
             params = {
                 "access_token": token_fb,
@@ -742,16 +771,23 @@ def obtener_metricas_meta():
             if res.ok:
                 posts = res.json().get("data", [])
                 for p in posts:
+                    msg_limpio = (p.get("message") or "")[:60].replace("\n", " ")
+                    clave_v = msg_limpio[:40].strip()
                     reporte_meta["facebook"].append({
                         "id": p.get("id"),
-                        "texto": (p.get("message") or "")[:60].replace("\n", " "),
+                        "texto": msg_limpio,
                         "fecha": p.get("created_time", "")[:10],
-                        "compartidos": p.get("shares", {}).get("count", 0) if p.get("shares") else 0
+                        "compartidos": p.get("shares", {}).get("count", 0) if p.get("shares") else 0,
+                        "vistas": vistas_videos_fb.get(clave_v, 0)
                     })
+                reporte_meta["facebook"].sort(key=lambda x: (x.get("compartidos", 0), x.get("vistas", 0)), reverse=True)
 
-        # Instagram Media Insights (via Instagram Graph API)
+        if not reporte_meta["facebook"] and cache_fb:
+            reporte_meta["facebook"] = cache_fb
+
+        # 2. Instagram Media + Insights (views, reach, saved, shares, total_interactions)
         if token_ig:
-            url_ig = "https://graph.instagram.com/v19.0/me/media"
+            url_ig = "https://graph.instagram.com/v21.0/me/media"
             params = {
                 "access_token": token_ig,
                 "fields": "id,caption,media_type,like_count,comments_count,timestamp,permalink",
@@ -761,13 +797,39 @@ def obtener_metricas_meta():
             if res.ok:
                 media = res.json().get("data", [])
                 for m in media:
+                    mid = m.get("id")
+                    ins_map = {}
+                    try:
+                        r_ins = requests.get(
+                            f"https://graph.instagram.com/v21.0/{mid}/insights",
+                            params={
+                                "metric": "views,reach,saved,shares,total_interactions",
+                                "access_token": token_ig
+                            },
+                            timeout=10
+                        )
+                        if r_ins.ok:
+                            for met in r_ins.json().get("data", []):
+                                ins_map[met.get("name")] = met.get("values", [{}])[0].get("value", 0)
+                    except Exception:
+                        pass
+
                     reporte_meta["instagram"].append({
-                        "id": m.get("id"),
+                        "id": mid,
                         "caption": (m.get("caption") or "")[:60].replace("\n", " "),
+                        "vistas": ins_map.get("views", 0),
+                        "alcance": ins_map.get("reach", 0),
                         "likes": m.get("like_count", 0),
                         "comentarios": m.get("comments_count", 0),
+                        "guardados": ins_map.get("saved", 0),
+                        "compartidos": ins_map.get("shares", 0),
+                        "interacciones": ins_map.get("total_interactions", m.get("like_count", 0) + m.get("comments_count", 0)),
                         "fecha": m.get("timestamp", "")[:10]
                     })
+                reporte_meta["instagram"].sort(
+                    key=lambda x: (x.get("vistas", 0), x.get("guardados", 0), x.get("likes", 0)),
+                    reverse=True
+                )
         elif ig_id and token_fb:
             url_ig = f"https://graph.facebook.com/v19.0/{ig_id}/media"
             params = {
@@ -781,14 +843,24 @@ def obtener_metricas_meta():
                 for m in media:
                     reporte_meta["instagram"].append({
                         "id": m.get("id"),
-                        "caption": (m.get("caption") or "")[:40],
+                        "caption": (m.get("caption") or "")[:60].replace("\n", " "),
+                        "vistas": 0,
+                        "alcance": 0,
                         "likes": m.get("like_count", 0),
                         "comentarios": m.get("comments_count", 0),
+                        "guardados": 0,
+                        "compartidos": 0,
                         "fecha": m.get("timestamp", "")[:10]
                     })
+
+        if not reporte_meta["instagram"] and cache_ig:
+            reporte_meta["instagram"] = cache_ig
+
         return reporte_meta
     except Exception as e:
         print(f"   ℹ Meta API no disponible o expiró el token: {e}")
+        if cache_fb or cache_ig:
+            return {"facebook": cache_fb, "instagram": cache_ig}
         return None
 
 def obtener_metricas_tiktok():
@@ -835,14 +907,14 @@ def obtener_metricas_tiktok():
     return None
 
 def analizar_rendimiento_canal(max_videos=15):
-    """Analiza las métricas reales de los videos de YouTube Shorts del canal y de otras redes,
+    """Analiza las métricas reales de los videos de YouTube Shorts, TikTok, Instagram y Facebook,
     calcula patrones ganadores y actualiza el contexto para retroalimentar a Claude."""
     service = obtener_servicio_youtube()
     if not service:
         print("✖ No se pudo conectar a YouTube para extraer métricas.")
         return None
 
-    print(f"\n📊 Analizando métricas de los últimos {max_videos} videos de Narrativas Sumergidas...")
+    print(f"\n📊 Analizando métricas de las 4 redes sociales de Narrativas Sumergidas...")
     try:
         res = service.search().list(channelId='UCATQH4An6atNNAtZYXMNkoQ', part='snippet',
                                     maxResults=max_videos, order='date', type='video').execute()
@@ -874,7 +946,7 @@ def analizar_rendimiento_canal(max_videos=15):
         reporte.sort(key=lambda x: x["vistas"], reverse=True)
 
         print("\n" + "═" * 70)
-        print("📈 REPORTE DE RENDIMIENTO DEL CANAL (YOUTUBE SHORTS)")
+        print("📈 1) REPORTE DE RENDIMIENTO EN YOUTUBE SHORTS")
         print("═" * 70)
         print(f"{'Vistas':<8} | {'Likes':<6} | {'Engage%':<8} | Título")
         print("─" * 70)
@@ -895,18 +967,49 @@ def analizar_rendimiento_canal(max_videos=15):
         for b in bajos: print(f"      ✖ '{b['titulo']}' ({b['vistas']} vistas)")
 
         # Chequeo multi-plataforma (Meta & TikTok)
-        print("\n🌐 ESTADO DE CONEXIÓN MULTIPLATAFORMA:")
         meta_data = obtener_metricas_meta()
-        if meta_data:
-            print(f"   ✔ Meta conectado: FB ({len(meta_data.get('facebook', []))} posts), IG ({len(meta_data.get('instagram', []))} media)")
-        else:
-            print("   ℹ Meta (Facebook / Instagram): Sin token configurado (ver GUIA_CONEXION_METRICAS.md)")
-
         tt_data = obtener_metricas_tiktok()
+
+        if tt_data:
+            print("\n" + "═" * 78)
+            print("🎵 2) REPORTE DE RENDIMIENTO EN TIKTOK")
+            print("═" * 78)
+            print(f"{'Vistas':<9} | {'Likes':<6} | {'Shares':<7} | {'Coment':<6} | Título")
+            print("─" * 78)
+            for v in tt_data[:8]:
+                print(f"{v['vistas']:<9} | {v['likes']:<6} | {v.get('compartidos', 0):<7} | {v['comentarios']:<6} | {v['titulo'][:40]}")
+            print("═" * 78)
+
+        if meta_data and meta_data.get("instagram"):
+            print("\n" + "═" * 82)
+            print("📸 3) REPORTE DE RENDIMIENTO EN INSTAGRAM (@narrativasumergidas)")
+            print("═" * 82)
+            print(f"{'Vistas':<7} | {'Alcance':<7} | {'Likes':<5} | {'Guard':<5} | {'Shares':<6} | Publicación")
+            print("─" * 82)
+            for ig_it in meta_data["instagram"][:10]:
+                print(f"{ig_it.get('vistas', 0):<7} | {ig_it.get('alcance', 0):<7} | {ig_it.get('likes', 0):<5} | {ig_it.get('guardados', 0):<5} | {ig_it.get('compartidos', 0):<6} | {ig_it.get('caption', '')[:38]}")
+            print("═" * 82)
+
+        if meta_data and meta_data.get("facebook"):
+            print("\n" + "═" * 78)
+            print("📘 4) REPORTE DE RENDIMIENTO EN FACEBOOK (Narrativas Sumergidas)")
+            print("═" * 78)
+            print(f"{'Shares':<8} | {'Fecha':<10} | Publicación")
+            print("─" * 78)
+            for fb_it in meta_data["facebook"][:8]:
+                print(f"{fb_it.get('compartidos', 0):<8} | {fb_it.get('fecha', ''):<10} | {fb_it.get('texto', '')[:50]}")
+            print("═" * 78)
+
+        print("\n🌐 ESTADO DE CONEXIÓN MULTIPLATAFORMA:")
+        if meta_data:
+            print(f"   ✔ Meta conectado: FB ({len(meta_data.get('facebook', []))} posts), IG ({len(meta_data.get('instagram', []))} media con insights)")
+        else:
+            print("   ℹ Meta (Facebook / Instagram): Sin token configurado")
+
         if tt_data:
             print(f"   ✔ TikTok conectado: {len(tt_data)} videos analizados")
         else:
-            print("   ℹ TikTok: Sin token configurado (ver GUIA_CONEXION_METRICAS.md)")
+            print("   ℹ TikTok: Sin token configurado")
 
         resumen_analisis = {
             "fecha_analisis": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -921,7 +1024,7 @@ def analizar_rendimiento_canal(max_videos=15):
         }
         with open("metricas_canal.json", "w", encoding="utf-8") as f:
             json.dump(resumen_analisis, f, ensure_ascii=False, indent=2)
-        print("\n✔ Archivo 'metricas_canal.json' actualizado para retroalimentar la generación de guiones.")
+        print("\n✔ Archivo 'metricas_canal.json' actualizado con las 4 redes para retroalimentar a Claude.")
         return resumen_analisis
     except Exception as e:
         print(f"✖ Error analizando el canal: {e}")
@@ -929,7 +1032,7 @@ def analizar_rendimiento_canal(max_videos=15):
 
 def obtener_feedback_metricas():
     """Lee metricas_canal.json si existe y construye directrices para Claude
-    basadas en lo que realmente funciona en el canal y lo que fracasó."""
+    basadas en las métricas reales de las 4 redes: YouTube Shorts, TikTok, Instagram y Facebook."""
     if not os.path.exists("metricas_canal.json"):
         return ""
     try:
@@ -937,30 +1040,63 @@ def obtener_feedback_metricas():
             data = json.load(f)
         top = data.get("top_videos", [])
         bajos = data.get("videos_bajos", [])
-        if not top and not bajos:
+        multi = data.get("multiplataforma", {})
+        tt = multi.get("tiktok", []) if isinstance(multi, dict) else []
+        meta = multi.get("meta", {}) if isinstance(multi, dict) else {}
+        ig_list = meta.get("instagram", []) if isinstance(meta, dict) else []
+        fb_list = meta.get("facebook", []) if isinstance(meta, dict) else []
+
+        if not top and not bajos and not tt and not ig_list and not fb_list:
             return ""
 
-        feedback = "\n\n📊 RETROALIMENTACIÓN DE AUDIENCIA REAL (MÉTRICAS DEL CANAL):\n"
-        feedback += "El sistema analizó los videos reales con mejor y peor desempeño de la audiencia:\n"
+        feedback = "\n\n📊 RETROALIMENTACIÓN DE AUDIENCIA REAL (MÉTRICAS EN VIVO DE LAS 4 REDES):\n"
+        feedback += "El sistema analizó el rendimiento real de los contenidos publicados en YouTube Shorts, TikTok, Instagram y Facebook:\n"
+
         if top:
-            feedback += "🔥 PATRONES GANADORES (Más de 500-1,000 reproducciones - EMULAR ESTE ESTILO):\n"
+            feedback += "\n1️⃣ YOUTUBE SHORTS — PATRONES GANADORES (≥500-1,250 vistas):\n"
             for t in top[:4]:
-                feedback += f"  - '{t.get('titulo')}' ({t.get('vistas')} vistas, {t.get('ratio_engagement')}% retención/likes)\n"
-            feedback += "  -> Clave: Arquitectura maldita con historia real, leyendas urbanas con ubicación física reconocible, supervivencia extrema claustrofóbica o misterios sin resolver.\n"
+                feedback += f"  - '{t.get('titulo')}' ({t.get('vistas')} vistas, {t.get('ratio_engagement')}% engagement)\n"
+            feedback += "  -> Clave YouTube: Ángulo documental/histórico riguroso, arquitectura maldita reconocible (Roma, Lecumberri, Ciudad Madero, Winchester) y misterios mexicanos.\n"
+
         if bajos:
-            feedback += "⚠️ PATRONES QUE NO FUNCIONARON (Menos de 100 reproducciones - EVITAR ESTE ENFOQUE):\n"
+            feedback += "⚠️ YOUTUBE SHORTS — QUÉ EVITAR (<100 vistas):\n"
             for b in bajos[:3]:
                 feedback += f"  - '{b.get('titulo')}' ({b.get('vistas')} vistas)\n"
-            feedback += "  -> Clave a evitar: No uses desastres mecánicos o accidentes técnicos sin componente humano/sobrenatural. Evita títulos genéricos sin gancho de intriga.\n"
+            feedback += "  -> Clave a evitar: Desastres técnicos extranjeros sin elemento sobrenatural o títulos genéricos sin curiosidad inmediata.\n"
 
-        tt = data.get("multiplataforma", {}).get("tiktok", [])
         if isinstance(tt, list) and tt:
-            feedback += "\n🎵 IMPACTO EN TIKTOK (HITS VIRALES EN FORMATO VERTICAL):\n"
-            for t_item in tt[:3]:
-                feedback += f"  - '{t_item.get('titulo')}' ({t_item.get('vistas'):,} vistas, {t_item.get('likes'):,} likes, {t_item.get('compartidos', 0):,} compartidos)\n"
-            feedback += "  -> Clave TikTok: Iniciar con shock visual inmediato, leyendas locales con nombres de pueblos/iglesias específicas y preguntas directas ('¿Tú la conocías?', '¿Te atreverías?').\n"
+            feedback += "\n2️⃣ TIKTOK — HITS VIRALES Y RETENCIÓN:\n"
+            for t_item in tt[:4]:
+                feedback += f"  - '{t_item.get('titulo')}' ({t_item.get('vistas'):,} vistas, {t_item.get('likes'):,} likes, {t_item.get('compartidos', 0):,} compartidos, {t_item.get('comentarios', 0)} comentarios)\n"
+            feedback += "  -> Clave TikTok: Gancho de shock visual en los primeros 2 segundos, leyendas locales con nombre de iglesia/colonia real y llamada a compartir.\n"
 
-        feedback += "👉 Aplica estas lecciones de audiencia en el gancho inicial (0-3s), el título para YouTube Shorts y la atmósfera del guion.\n"
+        if isinstance(ig_list, list) and ig_list:
+            feedback += "\n3️⃣ INSTAGRAM (@narrativasumergidas) — ALCANCE, GUARDADOS Y COMPARTIDOS:\n"
+            ig_sorted = sorted(
+                ig_list,
+                key=lambda x: (x.get("vistas", 0), x.get("guardados", 0), x.get("likes", 0)),
+                reverse=True
+            )
+            for ig_item in ig_sorted[:4]:
+                feedback += (
+                    f"  - '{ig_item.get('caption')}' ({ig_item.get('vistas', 0)} reproducciones, "
+                    f"alcance {ig_item.get('alcance', 0)}, {ig_item.get('likes', 0)} likes, "
+                    f"{ig_item.get('guardados', 0)} guardados, {ig_item.get('compartidos', 0)} compartidos)\n"
+                )
+            feedback += "  -> Clave Instagram: Estética gótica/arquitectónica ('La Casa de las Brujas', 'Maximiliano', 'La Vampira', 'Lecumberri') y enfoque de 'dato guardable para visitar' que maximiza los Guardados (Saves) y Compartidos por DM.\n"
+
+        if isinstance(fb_list, list) and fb_list:
+            feedback += "\n4️⃣ FACEBOOK REELS & POSTS (Narrativas Sumergidas) — VIRALIDAD POR COMPARTIDOS:\n"
+            fb_sorted = sorted(
+                fb_list,
+                key=lambda x: (x.get("compartidos", 0), x.get("vistas", 0)),
+                reverse=True
+            )
+            for fb_item in fb_sorted[:4]:
+                feedback += f"  - '{fb_item.get('texto')}' ({fb_item.get('compartidos', 0)} compartidos, fecha {fb_item.get('fecha', '')})\n"
+            feedback += "  -> Clave Facebook: Datos históricos insólitos o escandalosos, leyendas urbanas con dilema moral y preguntas dicotómicas A/B que provoquen debate en comentarios y compartidos masivos.\n"
+
+        feedback += "\n👉 INSTRUCCIÓN OBLIGATORIA: Aplica estas métricas reales de las 4 plataformas al construir el gancho inicial (0-3s), la tensión del guion y los copys/títulos específicos de YouTube Shorts, TikTok, Instagram y Facebook.\n"
         return feedback
     except Exception:
         return ""

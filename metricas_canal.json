@@ -1,7 +1,7 @@
 {
-  "fecha_analisis": "2026-10-12 14:56:11",
+  "fecha_analisis": "2026-10-12 15:11:19",
   "total_videos_analizados": 15,
-  "promedio_vistas": 399.8,
+  "promedio_vistas": 399.9,
   "top_videos": [
     {
       "id": "nUg7UvAfH-Q",
@@ -42,10 +42,10 @@
     {
       "id": "Xk3g_1QC3ak",
       "titulo": "La Mansión Winchester: Historia Real de la Casa Construida para Engañar a los Muertos.",
-      "vistas": 658,
+      "vistas": 659,
       "likes": 25,
       "comentarios": 0,
-      "ratio_engagement": 3.8,
+      "ratio_engagement": 3.79,
       "publicado": "2026-10-10"
     },
     {
@@ -98,112 +98,278 @@
   ],
   "multiplataforma": {
     "meta": {
-      "facebook": [],
+      "facebook": [
+        {
+          "id": "1158791430643856_122124576393306929",
+          "texto": "Jerusalén, alrededor del año 48 d.C. Miles de peregrinos cel",
+          "fecha": "2026-10-01",
+          "compartidos": 113
+        },
+        {
+          "id": "1158791430643856_122122546761306929",
+          "texto": "LO DESENTERRÓ PARA JUZGARLO. 🤯 Conoce el evento más macabro y vengativo del Vaticano",
+          "fecha": "2026-09-14",
+          "compartidos": 2
+        },
+        {
+          "id": "1158791430643856_122125311621306929",
+          "texto": "Un conteo mal hecho. Dos buceadores solos en el océano. Una ",
+          "fecha": "2026-10-07",
+          "compartidos": 1
+        },
+        {
+          "id": "1158791430643856_122124803055306929",
+          "texto": "En los años 50, levantar la colonia Caracoles requirió de un",
+          "fecha": "2026-10-02",
+          "compartidos": 1
+        },
+        {
+          "id": "1158791430643856_122125917543306929",
+          "texto": "El ritual que en México aún se hace a escondidas  La neta, e",
+          "fecha": "2026-10-12",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122125429557306929",
+          "texto": "Un tren de esquiadores, un calefactor defectuoso y un túnel ",
+          "fecha": "2026-10-07",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122125402911306929",
+          "texto": "Un faro aislado en el Pacífico, un naufragio sin sobrevivien",
+          "fecha": "2026-10-07",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122124705243306929",
+          "texto": "Frente a la Plaza Río de Janeiro, en la colonia Roma de la C",
+          "fecha": "2026-10-02",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122124333249306929",
+          "texto": "Colonia Árbol Grande, Ciudad Madero, 1973. La mujer más gene",
+          "fecha": "2026-09-29",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122124204843306929",
+          "texto": "Doce horas de parto, sin médico, sin partera y completamente",
+          "fecha": "2026-09-28",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122124200307306929",
+          "texto": "Jugaban con fuego radiactivo usando un simple destornillador",
+          "fecha": "2026-09-28",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122123947605306929",
+          "texto": "La profanación más oscura de la historia de México. 🥀 Conoce",
+          "fecha": "2026-09-26",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122123825121306929",
+          "texto": "¿Hasta dónde llega la crueldad de una familia por mantener l",
+          "fecha": "2026-09-25",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122123650545306929",
+          "texto": "La Castañeda fue el infierno donde los ricos de México sepul",
+          "fecha": "2026-09-23",
+          "compartidos": 0
+        },
+        {
+          "id": "1158791430643856_122123526291306929",
+          "texto": "EL MÉDICO SE EQUIVOCÓ Y LA ENTERRARON VIVA. 🤯 Conoce la maca",
+          "fecha": "2026-09-22",
+          "compartidos": 0
+        }
+      ],
       "instagram": [
-        {
-          "id": "18134208217657674",
-          "caption": "Graniceros: los elegidos por el rayo  Cuevas, ofrendas de mo",
-          "likes": 1,
-          "comentarios": 0,
-          "fecha": "2026-10-12"
-        },
-        {
-          "id": "18050880716602633",
-          "caption": "Seis galerías. Una torre central. Una vigilancia que, según ",
-          "likes": 4,
-          "comentarios": 0,
-          "fecha": "2026-10-10"
-        },
-        {
-          "id": "18177847375446855",
-          "caption": "Nueve peldaños. Un techo. Ningún destino. 🕯️  Una casa que n",
-          "likes": 0,
-          "comentarios": 0,
-          "fecha": "2026-10-10"
-        },
-        {
-          "id": "18009826454995897",
-          "caption": "Subir fue su sentencia.  Solo 12 sobrevivieron al infirmo de",
-          "likes": 4,
-          "comentarios": 1,
-          "fecha": "2026-10-07"
-        },
-        {
-          "id": "18011355752969448",
-          "caption": "El faro donde nadie vive.. pero está lleno de muertos.  Till",
-          "likes": 0,
-          "comentarios": 0,
-          "fecha": "2026-10-07"
-        },
-        {
-          "id": "17911513146500442",
-          "caption": "‘Por favor, ayúdennos antes de morir’. Lo escribieron en una",
-          "likes": 0,
-          "comentarios": 0,
-          "fecha": "2026-10-07"
-        },
-        {
-          "id": "18165730600487298",
-          "caption": "Hay monumentos que no nacieron de la fe, sino del miedo abso",
-          "likes": 2,
-          "comentarios": 1,
-          "fecha": "2026-10-02"
-        },
         {
           "id": "18077261891405353",
           "caption": "Frente a la Plaza Río de Janeiro, en la colonia Roma de la C",
+          "vistas": 211,
+          "alcance": 177,
           "likes": 8,
           "comentarios": 0,
+          "guardados": 4,
+          "compartidos": 0,
+          "interacciones": 13,
           "fecha": "2026-10-02"
-        },
-        {
-          "id": "18094950386444178",
-          "caption": "El pedo más letal de la historia 💨😳  Año 48 d.C., Jerusalén.",
-          "likes": 0,
-          "comentarios": 0,
-          "fecha": "2026-10-01"
-        },
-        {
-          "id": "18104395904120179",
-          "caption": "Dicen que en esta iglesia dormía una vampira… 🦇  Ciudad Made",
-          "likes": 5,
-          "comentarios": 0,
-          "fecha": "2026-09-29"
-        },
-        {
-          "id": "17956831773014970",
-          "caption": "Se hizo una cesárea a sí misma… y sobrevivió. 😳  Marzo del 2",
-          "likes": 1,
-          "comentarios": 0,
-          "fecha": "2026-09-28"
         },
         {
           "id": "18150246073535907",
           "caption": "Un destornillador resbaló y firmó su sentencia de muerte. De",
+          "vistas": 211,
+          "alcance": 186,
           "likes": 0,
           "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
           "fecha": "2026-09-28"
         },
         {
           "id": "17974402466935152",
           "caption": "El macabro secreto del emperador Maximiliano en Querétaro. 💀",
+          "vistas": 207,
+          "alcance": 180,
           "likes": 7,
           "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 2,
+          "interacciones": 10,
           "fecha": "2026-09-26"
+        },
+        {
+          "id": "18104395904120179",
+          "caption": "Dicen que en esta iglesia dormía una vampira… 🦇  Ciudad Made",
+          "vistas": 167,
+          "alcance": 131,
+          "likes": 5,
+          "comentarios": 0,
+          "guardados": 1,
+          "compartidos": 1,
+          "interacciones": 8,
+          "fecha": "2026-09-29"
+        },
+        {
+          "id": "18134208217657674",
+          "caption": "Graniceros: los elegidos por el rayo  Cuevas, ofrendas de mo",
+          "vistas": 144,
+          "alcance": 134,
+          "likes": 1,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 1,
+          "fecha": "2026-10-12"
+        },
+        {
+          "id": "18050880716602633",
+          "caption": "Seis galerías. Una torre central. Una vigilancia que, según ",
+          "vistas": 124,
+          "alcance": 110,
+          "likes": 4,
+          "comentarios": 0,
+          "guardados": 1,
+          "compartidos": 0,
+          "interacciones": 5,
+          "fecha": "2026-10-10"
+        },
+        {
+          "id": "18165730600487298",
+          "caption": "Hay monumentos que no nacieron de la fe, sino del miedo abso",
+          "vistas": 111,
+          "alcance": 100,
+          "likes": 2,
+          "comentarios": 1,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 3,
+          "fecha": "2026-10-02"
+        },
+        {
+          "id": "18009826454995897",
+          "caption": "Subir fue su sentencia.  Solo 12 sobrevivieron al infirmo de",
+          "vistas": 24,
+          "alcance": 126,
+          "likes": 4,
+          "comentarios": 1,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 5,
+          "fecha": "2026-10-07"
         },
         {
           "id": "18248990590314342",
           "caption": "Detrás del lujo de la aristocracia francesa se escondía un d",
+          "vistas": 21,
+          "alcance": 13,
           "likes": 0,
           "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
           "fecha": "2026-09-25"
         },
         {
-          "id": "17974936217932764",
-          "caption": "Las traiciones familiares más oscuras sucedieron en La Casta",
+          "id": "17956831773014970",
+          "caption": "Se hizo una cesárea a sí misma… y sobrevivió. 😳  Marzo del 2",
+          "vistas": 17,
+          "alcance": 8,
+          "likes": 1,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 1,
+          "fecha": "2026-09-28"
+        },
+        {
+          "id": "18094950386444178",
+          "caption": "El pedo más letal de la historia 💨😳  Año 48 d.C., Jerusalén.",
+          "vistas": 10,
+          "alcance": 4,
           "likes": 0,
           "comentarios": 0,
-          "fecha": "2026-09-23"
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
+          "fecha": "2026-10-01"
+        },
+        {
+          "id": "17911513146500442",
+          "caption": "‘Por favor, ayúdennos antes de morir’. Lo escribieron en una",
+          "vistas": 7,
+          "alcance": 4,
+          "likes": 0,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
+          "fecha": "2026-10-07"
+        },
+        {
+          "id": "18011355752969448",
+          "caption": "El faro donde nadie vive.. pero está lleno de muertos.  Till",
+          "vistas": 2,
+          "alcance": 1,
+          "likes": 0,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
+          "fecha": "2026-10-07"
+        },
+        {
+          "id": "18177847375446855",
+          "caption": "Nueve peldaños. Un techo. Ningún destino. 🕯️  Una casa que n",
+          "vistas": 1,
+          "alcance": 1,
+          "likes": 0,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
+          "fecha": "2026-10-10"
+        },
+        {
+          "id": "17912770995507582",
+          "caption": "La Isla de las Muñecas | Dato guardable  Una chinampa, cient",
+          "vistas": 0,
+          "alcance": 0,
+          "likes": 0,
+          "comentarios": 0,
+          "guardados": 0,
+          "compartidos": 0,
+          "interacciones": 0,
+          "fecha": "2026-10-12"
         }
       ]
     },
@@ -211,7 +377,7 @@
       {
         "id": "7690803045201972500",
         "titulo": "Dicen que en esta iglesia de Ciudad Madero dormía ",
-        "vistas": 31148,
+        "vistas": 31157,
         "likes": 1695,
         "comentarios": 128,
         "compartidos": 1216
@@ -315,8 +481,8 @@
       {
         "id": "7695551688505052436",
         "titulo": "Un rayo te elige y no puedes negarte. En los puebl",
-        "vistas": 335,
-        "likes": 29,
+        "vistas": 343,
+        "likes": 30,
         "comentarios": 0,
         "compartidos": 1
       },
