@@ -302,6 +302,125 @@ def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
         return False
 
 # ---------------------------------------------------------------------------
+# INTEGRACIÓN YOUTUBE SHORTS (API AUTÓNOMA OFICIAL)
+# ---------------------------------------------------------------------------
+SCOPES_YOUTUBE = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube']
+
+def obtener_servicio_youtube():
+    """Obtiene el cliente autenticado de YouTube Data API v3 usando credentials.json -> token_youtube.json."""
+    try:
+        from google.oauth2.credentials import Credentials
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from google.auth.transport.requests import Request
+        from googleapiclient.discovery import build
+    except ImportError:
+        print("⚠ Faltan librerías de Google: ./venv/bin/pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib")
+        return None
+
+    creds = None
+    if os.path.exists('token_youtube.json'):
+        try:
+            creds = Credentials.from_authorized_user_file('token_youtube.json', SCOPES_YOUTUBE)
+        except Exception:
+            creds = None
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                with open('token_youtube.json', 'w') as token_file:
+                    token_file.write(creds.to_json())
+            except Exception:
+                creds = None
+
+        if not creds:
+            arch_cred = "credentials.json"
+            if not os.path.exists(arch_cred):
+                cands = [f for f in os.listdir(".") if f.startswith("client_secret") and f.endswith(".json")]
+                if cands: arch_cred = cands[0]
+
+            if not os.path.exists(arch_cred):
+                return None
+
+            try:
+                print("\n🔴 Iniciando autenticación autónoma con YouTube Data API...")
+                flow = InstalledAppFlow.from_client_secrets_file(arch_cred, SCOPES_YOUTUBE)
+                creds = flow.run_local_server(port=0)
+                with open('token_youtube.json', 'w') as token_file:
+                    token_file.write(creds.to_json())
+                print("✔ Autenticación con YouTube completada y guardada en token_youtube.json.")
+            except Exception as e:
+                print(f"⚠ Error autenticando con YouTube: {e}")
+                return None
+
+    try:
+        return build('youtube', 'v3', credentials=creds)
+    except Exception as e:
+        print(f"⚠ Error conectando con servicio YouTube: {e}")
+        return None
+
+def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, publish_at_iso=None):
+    """Sube un video vertical a YouTube Shorts y lo deja programado o público de forma 100% oficial y automática."""
+    if not os.path.exists(ruta_video):
+        return None
+
+    service = obtener_servicio_youtube()
+    if not service:
+        print("ℹ No se pudo conectar a YouTube Data API (se conserva sin subir).")
+        return None
+
+    from googleapiclient.http import MediaFileUpload
+
+    print(f"\n🔴 Subiendo a YouTube Shorts: '{titulo[:50]}'...")
+    if tags is None:
+        tags = ["Shorts", "NarrativasSumergidas", "Misterio", "LeyendasUrbanas"]
+    elif isinstance(tags, str):
+        tags = [t.strip().lstrip("#") for t in tags.split() if t.strip()]
+
+    # Si hay fecha y hora de publicación programada, el estado debe ser 'private' con publishAt
+    status_body = {
+        'privacyStatus': 'private' if publish_at_iso else 'public',
+        'selfDeclaredMadeForKids': False
+    }
+    if publish_at_iso:
+        status_body['publishAt'] = publish_at_iso
+
+    body = {
+        'snippet': {
+            'title': titulo[:100],
+            'description': descripcion[:5000],
+            'tags': tags[:15],
+            'categoryId': '24'  # Entretenimiento
+        },
+        'status': status_body
+    }
+
+    try:
+        media = MediaFileUpload(ruta_video, mimetype='video/mp4', chunksize=1024*1024*5, resumable=True)
+        request = service.videos().insert(part=','.join(body.keys()), body=body, media_body=media)
+
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"   Progreso YouTube: {int(status.progress() * 100)}%...", end="\r", flush=True)
+
+        video_id = response.get('id')
+        if video_id:
+            url_short = f"https://youtube.com/shorts/{video_id}"
+            if publish_at_iso:
+                print(f"✅ ¡YouTube Short subido y PROGRAMADO con éxito!")
+                print(f"   🕒 Publicación programada para: {publish_at_iso}")
+            else:
+                print(f"✅ ¡YouTube Short subido y PUBLICADO exitosamente!")
+            print(f"   🔗 Enlace: {url_short}")
+            return video_id
+        return None
+    except Exception as e:
+        print(f"✖ Error subiendo a YouTube Shorts: {e}")
+        return None
+
+# ---------------------------------------------------------------------------
 # UTILIDADES
 # ---------------------------------------------------------------------------
 def slug(texto, n=40):
@@ -1319,7 +1438,15 @@ def flujo_videos():
                     "archivo_salida": f"{c}.mp4",
                     "tier": ep.get("tier")
                 })
-                # Subir carpeta completa a Google Drive y liberar disco en la Mac
+                # 1. Subida y programación 100% autónoma a YouTube Shorts (si está habilitado)
+                meta_yt = ep.get("metadata", {}).get("youtube_shorts", {})
+                if meta_yt:
+                    tit_yt = meta_yt.get("titulo", ep.get("titulo", c))
+                    desc_yt = meta_yt.get("descripcion", "") + "\n\n" + meta_yt.get("hashtags", "")
+                    tags_yt = meta_yt.get("hashtags", "")
+                    subir_y_programar_youtube_short(mp4, tit_yt, desc_yt, tags=tags_yt)
+
+                # 2. Subir carpeta completa a Google Drive y liberar disco en la Mac
                 subir_carpeta_a_gdrive_y_liberar(c)
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
