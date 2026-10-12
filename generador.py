@@ -849,7 +849,7 @@ def conectar_o_probar_tiktok():
 
     verifier = "narrativas_sumergidas_tiktok_oauth_verification_token_m4_2026"
     h = hashlib.sha256(verifier.encode("utf-8")).digest()
-    code_challenge = base64.urlsafe_b64encode(h).decode("utf-8").rstrip("=")
+    code_challenge = h.hex()
 
     auth_url = (
         f"https://www.tiktok.com/v2/auth/authorize/"
