@@ -604,6 +604,104 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None):
         print(f"✖ Error subiendo a Facebook: {e}")
         return None
 
+def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=None):
+    """Sube y publica un Reel directamente en la cuenta de Instagram (@narrativasumergidas) vía Instagram Graph API."""
+    if not os.path.exists(ruta_video):
+        return None
+
+    archivo_token = "token_meta.json"
+    if not os.path.exists(archivo_token):
+        return None
+
+    try:
+        with open(archivo_token, "r", encoding="utf-8") as f:
+            d = json.load(f)
+            ig_cfg = d.get("instagram", {})
+            token = ig_cfg.get("access_token") or os.getenv("IG_ACCESS_TOKEN")
+            ig_id = ig_cfg.get("account_id") or os.getenv("META_IG_ACCOUNT_ID", "28838223979153102")
+
+        if not token or not ig_id:
+            return None
+
+        tam_mb = os.path.getsize(ruta_video) / (1024 * 1024)
+        print(f"\n📸 Subiendo Reel a Instagram (@narrativasumergidas): '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
+
+        # 1. Generar URL directa temporal para que los servidores de Instagram descarguen el MP4
+        with open(ruta_video, "rb") as vf:
+            r_up = requests.post(
+                "https://litterbox.catbox.moe/resources/internals/api.php",
+                headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+                data={"reqtype": "fileupload", "time": "1h"},
+                files={"fileToUpload": ("reel.mp4", vf, "video/mp4")},
+                timeout=180
+            )
+        video_url = r_up.text.strip()
+        if not video_url.startswith("https://"):
+            print(f"✖ No se pudo generar enlace temporal para Instagram: {video_url[:120]}")
+            return None
+
+        partes_caption = []
+        if titulo:
+            partes_caption.append(titulo.strip())
+        if descripcion:
+            partes_caption.append(descripcion.strip())
+        if hashtags:
+            partes_caption.append(hashtags.strip())
+        caption = "\n\n".join(partes_caption) or os.path.splitext(os.path.basename(ruta_video))[0]
+
+        # 2. Crear contenedor de Reel en Instagram
+        r_cont = requests.post(
+            f"https://graph.instagram.com/v21.0/{ig_id}/media",
+            data={
+                "media_type": "REELS",
+                "video_url": video_url,
+                "caption": caption,
+                "access_token": token
+            },
+            timeout=30
+        )
+        if not r_cont.ok:
+            print(f"✖ Error creando contenedor en Instagram ({r_cont.status_code}): {r_cont.text}")
+            return None
+
+        cid = r_cont.json().get("id")
+        print(f"   ⏳ Procesando Reel en Instagram (Container ID: {cid})...")
+        for _ in range(30):
+            time.sleep(5)
+            r_st = requests.get(
+                f"https://graph.instagram.com/v21.0/{cid}?fields=status_code,status&access_token={token}",
+                timeout=15
+            )
+            st_data = r_st.json()
+            sc = st_data.get("status_code")
+            if sc == "FINISHED":
+                r_pub = requests.post(
+                    f"https://graph.instagram.com/v21.0/{ig_id}/media_publish",
+                    data={"creation_id": cid, "access_token": token},
+                    timeout=30
+                )
+                if r_pub.ok:
+                    mid = r_pub.json().get("id")
+                    r_link = requests.get(
+                        f"https://graph.instagram.com/v21.0/{mid}?fields=id,permalink&access_token={token}",
+                        timeout=15
+                    )
+                    permalink = r_link.json().get("permalink", "") if r_link.ok else ""
+                    print(f"✅ ¡Reel publicado exitosamente en Instagram! (ID: {mid}) {permalink}")
+                    return mid
+                else:
+                    print(f"✖ Error publicando Reel en Instagram ({r_pub.status_code}): {r_pub.text}")
+                    return None
+            elif sc == "ERROR":
+                print(f"✖ Error transcodificando Reel en Instagram: {st_data}")
+                return None
+
+        print("⚠ Tiempo de espera agotado procesando el Reel en Instagram.")
+        return None
+    except Exception as e:
+        print(f"✖ Error subiendo a Instagram: {e}")
+        return None
+
 def obtener_metricas_meta():
     """Consulta métricas de Facebook e Instagram si existen credenciales en token_meta.json o .env."""
     token_fb = os.getenv("META_ACCESS_TOKEN")
@@ -1220,6 +1318,7 @@ def menu_rendimiento_redes():
         print("  6) Conectar / Probar Meta (Facebook e Instagram)")
         print("  7) Probar subir un video a TikTok (enviar a borradores)")
         print("  8) Probar subir un video a Facebook Page (publicar video)")
+        print("  9) Probar subir un video a Instagram (@narrativasumergidas Reel)")
         print("  0) Volver al menú principal")
         op = input("Elige una opción: ").strip()
         if op == "1":
@@ -1244,6 +1343,12 @@ def menu_rendimiento_redes():
             ruta_v = input("Ruta del archivo .mp4 a subir a Facebook: ").strip().strip('"').strip("'")
             if os.path.exists(ruta_v):
                 subir_video_facebook(ruta_v)
+            else:
+                print(f"✖ El archivo '{ruta_v}' no existe.")
+        elif op == "9":
+            ruta_v = input("Ruta del archivo .mp4 a subir a Instagram: ").strip().strip('"').strip("'")
+            if os.path.exists(ruta_v):
+                subir_video_instagram(ruta_v)
             else:
                 print(f"✖ El archivo '{ruta_v}' no existe.")
         elif op == "0":
@@ -2317,12 +2422,19 @@ def flujo_videos():
                     desc_tt = (meta_tt or {}).get("descripcion")
                     subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt)
 
-                # 3. Subida automática a Facebook Page (si está conectada la cuenta)
+                # 3. Subida automática a Facebook Page e Instagram Reels (si están conectadas las cuentas)
                 meta_fb = ep.get("metadata", {}).get("facebook_reels", {})
+                meta_ig = ep.get("metadata", {}).get("instagram_reels", {})
                 if os.path.exists("token_meta.json"):
                     tit_fb = (meta_fb or {}).get("titulo")
                     desc_fb = (meta_fb or {}).get("descripcion")
                     subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb)
+
+                    if meta_ig:
+                        tit_ig = meta_ig.get("titulo")
+                        desc_ig = meta_ig.get("descripcion")
+                        tags_ig = meta_ig.get("hashtags")
+                        subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
 
                 # 4. Subir carpeta completa a Google Drive y liberar disco en la Mac
                 subir_carpeta_a_gdrive_y_liberar(c)
