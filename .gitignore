@@ -26,3 +26,9 @@ lote_videos_actual.json
 lote_historias_actual.json
 *.parcial.mp4
 */metadata.md
+
+# Credenciales de Google Drive
+credentials.json
+client_secret*.json
+token.json
+service_account.json

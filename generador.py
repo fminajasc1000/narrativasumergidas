@@ -1,4 +1,4 @@
-import requests, base64, time, json, os, re, subprocess, signal, random
+import requests, base64, time, json, os, re, subprocess, signal, random, shutil, mimetypes
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageOps, ImageFilter, ImageColor
 import json_repair
 
@@ -156,6 +156,152 @@ def registrar_historia_usada(titulo, tipo="video", detalles=None):
             subprocess.Popen(["git", "push", "origin", "main"], cwd=os.path.dirname(ARCHIVO_HISTORIAS_LOCAL) or ".", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:
         pass
+
+# ---------------------------------------------------------------------------
+# INTEGRACIÓN GOOGLE DRIVE (API AUTÓNOMA)
+# ---------------------------------------------------------------------------
+GDRIVE_FOLDER_ID = os.environ.get("GDRIVE_FOLDER_ID", "1kLN0dbdv2ZgL0V96JjHquBx0RhLtcMwS")
+SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
+
+def obtener_servicio_drive():
+    """Obtiene el cliente autenticado de Google Drive usando OAuth2 (credentials.json / token.json) o Cuenta de Servicio."""
+    try:
+        from google.oauth2.credentials import Credentials
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from google.auth.transport.requests import Request
+        from googleapiclient.discovery import build
+        from google.oauth2 import service_account
+    except ImportError:
+        print("⚠ Faltan librerías de Google Drive: ./venv/bin/pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib")
+        return None
+
+    # 1. Opción Cuenta de Servicio (service_account.json) si existe
+    if os.path.exists("service_account.json"):
+        try:
+            creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES_DRIVE)
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"⚠ Error con service_account.json: {e}")
+
+    # 2. Opción OAuth2 usuario (credentials.json -> token.json)
+    creds = None
+    if os.path.exists('token.json'):
+        try:
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES_DRIVE)
+        except Exception:
+            creds = None
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                with open('token.json', 'w') as token_file:
+                    token_file.write(creds.to_json())
+            except Exception:
+                creds = None
+
+        if not creds:
+            # Buscar archivo de credenciales de cliente OAuth
+            arch_cred = "credentials.json"
+            if not os.path.exists(arch_cred):
+                cands = [f for f in os.listdir(".") if f.startswith("client_secret") and f.endswith(".json")]
+                if cands: arch_cred = cands[0]
+
+            if not os.path.exists(arch_cred):
+                return None  # No hay credenciales configuradas todavía
+
+            try:
+                print("\n🔑 Iniciando autenticación autónoma con Google Drive...")
+                flow = InstalledAppFlow.from_client_secrets_file(arch_cred, SCOPES_DRIVE)
+                creds = flow.run_local_server(port=0)
+                with open('token.json', 'w') as token_file:
+                    token_file.write(creds.to_json())
+                print("✔ Autenticación con Google Drive completada y guardada en token.json.")
+            except Exception as e:
+                print(f"⚠ Error autenticando con Google Drive: {e}")
+                return None
+
+    try:
+        return build('drive', 'v3', credentials=creds)
+    except Exception as e:
+        print(f"⚠ Error conectando con servicio Google Drive: {e}")
+        return None
+
+def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
+    """Sube recursivamente una carpeta y todos sus archivos a Google Drive,
+    verifica la subida exitosa y luego elimina la carpeta local de la Mac para liberar disco."""
+    if not os.path.exists(ruta_carpeta):
+        return False
+
+    service = obtener_servicio_drive()
+    if not service:
+        print(f"ℹ No se pudo conectar a Google Drive (coloca 'credentials.json' para activar la subida automática).")
+        print(f"  La carpeta local '{ruta_carpeta}' se conserva en el disco.")
+        return False
+
+    from googleapiclient.http import MediaFileUpload
+
+    nombre_carpeta = os.path.basename(ruta_carpeta.rstrip("/\\"))
+    print(f"\n☁ Subiendo carpeta '{nombre_carpeta}' a Google Drive (ID: {parent_id})...")
+
+    try:
+        # 1. Crear la carpeta en Google Drive dentro del parent_id
+        meta_carpeta = {
+            'name': nombre_carpeta,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [parent_id]
+        }
+        folder_drive = service.files().create(body=meta_carpeta, fields='id').execute()
+        folder_id = folder_drive.get('id')
+
+        # 2. Subir todos los archivos de la carpeta
+        archivos_locales = [f for f in os.listdir(ruta_carpeta) if os.path.isfile(os.path.join(ruta_carpeta, f)) and not f.startswith(".")]
+        subidos = 0
+
+        for idx, nom_arch in enumerate(archivos_locales, 1):
+            ruta_f = os.path.join(ruta_carpeta, nom_arch)
+            tipo_mime, _ = mimetypes.guess_type(ruta_f)
+            if not tipo_mime:
+                if nom_arch.endswith(".mp4"): tipo_mime = "video/mp4"
+                elif nom_arch.endswith(".mp3"): tipo_mime = "audio/mpeg"
+                elif nom_arch.endswith(".png"): tipo_mime = "image/png"
+                elif nom_arch.endswith(".md"): tipo_mime = "text/markdown"
+                else: tipo_mime = "application/octet-stream"
+
+            tam_mb = os.path.getsize(ruta_f) / (1024 * 1024)
+            print(f"   [{idx}/{len(archivos_locales)}] Subiendo {nom_arch} ({tam_mb:.1f} MB)...", end="", flush=True)
+
+            file_metadata = {'name': nom_arch, 'parents': [folder_id]}
+            media = MediaFileUpload(ruta_f, mimetype=tipo_mime, resumable=True)
+            request = service.files().create(body=file_metadata, media_body=media, fields='id')
+            response = None
+            while response is None:
+                status, response = request.next_chunk()
+
+            if response and response.get('id'):
+                subidos += 1
+                print(" ✔")
+            else:
+                print(" ✖")
+
+        # 3. Validar integridad antes de eliminar
+        if subidos == len(archivos_locales):
+            print(f"✅ Carpeta '{nombre_carpeta}' subida completa a Google Drive ({subidos}/{len(archivos_locales)} archivos).")
+            print(f"🧹 Eliminando carpeta local '{ruta_carpeta}' para liberar disco en la Mac...")
+            shutil.rmtree(ruta_carpeta, ignore_errors=True)
+            if not os.path.exists(ruta_carpeta):
+                print(f"✔ Espacio en disco liberado con éxito. (El historial y metadata continúan preservados en Git).")
+                return True
+            else:
+                print(f"⚠ Se subió a Drive pero no se pudo eliminar la carpeta local.")
+                return True
+        else:
+            print(f"⚠ Solo se subieron {subidos} de {len(archivos_locales)} archivos. Por seguridad, NO se eliminó la carpeta local.")
+            return False
+
+    except Exception as e:
+        print(f"✖ Error subiendo '{nombre_carpeta}' a Google Drive: {e}")
+        return False
 
 # ---------------------------------------------------------------------------
 # UTILIDADES
@@ -1169,9 +1315,12 @@ def flujo_videos():
                     "archivo_salida": f"{c}.mp4",
                     "tier": ep.get("tier")
                 })
+                # Subir carpeta completa a Google Drive y liberar disco en la Mac
+                subir_carpeta_a_gdrive_y_liberar(c)
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
-    completo = fallos == 0 and all(r for r in m["resultados"]) and all(os.path.exists(os.path.join(c, f"{c}.mp4")) for _, c, _ in trabajos)
+    completo = fallos == 0 and all(r for r in m["resultados"]) and all(
+        (not os.path.exists(c)) or os.path.exists(os.path.join(c, f"{c}.mp4")) for _, c, _ in trabajos)
     if completo:
         m["terminado"] = True; guardar_manifest(MANIFEST_VIDEOS, m)
         print("\n✅ Lote de videos terminado.")
@@ -1295,6 +1444,8 @@ def flujo_historias_foto():
                     "tier": h.get("tier"),
                     "momento_dia": cfg.get("momento_dia")
                 })
+                # Subir carrusel completo a Google Drive y liberar disco en la Mac
+                subir_carpeta_a_gdrive_y_liberar(carpeta)
     finally:
         detener_sd(p)
 
@@ -1511,6 +1662,8 @@ def reanudar_y_ensamblar_carpeta(ruta_carpeta):
             "carpeta": nombre_carpeta,
             "archivo_salida": f"{titulo_slug}.mp4"
         })
+        # Opción de subir a Google Drive y liberar disco
+        subir_carpeta_a_gdrive_y_liberar(ruta_carpeta)
         return True
     else:
         print(f"\n✖ Ocurrió un error y no se pudo generar el archivo .mp4.")
