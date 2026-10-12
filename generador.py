@@ -725,18 +725,17 @@ def exportar_metadata(datos, ruta):
             ruteo = datos.get("enrutamiento", {})
             f.write(f"**🚦 Publicar en (prioridad):** {', '.join(ruteo.get('publicar', []))}\n")
             f.write(f"**⛔ Omitir:** {', '.join(ruteo.get('omitir', []))}\n\n")
-            
-            cal = meta.get("calendario_publicacion", {})
-            if cal:
-                f.write("## 📅 CALENDARIO Y DÍAS DE PUBLICACIÓN RECOMENDADOS\n")
-                if cal.get("dias_recomendados"): f.write(f"- **Días ideales:** {cal['dias_recomendados']}\n")
-                if cal.get("estrategia_escalonada"): f.write(f"- **Estrategia algorítmica:** {cal['estrategia_escalonada']}\n")
-                f.write("\n---\n")
 
-            f.write(f"## 📜 GUION\n{datos.get('locucion_elevenlabs', {}).get('texto_completo', '')}\n\n---\n")
-            f.write("## 📱 COPY PARA REDES SOCIALES\n")
+            # SECCIÓN COPIAR Y PEGAR METRICOOL
             meta = datos.get("metadata", {})
             momento_sel = datos.get("momento_dia") or "multi"
+            f.write("═══════════════════════════════════════════════════════════════════\n")
+            f.write("📋 GUÍA RÁPIDA: COPIAR Y PEGAR EN METRICOOL (3 MINUTOS)\n")
+            f.write("═══════════════════════════════════════════════════════════════════\n")
+            f.write("1. En Metricool ve a 'Planificación' ➔ 'Crear publicación'.\n")
+            f.write("2. Arrastra el archivo de video: {}.mp4\n".format(os.path.basename(ruta.rstrip("/\\"))))
+            f.write("3. Selecciona las casillas de las 4 redes: YT, TikTok, Instagram y Facebook.\n")
+            f.write("4. Copia y pega cada bloque en su respectiva red:\n\n")
             
             for red in ["youtube_shorts", "tiktok", "facebook_reels", "instagram_reels", "bilibili"]:
                 if red in meta:
@@ -764,7 +763,14 @@ def exportar_metadata(datos, ruta):
                 if horarios.get("madrugada"): f.write(f"- 🕯️ **Madrugada / Insomnio (00:00 - 04:00 CST):** {horarios['madrugada']}\n")
                 f.write("\n")
 
-            f.write("---\n")
+            cal = meta.get("calendario_publicacion", {})
+            if cal:
+                f.write("## 📅 CALENDARIO Y DÍAS DE PUBLICACIÓN RECOMENDADOS\n")
+                if cal.get("dias_recomendados"): f.write(f"- **Días ideales:** {cal['dias_recomendados']}\n")
+                if cal.get("estrategia_escalonada"): f.write(f"- **Estrategia algorítmica:** {cal['estrategia_escalonada']}\n")
+                f.write("\n---\n")
+
+            f.write(f"## 📜 GUION COMPLETO\n{datos.get('locucion_elevenlabs', {}).get('texto_completo', '')}\n\n---\n")
             for clave, arch, uso in (("portada", "00_portada.png", "YouTube / Instagram"), ("portada_b", "00_portada_tiktok.png", "TikTok / Facebook"),
                                      ("portada_bilibili", "00_portada_bilibili.png", "Bilibili 16:9 (suspendido, lista para cuando se reactive)")):
                 p = datos.get(clave, {})
@@ -1343,6 +1349,16 @@ def exportar_historia_md(h, carpeta):
         f.write(f"# 📸 {h.get('titulo', '')}\n\n")
         f.write(f"**Serie / Parte:** {h.get('serie', '')} {h.get('parte', '')}\n\n")
         f.write(f"**Tier:** {h.get('tier', '')}\n\n")
+
+        # SECCIÓN COPIAR Y PEGAR METRICOOL
+        f.write("═══════════════════════════════════════════════════════════════════\n")
+        f.write("📋 GUÍA RÁPIDA: COPIAR Y PEGAR EN METRICOOL (CARRUSEL DE FOTOS)\n")
+        f.write("═══════════════════════════════════════════════════════════════════\n")
+        f.write("1. En Metricool ve a 'Planificación' ➔ 'Crear publicación'.\n")
+        f.write("2. Arrastra las imágenes rotuladas en orden (01_portada.png, 02_desarrollo.png...).\n")
+        f.write("3. Selecciona las casillas de: Instagram, Facebook y YouTube Community.\n")
+        f.write("4. Copia y pega el copy y hashtags de cada red abajo:\n\n")
+
         momento_sel = h.get("momento_dia") or "multi"
         for red in ["facebook", "instagram", "youtube_community"]:
             if red in meta:
