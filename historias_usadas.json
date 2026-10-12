@@ -20,12 +20,13 @@
   {
     "titulo": "La Castañeda: el manicomio de Mixcoac que Porfirio Díaz inauguró como orgullo",
     "fecha": "2026-10-12 15:51:42",
-    "ultima_actualizacion": "2026-10-12 15:51:42",
+    "ultima_actualizacion": "2026-10-12 16:07:09",
     "tipo": "historia_foto",
     "slug": "la_castañeda_el_manicomio_de_mixcoac_que",
-    "estado": "guion_listo",
+    "estado": "carrusel_completo",
     "tier": "ARQUITECTURA",
-    "carpeta": "la_castañeda_el_manicomio_de_mixcoac_que",
+    "num_imagenes": 8,
+    "carpeta": "historia_foto_la_castañeda_el_manicomio_de_mixcoa",
     "momento_dia": "tarde"
   },
   {
