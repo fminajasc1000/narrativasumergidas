@@ -20,12 +20,15 @@
   {
     "titulo": "La Isla de las Muñecas: el hombre que colgó muñecas para calmar a una niña ahogada",
     "fecha": "2026-10-11 17:19:23",
-    "ultima_actualizacion": "2026-10-11 17:19:23",
+    "ultima_actualizacion": "2026-10-11 18:09:05",
     "tipo": "video",
     "slug": "la_isla_de_las_muñecas_el_hombre_que_col",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 110.4,
+    "num_imagenes": 26,
     "carpeta": "la_isla_de_las_muñecas_el_hombre_que_col",
+    "archivo_salida": "la_isla_de_las_muñecas_el_hombre_que_col.mp4",
     "momento_dia": "manana"
   },
   {
