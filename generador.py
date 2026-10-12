@@ -197,19 +197,24 @@ def pedir_modo(etiqueta):
     return [{"tipo": "tema", "texto": None} for _ in range(n)]
 
 FRANJAS_DIA = {
-    "1": ("Cualquier momento / Multi-horario (estrategia 24h completa en metadata, recomendado)", "multi"),
+    "1": ("Cualquier momento / Multi-horario (estrategia 24h completa en metadata)", "multi"),
     "2": ("Mañana (07:00 - 10:00 CST: despertar, transporte, datos insólitos)", "manana"),
     "3": ("Mediodía (12:00 - 15:00 CST: break de almuerzo, misterio y arquitectura)", "mediodia"),
     "4": ("Tarde (16:00 - 19:00 CST: salida laboral/escolar, debate en Facebook)", "tarde"),
     "5": ("Noche Prime (20:00 - 23:00 CST: máxima oscuridad, terror inmersivo)", "noche"),
     "6": ("Madrugada / Insomnio (00:00 - 04:00 CST: paranoia y misterio para desvelados)", "madrugada"),
+    "7": ("Jornada 24H Completa (1 por franja: Mañana, Mediodía, Tarde, Noche y Madrugada)", "jornada_completa"),
 }
 
-def pedir_config_videos():
+ORDEN_5_FRANJAS = ["manana", "mediodia", "tarde", "noche", "madrugada"]
+
+def pedir_config_videos(num_peticiones=1):
     print("\n¿Para qué momento del día deseas enfocar la historia / publicación?")
     for k, (nombre, _) in FRANJAS_DIA.items():
         print(f"  {k}) {nombre}")
-    op = input("Opción [1]: ").strip() or "1"
+    # Si se solicitaron 5 entregas, sugerir opción 7 (Jornada 24H) por defecto
+    defecto = "7" if num_peticiones == 5 else "1"
+    op = input(f"Opción [{defecto}]: ").strip() or defecto
     _, clave = FRANJAS_DIA.get(op, FRANJAS_DIA["1"])
     return {"momento_dia": clave}
 
@@ -804,6 +809,8 @@ def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=Non
         escenas = ajustar_cuota_escenas(escenas, n_escenas_objetivo)
 
     ep["escenas"] = escenas
+    if peticion.get("momento_dia"):
+        ep["momento_dia"] = peticion.get("momento_dia")
     return datos_guion
 
 def mover_clip(clip_img, mov="zoom_in", dur=4.0):
@@ -1060,8 +1067,9 @@ def elegir_lote(ruta, etiqueta, pedir_config=None):
         if input(f"⏯ Hay un lote de {etiqueta} sin terminar ({hechos}/{len(m.get('resultados', []))} guiones listos). ¿Reanudarlo? [S/n]: ").strip().lower() != "n":
             return m
     peticiones = pedir_modo(etiqueta)
+    cfg = pedir_config(len(peticiones)) if pedir_config else {}
     m = {"peticiones": peticiones, "resultados": [None] * len(peticiones), "parciales": {}, "terminado": False,
-         "config": pedir_config() if pedir_config else {}}
+         "config": cfg}
     guardar_manifest(ruta, m)
     return m
 
@@ -1101,8 +1109,19 @@ def flujo_videos():
     m = elegir_lote(MANIFEST_VIDEOS, "videos", pedir_config_videos)
     cfg = m.get("config") or {}
     momento = cfg.get("momento_dia", "multi")
-    for pet in m.get("peticiones", []):
-        pet.setdefault("momento_dia", momento)
+    peticiones = m.get("peticiones", [])
+
+    # Si se eligió jornada completa o hay exactamente 5 peticiones y momento es jornada_completa
+    if momento == "jornada_completa" or (len(peticiones) == 5 and momento == "jornada_completa"):
+        for idx, pet in enumerate(peticiones):
+            franja = ORDEN_5_FRANJAS[idx % len(ORDEN_5_FRANJAS)]
+            pet["momento_dia"] = franja
+        print(f"\n🌅☀️🌇🌙🕯️ Distribución 24H aplicada a los {len(peticiones)} videos:")
+        for idx, pet in enumerate(peticiones):
+            print(f"   Video {idx + 1}: {pet.get('momento_dia', '').upper()}")
+    else:
+        for pet in peticiones:
+            pet.setdefault("momento_dia", momento)
 
     def gen(pet, usados, i):
         def guardar_parcial(g):  # fase 1 lista: si falla la fase 2 no se repite el guion
@@ -1202,7 +1221,7 @@ def exportar_historia_md(h, carpeta):
         for i, s in enumerate(h.get("diapositivas", []), 1):
             f.write(f"### {i}: {s.get('archivo', '')}\n- Texto: {s.get('texto_pantalla', '')}\n- Narración: {s.get('narracion', '')}\n- Prompt: {s.get('prompt', '')}\n\n")
 
-def pedir_config_historias():
+def pedir_config_historias(num_peticiones=1):
     n_slides = pedir_int("¿Diapositivas por historia?", 8, 3, 15)
     print("\nFormato de imagen:")
     for k, (nombre, _, _) in FORMATOS_FOTO.items(): print(f"  {k}) {nombre}")
@@ -1210,7 +1229,8 @@ def pedir_config_historias():
 
     print("\n¿Para qué momento del día deseas enfocar la historia fotográfica?")
     for k, (nombre, _) in FRANJAS_DIA.items(): print(f"  {k}) {nombre}")
-    op_hora = input("Opción [1]: ").strip() or "1"
+    defecto_hora = "7" if num_peticiones == 5 else "1"
+    op_hora = input(f"Opción [{defecto_hora}]: ").strip() or defecto_hora
     _, clave_hora = FRANJAS_DIA.get(op_hora, FRANJAS_DIA["1"])
 
     return {"n_slides": n_slides, "formato": op if op in FORMATOS_FOTO else "1", "momento_dia": clave_hora}
@@ -1219,13 +1239,28 @@ def flujo_historias_foto():
     m = elegir_lote(MANIFEST_HISTORIAS, "historias fotográficas", pedir_config_historias)
     cfg = m.get("config") or {"n_slides": 8, "formato": "1", "momento_dia": "multi"}
     momento = cfg.get("momento_dia", "multi")
-    for pet in m.get("peticiones", []):
-        pet.setdefault("momento_dia", momento)
+    peticiones = m.get("peticiones", [])
+
+    # Si se eligió jornada completa o hay exactamente 5 peticiones y momento es jornada_completa
+    if momento == "jornada_completa" or (len(peticiones) == 5 and momento == "jornada_completa"):
+        for idx, pet in enumerate(peticiones):
+            franja = ORDEN_5_FRANJAS[idx % len(ORDEN_5_FRANJAS)]
+            pet["momento_dia"] = franja
+        print(f"\n🌅☀️🌇🌙🕯️ Distribución 24H aplicada a las {len(peticiones)} historias fotográficas:")
+        for idx, pet in enumerate(peticiones):
+            print(f"   Historia {idx + 1}: {pet.get('momento_dia', '').upper()}")
+    else:
+        for pet in peticiones:
+            pet.setdefault("momento_dia", momento)
     _, tam_sd, tam_final = FORMATOS_FOTO.get(cfg.get("formato", "1"), FORMATOS_FOTO["1"])
 
     def gen(pet, usados, i):
-        h = generar_historia_foto(pet, usados, cfg.get("n_slides", 8))
-        return h.get("historia", h) if h else None
+        res = generar_historia_foto(pet, usados, cfg.get("n_slides", 8))
+        if not res: return None
+        h = res.get("historia", res)
+        if pet.get("momento_dia"):
+            h["momento_dia"] = pet.get("momento_dia")
+        return h
     completar_guiones(m, MANIFEST_HISTORIAS, gen)
     historias = [r for r in m["resultados"] if r]
     if not historias: return
