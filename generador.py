@@ -284,13 +284,17 @@ def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
             else:
                 print(" ✖")
 
-        # 3. Validar integridad de subida
+        # 3. Validar integridad de subida antes de liberar la Mac local
         if subidos == len(archivos_locales):
             print(f"✅ Carpeta '{nombre_carpeta}' respaldada completa en Google Drive ({subidos}/{len(archivos_locales)} archivos).")
-            print(f"📁 Conservando carpeta local '{ruta_carpeta}' intacta en la Mac (regla estricta: prohibido eliminar contenido local).")
+            print(f"🔒 [Regla Google Drive]: Solo agregar contenido nuevo; PROHIBIDO eliminar nada de la nube.")
+            print(f"🧹 Eliminando carpeta temporal '{ruta_carpeta}' de la Mac local para liberar disco...")
+            shutil.rmtree(ruta_carpeta, ignore_errors=True)
+            if not os.path.exists(ruta_carpeta):
+                print(f"✔ Espacio en disco de la Mac liberado exitosamente.")
             return True
         else:
-            print(f"⚠ Se subieron {subidos} de {len(archivos_locales)} archivos a Google Drive.")
+            print(f"⚠ Solo se subieron {subidos} de {len(archivos_locales)} archivos a Drive. Se conserva en la Mac por seguridad.")
             return False
 
     except Exception as e:
