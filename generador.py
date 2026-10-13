@@ -253,7 +253,7 @@ def obtener_servicio_drive():
         print(f"⚠ Error conectando con servicio Google Drive: {e}")
         return None
 
-def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID, conservar_local=False):
+def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID, conservar_local=False, redes_pendientes=None):
     """Sube recursivamente una carpeta y todos sus archivos a Google Drive como respaldo.
     Se ejecuta DESPUÉS de publicar en las 4 redes sociales. Si conservar_local=True (ej. si falló alguna red),
     conserva la carpeta local en la Mac para poder reintentar."""
@@ -316,9 +316,11 @@ def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID, c
             print(f"✅ Carpeta '{nombre_carpeta}' respaldada completa en Google Drive ({subidos}/{len(archivos_locales)} archivos).")
             print(f"🔒 [Regla Google Drive]: Solo agregar contenido nuevo; PROHIBIDO eliminar nada de la nube.")
             if conservar_local:
-                print(f"📌 Se conserva la carpeta local '{ruta_carpeta}' en la Mac porque quedó pendiente alguna red social.")
+                detalle_redes = ", ".join(redes_pendientes) if redes_pendientes else "alguna red social"
+                print(f"📌 Se conserva la carpeta local '{ruta_carpeta}' en la Mac porque quedó pendiente: [{detalle_redes}].")
+                print(f"   💡 Puedes reintentar subir solo a la red pendiente desde el menú Opción 4 (Panel de Redes).")
             else:
-                print(f"🧹 Eliminando carpeta temporal '{ruta_carpeta}' de la Mac local para liberar disco...")
+                print(f"🧹 ¡4/4 redes sociales publicadas con éxito! Eliminando carpeta temporal '{ruta_carpeta}' de la Mac local...")
                 shutil.rmtree(ruta_carpeta, ignore_errors=True)
                 if not os.path.exists(ruta_carpeta):
                     print(f"✔ Espacio en disco de la Mac liberado exitosamente.")
@@ -607,6 +609,15 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
         res_init = None
         modo_directo = False
 
+        # Calcular chunks respetando el límite estricto de TikTok (máx 64 MB por chunk)
+        max_chunk = 50 * 1024 * 1024  # 50 MB
+        if tam_archivo <= max_chunk:
+            chunk_size = tam_archivo
+            total_chunks = 1
+        else:
+            chunk_size = 20 * 1024 * 1024  # 20 MB por bloque
+            total_chunks = tam_archivo // chunk_size
+
         # Usar Inbox Draft (/v2/post/publish/inbox/video/init/) por defecto para dejar el borrador
         # listo en la app de TikTok (permite programar o publicar en público sin requerir auditoría de app).
         usar_direct_post = os.getenv("TIKTOK_DIRECT_POST", "0") == "1"
@@ -623,8 +634,8 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
                 "source_info": {
                     "source": "FILE_UPLOAD",
                     "video_size": tam_archivo,
-                    "chunk_size": tam_archivo,
-                    "total_chunk_count": 1
+                    "chunk_size": chunk_size,
+                    "total_chunk_count": total_chunks
                 }
             }
             r_dir = requests.post(
@@ -646,8 +657,8 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
                 "source_info": {
                     "source": "FILE_UPLOAD",
                     "video_size": tam_archivo,
-                    "chunk_size": tam_archivo,
-                    "total_chunk_count": 1
+                    "chunk_size": chunk_size,
+                    "total_chunk_count": total_chunks
                 }
             }
             r_init = requests.post(url_init, headers=headers_init, json=body_init, timeout=20)
@@ -659,14 +670,21 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
         upload_url = res_init["data"]["upload_url"]
         publish_id = res_init["data"]["publish_id"]
 
-        # 2. Upload video bytes
-        headers_upload = {
-            "Content-Range": f"bytes 0-{tam_archivo - 1}/{tam_archivo}",
-            "Content-Length": str(tam_archivo),
-            "Content-Type": "video/mp4"
-        }
+        # 2. Upload video bytes (soporta 1 o múltiples chunks)
         with open(ruta_video, "rb") as f_vid:
-            requests.put(upload_url, data=f_vid, headers=headers_upload, timeout=180)
+            for idx_c in range(total_chunks):
+                inicio_b = idx_c * chunk_size
+                if idx_c == total_chunks - 1:
+                    fin_b = tam_archivo - 1
+                else:
+                    fin_b = inicio_b + chunk_size - 1
+                bloque = f_vid.read(fin_b - inicio_b + 1)
+                headers_upload = {
+                    "Content-Range": f"bytes {inicio_b}-{fin_b}/{tam_archivo}",
+                    "Content-Length": str(len(bloque)),
+                    "Content-Type": "video/mp4"
+                }
+                requests.put(upload_url, data=bloque, headers=headers_upload, timeout=240)
 
         # 3. Check status
         url_status = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
@@ -2787,13 +2805,18 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     destino = os.path.join(ruta_carpeta, f"{titulo}.mp4")
     temporal = os.path.join(ruta_carpeta, f"{titulo}.parcial.mp4")
 
-    # Limitación extrema de CPU/RAM en Mac mini M4: 1 solo hilo y preset ultrafast en núcleos de eficiencia
+    # Limitación estricta de CPU/RAM en Mac mini M4: 1 solo hilo en núcleos de eficiencia y tamaño óptimo (~15 MB)
     num_threads = 1
     try:
-        vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="ultrafast",
-                            threads=num_threads, ffmpeg_params=["-threads", "1"], logger=None)
+        vid.write_videofile(
+            temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast",
+            threads=num_threads,
+            ffmpeg_params=["-crf", "24", "-maxrate", "3500k", "-bufsize", "7000k", "-x264-params", "threads=1:lookahead_threads=1"],
+            logger=None
+        )
         os.replace(temporal, destino)
-        print(f"✔ Video ensamblado: {destino}")
+        tam_mb_out = os.path.getsize(destino) / (1024 * 1024)
+        print(f"✔ Video ensamblado: {destino} ({tam_mb_out:.1f} MB)")
     finally:
         try: vid.close()
         except Exception: pass
@@ -2808,13 +2831,13 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
     """
     Publica el video local en las 4 redes sociales (YouTube Shorts, TikTok, Facebook Page e Instagram Reels)
     ANTES de subir la carpeta a Google Drive.
-    Devuelve True si todas las redes configuradas tuvieron éxito, o False si alguna falló
-    (para conservar los archivos en local si alguna red falló).
+    Imprime un reporte explícito del estado de cada red y devuelve (todas_redes_ok, redes_pendientes).
     """
     print("\n🚀 [FASE A: REDES SOCIALES PRIMERO] Publicando desde archivos locales en las 4 redes...")
     meta_all = ep.get("metadata", {}) or {}
     primer_com = meta_all.get("comentario_fijado", "")
-    fallo_alguna_red = False
+    estado_redes = {}
+    redes_pendientes = []
 
     # 1. YouTube Shorts (con primer comentario fijado)
     meta_yt = meta_all.get("youtube_shorts") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
@@ -2829,8 +2852,14 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
             publish_at_iso=fecha_prog_iso,
             primer_comentario=primer_com
         )
-        if not vid_yt:
-            fallo_alguna_red = True
+        if vid_yt:
+            estado_redes["YouTube Shorts"] = f"✅ PUBLICADO (https://youtube.com/shorts/{vid_yt})"
+        else:
+            estado_redes["YouTube Shorts"] = "❌ FALLÓ / PENDIENTE (revisar token_youtube.json o cuota de YouTube API)"
+            redes_pendientes.append("YouTube Shorts")
+    else:
+        estado_redes["YouTube Shorts"] = "⚠ NO CONECTADO (falta token_youtube.json)"
+        redes_pendientes.append("YouTube Shorts (sin token)")
 
     # 2. TikTok (envío a borradores + portapapeles)
     meta_tt = meta_all.get("tiktok") or meta_all.get("facebook_reels") or {}
@@ -2839,8 +2868,14 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
         desc_tt = meta_tt.get("descripcion", "")
         tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
         res_tt = subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
-        if not res_tt:
-            fallo_alguna_red = True
+        if res_tt:
+            estado_redes["TikTok"] = f"✅ ENVIADO A BORRADORES (ID: {res_tt})"
+        else:
+            estado_redes["TikTok"] = "❌ FALLÓ / PENDIENTE (revisar conexión TikTok en Menú 4 -> 5 o 7)"
+            redes_pendientes.append("TikTok")
+    else:
+        estado_redes["TikTok"] = "⚠ NO CONECTADO (falta token_tiktok.json)"
+        redes_pendientes.append("TikTok (sin token)")
 
     # 3. Facebook Page e Instagram Reels
     meta_fb = meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
@@ -2849,17 +2884,38 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
         tit_fb = meta_fb.get("titulo") or ep.get("titulo", carpeta)
         desc_fb = meta_fb.get("descripcion", "")
         res_fb = subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
-        if not res_fb:
-            fallo_alguna_red = True
+        if res_fb:
+            estado_redes["Facebook Page"] = f"✅ PUBLICADO (ID: {res_fb})"
+        else:
+            estado_redes["Facebook Page"] = "❌ FALLÓ / PENDIENTE (revisar token de Facebook en Menú 4 -> 6 u 8)"
+            redes_pendientes.append("Facebook Page")
 
         tit_ig = meta_ig.get("titulo") or ep.get("titulo", carpeta)
         desc_ig = meta_ig.get("descripcion", "")
         tags_ig = meta_ig.get("hashtags", "#HistoriaDeMexico #LeyendasMexicanas #Misterio")
         res_ig = subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
-        if not res_ig:
-            fallo_alguna_red = True
+        if res_ig:
+            estado_redes["Instagram Reels"] = f"✅ PUBLICADO (ID: {res_ig})"
+        else:
+            estado_redes["Instagram Reels"] = "❌ FALLÓ / PENDIENTE (revisar subida a Instagram en Menú 4 -> 9)"
+            redes_pendientes.append("Instagram Reels")
+    else:
+        estado_redes["Facebook Page"] = "⚠ NO CONECTADO (falta token_meta.json)"
+        estado_redes["Instagram Reels"] = "⚠ NO CONECTADO (falta token_meta.json)"
+        redes_pendientes.extend(["Facebook Page (sin token)", "Instagram Reels (sin token)"])
 
-    return not fallo_alguna_red
+    print("\n═══════════════════════════════════════════════════════════════════")
+    print(f"📊 REPORTE DETALLADO DE REDES SOCIALES: '{carpeta}'")
+    print("═══════════════════════════════════════════════════════════════════")
+    for nombre_red, detalle_est in estado_redes.items():
+        print(f"   • {nombre_red:<16}: {detalle_est}")
+    if redes_pendientes:
+        print(f"\n   ⚠️ REDES PENDIENTES ({len(redes_pendientes)}): {', '.join(redes_pendientes)}")
+    else:
+        print("\n   🎉 ¡4 DE 4 REDES SOCIALES COMPLETADAS EXITOSAMENTE!")
+    print("═══════════════════════════════════════════════════════════════════")
+
+    return (len(redes_pendientes) == 0), redes_pendientes
 
 # ---------------------------------------------------------------------------
 # FLUJO 1: LOTE DE VIDEOS
@@ -3092,11 +3148,11 @@ def flujo_videos():
                     )
 
                 # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
-                todas_redes_ok = publicar_video_en_4_redes(mp4, ep, c, fecha_prog_iso=fecha_prog_iso)
+                todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(mp4, ep, c, fecha_prog_iso=fecha_prog_iso)
 
                 # PASO 2: Respaldar carpeta completa en Google Drive (conservando en local si alguna red falló)
                 print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
-                subir_carpeta_a_gdrive_y_liberar(c, conservar_local=(not todas_redes_ok))
+                subir_carpeta_a_gdrive_y_liberar(c, conservar_local=(not todas_redes_ok), redes_pendientes=redes_pendientes)
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
     completo = fallos == 0 and all(r for r in m["resultados"]) and all(
@@ -3518,11 +3574,11 @@ def reanudar_y_ensamblar_carpeta(ruta_carpeta):
             "archivo_salida": f"{titulo_slug}.mp4"
         })
         # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
-        todas_redes_ok = publicar_video_en_4_redes(destino_mp4, meta_info, nombre_carpeta)
+        todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(destino_mp4, meta_info, nombre_carpeta)
 
         # PASO 2: Subir a Google Drive después de redes sociales (conservando en local si alguna red falló)
         print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
-        subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, conservar_local=(not todas_redes_ok))
+        subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, conservar_local=(not todas_redes_ok), redes_pendientes=redes_pendientes)
         return True
     else:
         print(f"\n✖ Ocurrió un error y no se pudo generar el archivo .mp4.")
