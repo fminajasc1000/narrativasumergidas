@@ -1,17 +1,27 @@
-import sys, requests, base64, time, json, os, re, subprocess, signal, random, shutil, mimetypes
+import sys, requests, base64, time, json, os, re, subprocess, signal, random, shutil, mimetypes, gc, ctypes
 
 # ---------------------------------------------------------------------------
-# OPTIMIZACIÓN DE CPU / MULTITAREA EN APPLE SILICON (MAC MINI M4)
-# Limita el uso de hilos a 2 y reduce la prioridad del proceso (nice 15)
-# para que la Mac nunca se congele y puedas navegar o trabajar fluidamente.
+# OPTIMIZACIÓN EXTREMA DE CPU / GPU EN APPLE SILICON (MAC MINI M4)
+# 1. Limita todos los motores matemáticos a 1 solo hilo.
+# 2. Reduce la prioridad Unix al mínimo (nice 19).
+# 3. Activa PRIO_DARWIN_BG (Background QoS de macOS) para confinar este proceso
+#    y todos sus hijos (SDXL, FFMPEG, MoviePy) a los núcleos de Eficiencia (E-cores),
+#    dejando los núcleos de Rendimiento (P-cores) 100% libres para el sistema y el usuario.
 # ---------------------------------------------------------------------------
-os.environ["OMP_NUM_THREADS"] = "2"
-os.environ["MKL_NUM_THREADS"] = "2"
-os.environ["OPENBLAS_NUM_THREADS"] = "2"
-os.environ["VECLIB_MAXIMUM_THREADS"] = "2"
-os.environ["NUMEXPR_NUM_THREADS"] = "2"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
 try:
-    os.nice(15)
+    os.nice(19)
+except Exception:
+    pass
+try:
+    # PRIO_DARWIN_PROCESS = 4, PRIO_DARWIN_BG = 0x1000 (ejecución en E-cores sin bloquear UI)
+    ctypes.CDLL("/usr/lib/libc.dylib").setpriority(4, 0, 0x1000)
 except Exception:
     pass
 
@@ -243,9 +253,10 @@ def obtener_servicio_drive():
         print(f"⚠ Error conectando con servicio Google Drive: {e}")
         return None
 
-def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
-    """Sube recursivamente una carpeta y todos sus archivos a Google Drive como respaldo,
-    conservando siempre la carpeta intacta en la Mac (prohibido eliminar)."""
+def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID, conservar_local=False):
+    """Sube recursivamente una carpeta y todos sus archivos a Google Drive como respaldo.
+    Se ejecuta DESPUÉS de publicar en las 4 redes sociales. Si conservar_local=True (ej. si falló alguna red),
+    conserva la carpeta local en la Mac para poder reintentar."""
     if not os.path.exists(ruta_carpeta):
         return False
 
@@ -304,10 +315,13 @@ def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID):
         if subidos == len(archivos_locales):
             print(f"✅ Carpeta '{nombre_carpeta}' respaldada completa en Google Drive ({subidos}/{len(archivos_locales)} archivos).")
             print(f"🔒 [Regla Google Drive]: Solo agregar contenido nuevo; PROHIBIDO eliminar nada de la nube.")
-            print(f"🧹 Eliminando carpeta temporal '{ruta_carpeta}' de la Mac local para liberar disco...")
-            shutil.rmtree(ruta_carpeta, ignore_errors=True)
-            if not os.path.exists(ruta_carpeta):
-                print(f"✔ Espacio en disco de la Mac liberado exitosamente.")
+            if conservar_local:
+                print(f"📌 Se conserva la carpeta local '{ruta_carpeta}' en la Mac porque quedó pendiente alguna red social.")
+            else:
+                print(f"🧹 Eliminando carpeta temporal '{ruta_carpeta}' de la Mac local para liberar disco...")
+                shutil.rmtree(ruta_carpeta, ignore_errors=True)
+                if not os.path.exists(ruta_carpeta):
+                    print(f"✔ Espacio en disco de la Mac liberado exitosamente.")
             return True
         else:
             print(f"⚠ Solo se subieron {subidos} de {len(archivos_locales)} archivos a Drive. Se conserva en la Mac por seguridad.")
@@ -1720,7 +1734,9 @@ def conectar_o_probar_meta():
             return
 
     print("\nPara actualizar tokens de Facebook o Instagram:")
-    nuevo_fb = input("Pega el nuevo Token de Página de Facebook (o ENTER para conservar el actual): ").strip()
+    print("💡 TIP: Si pegas un token temporal de 1 hora de Graph API Explorer junto con tu App ID y App Secret,")
+    print("   el sistema lo convertirá automáticamente en un Token de Página PERMANENTE (que nunca caduca).")
+    nuevo_fb = input("Pega el Token de Facebook (de 1h o permanente, o ENTER para conservar el actual): ").strip()
     nuevo_ig = input("Pega el nuevo Token de Instagram (o ENTER para conservar el actual): ").strip()
     if nuevo_fb or nuevo_ig:
         d = {}
@@ -1728,15 +1744,78 @@ def conectar_o_probar_meta():
             try:
                 with open("token_meta.json", encoding="utf-8") as f:
                     d = json.load(f)
-            except: pass
+            except Exception:
+                pass
         if nuevo_fb:
+            app_id = d.get("app_id") or os.getenv("META_APP_ID", "")
+            app_secret = d.get("app_secret") or os.getenv("META_APP_SECRET", "")
+            in_id = input(f"App ID de Meta (ENTER para usar '{app_id}' o saltar canje): ").strip() or app_id
+            in_sec = input("App Secret de Meta (ENTER para usar el guardado o saltar canje): ").strip() or app_secret
+            if in_id and in_sec:
+                d["app_id"] = in_id
+                d["app_secret"] = in_sec
+                tok_perm = canjear_token_permanente_facebook(nuevo_fb, in_id, in_sec, p_id)
+                if tok_perm:
+                    nuevo_fb = tok_perm
             d.setdefault("facebook", {})["access_token"] = nuevo_fb
+            d.setdefault("facebook", {})["page_id"] = p_id
             d["access_token"] = nuevo_fb
         if nuevo_ig:
             d.setdefault("instagram", {})["access_token"] = nuevo_ig
         with open("token_meta.json", "w", encoding="utf-8") as f:
             json.dump(d, f, indent=2)
         print("✔ Guardado en 'token_meta.json'.")
+
+def canjear_token_permanente_facebook(token_corto, app_id, app_secret, page_id="1158791430643856"):
+    """Convierte un token corto (1h) de Meta en un Token de Usuario de 60 días y luego extrae
+    el Token de Página PERMANENTE (sin fecha de expiración) para Narrativas Sumergidas."""
+    try:
+        print("\n🔄 Canjeando token temporal por Token de Largo Plazo (60 días) / Permanente de Página...")
+        r_ll = requests.get(
+            "https://graph.facebook.com/v19.0/oauth/access_token",
+            params={
+                "grant_type": "fb_exchange_token",
+                "client_id": app_id.strip(),
+                "client_secret": app_secret.strip(),
+                "fb_exchange_token": token_corto.strip()
+            },
+            timeout=15
+        )
+        if not r_ll.ok:
+            print(f"   ⚠ No se pudo canjear fb_exchange_token ({r_ll.status_code}): {r_ll.text[:200]}")
+            return None
+        ll_token = r_ll.json().get("access_token")
+        if not ll_token:
+            return None
+        print("   ✔ Token de 60 días obtenido.")
+
+        # Intentar obtener el Page Access Token Permanente desde /me/accounts o /{page_id}?fields=access_token
+        r_pg = requests.get(
+            f"https://graph.facebook.com/v19.0/{page_id}",
+            params={"fields": "access_token,name", "access_token": ll_token},
+            timeout=15
+        )
+        if r_pg.ok and r_pg.json().get("access_token"):
+            pg_tok = r_pg.json()["access_token"]
+            print(f"   ✅ ¡Token de Página PERMANENTE (Nunca caduca) generado para '{r_pg.json().get('name', page_id)}'!")
+            return pg_tok
+
+        r_acc = requests.get(
+            "https://graph.facebook.com/v19.0/me/accounts",
+            params={"access_token": ll_token},
+            timeout=15
+        )
+        if r_acc.ok:
+            for pg in r_acc.json().get("data", []):
+                if pg.get("id") == str(page_id) and pg.get("access_token"):
+                    print(f"   ✅ ¡Token de Página PERMANENTE (Nunca caduca) generado para '{pg.get('name')}'!")
+                    return pg["access_token"]
+
+        print("   ✔ Se usará el Token extendido de 60 días.")
+        return ll_token
+    except Exception as e:
+        print(f"   ⚠ Error canjeando token permanente: {e}")
+        return None
 
 def mostrar_metricas_tiktok():
     """Muestra una tabla con las estadísticas reales de los videos en TikTok."""
@@ -1999,28 +2078,84 @@ def generar_audio(datos, ruta):
 # ---------------------------------------------------------------------------
 # STABLE DIFFUSION
 # ---------------------------------------------------------------------------
+def _aplicar_qos_fondo_pid(pid):
+    """Aplica prioridad nice 19 y Background QoS (E-cores) a un PID en macOS."""
+    try:
+        subprocess.run(["/usr/bin/renice", "+19", "-p", str(pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+    try:
+        if os.path.exists("/usr/sbin/taskpolicy"):
+            subprocess.run(["/usr/sbin/taskpolicy", "-b", "-p", str(pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
 def iniciar_sd():
     try:
-        if requests.get(f"{URL_SD_BASE}/sd-models", timeout=2).status_code == 200: return None
-    except: pass
+        if requests.get(f"{URL_SD_BASE}/sd-models", timeout=2).status_code == 200:
+            # Si ya estaba corriendo en el puerto 7860, aplicarle limitación de CPU/QoS de fondo
+            try:
+                out = subprocess.check_output(["lsof", "-ti:7860"], text=True).strip()
+                for pid_s in out.splitlines():
+                    if pid_s.strip().isdigit():
+                        _aplicar_qos_fondo_pid(int(pid_s.strip()))
+            except Exception:
+                pass
+            return None
+    except Exception:
+        pass
     env = os.environ.copy()
     env.pop("VIRTUAL_ENV", None)
-    # Control de uso de CPU: limitar a 2 hilos y nice 15 para multitarea fluida en Mac mini M4
-    env["OMP_NUM_THREADS"] = "2"
-    env["MKL_NUM_THREADS"] = "2"
-    env["OPENBLAS_NUM_THREADS"] = "2"
-    env["VECLIB_MAXIMUM_THREADS"] = "2"
-    env["NUMEXPR_NUM_THREADS"] = "2"
-    comandos = ["nice", "-n", "15", "./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
-    p = subprocess.Popen(comandos, cwd=RUTA_SD, env=env, preexec_fn=os.setsid)
+    # Control estricto de uso de CPU/GPU: 1 solo hilo y Background QoS (E-cores) en Mac mini M4
+    env["OMP_NUM_THREADS"] = "1"
+    env["MKL_NUM_THREADS"] = "1"
+    env["OPENBLAS_NUM_THREADS"] = "1"
+    env["VECLIB_MAXIMUM_THREADS"] = "1"
+    env["NUMEXPR_NUM_THREADS"] = "1"
+    env["TOKENIZERS_PARALLELISM"] = "false"
+    comandos = ["nice", "-n", "19", "./webui.sh", "--api", "--nowebui", "--port", "7860", "--medvram-sdxl", "--no-half-vae", "--use-cpu", "interrogate"]
+    if os.path.exists("/usr/sbin/taskpolicy"):
+        comandos = ["/usr/sbin/taskpolicy", "-b"] + comandos
+
+    def _init_child():
+        os.setsid()
+        try:
+            os.nice(19)
+            ctypes.CDLL("/usr/lib/libc.dylib").setpriority(4, 0, 0x1000)
+        except Exception:
+            pass
+
+    p = subprocess.Popen(comandos, cwd=RUTA_SD, env=env, preexec_fn=_init_child)
     for _ in range(60):
         try:
-            if requests.get(f"{URL_SD_BASE}/sd-models", timeout=2).status_code == 200: return p
-        except: time.sleep(2)
+            if requests.get(f"{URL_SD_BASE}/sd-models", timeout=2).status_code == 200:
+                return p
+        except Exception:
+            time.sleep(2)
     return p
 
 def detener_sd(p):
-    if p and p.poll() is None: os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+    """Descarga el modelo SDXL de la memoria unificada y cierra el proceso para dejar 100% libre la RAM antes de MoviePy."""
+    try:
+        requests.post(f"{URL_SD_BASE}/unload-checkpoint", timeout=5)
+    except Exception:
+        pass
+    if p and p.poll() is None:
+        try:
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+        except Exception:
+            pass
+    else:
+        # Si SDXL había quedado abierto de antes, cerrarlo también para liberar los ~7 GB de RAM unificada
+        try:
+            out = subprocess.check_output(["lsof", "-ti:7860"], text=True).strip()
+            for pid_s in out.splitlines():
+                if pid_s.strip().isdigit():
+                    os.kill(int(pid_s.strip()), signal.SIGTERM)
+        except Exception:
+            pass
+    gc.collect()
+    time.sleep(1.0)
 
 def generar_foto(prompt, ruta, ancho=768, alto=1344, reintentos=3):
     prompt_low = prompt.lower()
@@ -2043,6 +2178,8 @@ def generar_foto(prompt, ruta, ancho=768, alto=1344, reintentos=3):
             r = requests.post(URL_API_SD, json=payload, timeout=300)
             r.raise_for_status()
             with open(ruta, "wb") as f: f.write(base64.b64decode(r.json()['images'][0]))
+            # Pausa de enfriamiento (0.8s) para que la GPU/MPS de la Mac M4 no congele WindowServer
+            time.sleep(0.8)
             return True
         except Exception as e:
             print(f"Error en imagen {ruta} (intento {intento}/{reintentos}): {e}")
@@ -2650,18 +2787,79 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
     destino = os.path.join(ruta_carpeta, f"{titulo}.mp4")
     temporal = os.path.join(ruta_carpeta, f"{titulo}.parcial.mp4")
 
-    # Limitación estricta de CPU: 2 threads y ffmpeg -threads 2 para multitarea fluida en Mac mini M4
-    num_threads = 2
+    # Limitación extrema de CPU/RAM en Mac mini M4: 1 solo hilo y preset ultrafast en núcleos de eficiencia
+    num_threads = 1
     try:
-        vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="veryfast",
-                            threads=num_threads, ffmpeg_params=["-threads", "2"], logger=None)
+        vid.write_videofile(temporal, fps=24, codec="libx264", audio_codec="aac", preset="ultrafast",
+                            threads=num_threads, ffmpeg_params=["-threads", "1"], logger=None)
         os.replace(temporal, destino)
         print(f"✔ Video ensamblado: {destino}")
     finally:
         try: vid.close()
-        except: pass
+        except Exception: pass
         try: audio.close()
-        except: pass
+        except Exception: pass
+        for cap in capas_totales:
+            try: cap.close()
+            except Exception: pass
+        gc.collect()
+
+def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
+    """
+    Publica el video local en las 4 redes sociales (YouTube Shorts, TikTok, Facebook Page e Instagram Reels)
+    ANTES de subir la carpeta a Google Drive.
+    Devuelve True si todas las redes configuradas tuvieron éxito, o False si alguna falló
+    (para conservar los archivos en local si alguna red falló).
+    """
+    print("\n🚀 [FASE A: REDES SOCIALES PRIMERO] Publicando desde archivos locales en las 4 redes...")
+    meta_all = ep.get("metadata", {}) or {}
+    primer_com = meta_all.get("comentario_fijado", "")
+    fallo_alguna_red = False
+
+    # 1. YouTube Shorts (con primer comentario fijado)
+    meta_yt = meta_all.get("youtube_shorts") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
+    if os.path.exists("token_youtube.json"):
+        tit_yt = meta_yt.get("titulo") or ep.get("titulo", carpeta)
+        tags_yt = meta_yt.get("hashtags", "#Shorts #LeyendasDeMexico #HistoriaDeMexico")
+        if "#shorts" not in tags_yt.lower():
+            tags_yt = "#Shorts " + tags_yt
+        desc_yt = (meta_yt.get("descripcion", "") + "\n\n" + tags_yt).strip()
+        vid_yt = subir_y_programar_youtube_short(
+            mp4, tit_yt, desc_yt, tags=tags_yt,
+            publish_at_iso=fecha_prog_iso,
+            primer_comentario=primer_com
+        )
+        if not vid_yt:
+            fallo_alguna_red = True
+
+    # 2. TikTok (envío a borradores + portapapeles)
+    meta_tt = meta_all.get("tiktok") or meta_all.get("facebook_reels") or {}
+    if os.path.exists("token_tiktok.json"):
+        tit_tt = meta_tt.get("titulo") or ep.get("titulo", carpeta)
+        desc_tt = meta_tt.get("descripcion", "")
+        tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
+        res_tt = subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
+        if not res_tt:
+            fallo_alguna_red = True
+
+    # 3. Facebook Page e Instagram Reels
+    meta_fb = meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
+    meta_ig = meta_all.get("instagram_reels") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
+    if os.path.exists("token_meta.json"):
+        tit_fb = meta_fb.get("titulo") or ep.get("titulo", carpeta)
+        desc_fb = meta_fb.get("descripcion", "")
+        res_fb = subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
+        if not res_fb:
+            fallo_alguna_red = True
+
+        tit_ig = meta_ig.get("titulo") or ep.get("titulo", carpeta)
+        desc_ig = meta_ig.get("descripcion", "")
+        tags_ig = meta_ig.get("hashtags", "#HistoriaDeMexico #LeyendasMexicanas #Misterio")
+        res_ig = subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
+        if not res_ig:
+            fallo_alguna_red = True
+
+    return not fallo_alguna_red
 
 # ---------------------------------------------------------------------------
 # FLUJO 1: LOTE DE VIDEOS
@@ -2893,46 +3091,12 @@ def flujo_videos():
                         fecha_base=cfg.get("fecha_liberacion")
                     )
 
-                # 1. Subida y programación 100% autónoma a YouTube Shorts (con primer comentario)
-                meta_all = ep.get("metadata", {})
-                meta_yt = meta_all.get("youtube_shorts") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
-                primer_com = meta_all.get("comentario_fijado", "")
-                if os.path.exists("token_youtube.json"):
-                    tit_yt = meta_yt.get("titulo") or ep.get("titulo", c)
-                    tags_yt = meta_yt.get("hashtags", "#Shorts #LeyendasDeMexico #HistoriaDeMexico")
-                    if "#shorts" not in tags_yt.lower():
-                        tags_yt = "#Shorts " + tags_yt
-                    desc_yt = (meta_yt.get("descripcion", "") + "\n\n" + tags_yt).strip()
+                # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
+                todas_redes_ok = publicar_video_en_4_redes(mp4, ep, c, fecha_prog_iso=fecha_prog_iso)
 
-                    subir_y_programar_youtube_short(
-                        mp4, tit_yt, desc_yt, tags=tags_yt,
-                        publish_at_iso=fecha_prog_iso,
-                        primer_comentario=primer_com
-                    )
-
-                # 2. Subida automática a TikTok (si está conectada la cuenta)
-                meta_tt = meta_all.get("tiktok") or meta_all.get("facebook_reels") or {}
-                if os.path.exists("token_tiktok.json"):
-                    tit_tt = meta_tt.get("titulo") or ep.get("titulo", c)
-                    desc_tt = meta_tt.get("descripcion", "")
-                    tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
-                    subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
-
-                # 3. Subida automática a Facebook Page e Instagram Reels (si están conectadas las cuentas)
-                meta_fb = meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
-                meta_ig = meta_all.get("instagram_reels") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
-                if os.path.exists("token_meta.json"):
-                    tit_fb = meta_fb.get("titulo") or ep.get("titulo", c)
-                    desc_fb = meta_fb.get("descripcion", "")
-                    subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
-
-                    tit_ig = meta_ig.get("titulo") or ep.get("titulo", c)
-                    desc_ig = meta_ig.get("descripcion", "")
-                    tags_ig = meta_ig.get("hashtags", "#HistoriaDeMexico #LeyendasMexicanas #Misterio")
-                    subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
-
-                # 4. Subir carpeta completa a Google Drive y liberar disco en la Mac
-                subir_carpeta_a_gdrive_y_liberar(c)
+                # PASO 2: Respaldar carpeta completa en Google Drive (conservando en local si alguna red falló)
+                print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
+                subir_carpeta_a_gdrive_y_liberar(c, conservar_local=(not todas_redes_ok))
         except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
 
     completo = fallos == 0 and all(r for r in m["resultados"]) and all(
@@ -3105,9 +3269,30 @@ def flujo_historias_foto():
 # REANUDACIÓN DE CARPETAS EXISTENTES O INCONCLUSAS
 # ---------------------------------------------------------------------------
 def parsear_metadata_carpeta(ruta_carpeta):
-    """Extrae título, guion y escenas desde metadata.md si existe en la carpeta."""
+    """Extrae título, guion, metadata de redes y escenas desde metadata.md o lote_videos_actual.json."""
+    nombre_base = os.path.basename(ruta_carpeta.rstrip("/\\"))
+    info = {"titulo": nombre_base, "guion": "", "escenas": [], "metadata": {}}
+
+    # Intentar primero recuperar el diccionario completo de metadata desde lote_videos_actual.json
+    try:
+        m = cargar_manifest(MANIFEST_VIDEOS)
+        if m:
+            for r in (m.get("resultados") or []):
+                if not r: continue
+                ep_r = r.get("episodio", r)
+                if slug(ep_r.get("titulo", "")) == slug(nombre_base):
+                    info["metadata"] = ep_r.get("metadata") or {}
+                    break
+            if not info["metadata"]:
+                for _, g_parc in (m.get("parciales") or {}).items():
+                    ep_p = (g_parc or {}).get("episodio", g_parc or {})
+                    if slug(ep_p.get("titulo", "")) == slug(nombre_base):
+                        info["metadata"] = ep_p.get("metadata") or {}
+                        break
+    except Exception:
+        pass
+
     ruta_md = os.path.join(ruta_carpeta, "metadata.md")
-    info = {"titulo": os.path.basename(ruta_carpeta.rstrip("/\\")), "guion": "", "escenas": []}
     if not os.path.exists(ruta_md):
         return info
 
@@ -3120,6 +3305,32 @@ def parsear_metadata_carpeta(ruta_carpeta):
 
         m_gui = re.search(r"##\s*📜\s*GUION\s*\n(.*?)(?=\n---|\n##|$)", contenido, re.DOTALL)
         if m_gui: info["guion"] = m_gui.group(1).strip()
+
+        # Si no había metadata en el manifest, extraerla desde metadata.md
+        if not info["metadata"]:
+            meta_extraida = {}
+            for red_key, red_header in [
+                ("youtube_shorts", "YOUTUBE SHORTS"),
+                ("tiktok", "TIKTOK"),
+                ("facebook_reels", "FACEBOOK REELS"),
+                ("instagram_reels", "INSTAGRAM REELS")
+            ]:
+                patron_red = rf"##\s*{red_header}\s*\n(.*?)(?=\n##\s|\n---|$)"
+                m_red = re.search(patron_red, contenido, re.DOTALL)
+                if m_red:
+                    bloque_r = m_red.group(1)
+                    t_r = re.search(r"\*\*Título:\*\*\s*(.+)", bloque_r)
+                    d_r = re.search(r"\*\*Descripción:\*\*\s*(.+)", bloque_r)
+                    h_r = re.search(r"\*\*Hashtags:\*\*\s*(.+)", bloque_r)
+                    meta_extraida[red_key] = {
+                        "titulo": t_r.group(1).strip() if t_r else info["titulo"],
+                        "descripcion": d_r.group(1).strip() if d_r else "",
+                        "hashtags": h_r.group(1).strip() if h_r else ""
+                    }
+            m_com = re.search(r"\*\*Comentario fijado:\*\*\s*(.+)", contenido)
+            if m_com:
+                meta_extraida["comentario_fijado"] = m_com.group(1).strip()
+            info["metadata"] = meta_extraida
 
         bloque_escenas = re.search(r"##\s*🖼\s*ESCENAS.*?\n(.*)", contenido, re.DOTALL)
         if bloque_escenas:
@@ -3306,8 +3517,12 @@ def reanudar_y_ensamblar_carpeta(ruta_carpeta):
             "carpeta": nombre_carpeta,
             "archivo_salida": f"{titulo_slug}.mp4"
         })
-        # Opción de subir a Google Drive y liberar disco
-        subir_carpeta_a_gdrive_y_liberar(ruta_carpeta)
+        # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
+        todas_redes_ok = publicar_video_en_4_redes(destino_mp4, meta_info, nombre_carpeta)
+
+        # PASO 2: Subir a Google Drive después de redes sociales (conservando en local si alguna red falló)
+        print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
+        subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, conservar_local=(not todas_redes_ok))
         return True
     else:
         print(f"\n✖ Ocurrió un error y no se pudo generar el archivo .mp4.")
