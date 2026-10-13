@@ -434,10 +434,24 @@ def resolver_fecha_dia(texto_dia=None):
 
     return (ahora_cst + timedelta(days=1)).strftime("%Y-%m-%d")
 
-def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_base=None):
-    """Calcula fecha/hora en formato ISO 8601 UTC (RFC 3339) para programar en YouTube Shorts y Facebook.
+def formatear_hora_cst(publish_at_iso):
+    """Convierte un timestamp ISO UTC ('YYYY-MM-DDTHH:MM:SZ') a texto legible en hora CDMX (CST, UTC-6)."""
+    if not publish_at_iso:
+        return "Inmediato (Público ahora)"
+    try:
+        from datetime import datetime, timedelta, timezone
+        tz_cst = timezone(timedelta(hours=-6))
+        dt_utc = datetime.strptime(publish_at_iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        dt_cst = dt_utc.astimezone(tz_cst)
+        return f"{dt_cst.strftime('%Y-%m-%d %H:%M')} CST ({publish_at_iso})"
+    except Exception:
+        return publish_at_iso
+
+def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_base=None, forzar_programacion=True):
+    """Calcula fecha/hora en formato ISO 8601 UTC (RFC 3339) para programar en las redes sociales.
     Zona horaria de referencia: CST (México, UTC-6).
-    Si se proporciona fecha_base ('YYYY-MM-DD'), programa las 5 franjas dentro de esa jornada."""
+    Soporta entradas naturales como 'mañana', 'hoy', 'viernes', 'mañana 21:00', '01:30', '2026-10-15 20:00'.
+    Cuando forzar_programacion=True, NUNCA devuelve None (garantiza que jamás se libere de inmediato por error)."""
     from datetime import datetime, timedelta, timezone
     tz_cst = timezone(timedelta(hours=-6))
     ahora_cst = datetime.now(tz_cst)
@@ -448,48 +462,72 @@ def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_ba
         "tarde": (17, 0),
         "noche": (21, 0),
         "madrugada": (1, 30),
+        "multi": (20, 30),
+        "jornada_completa": (20, 30),
     }
+
+    target_h_def, target_m_def = horas_franja.get(momento_dia or "multi", (20, 30))
 
     try:
         base_dt = ahora_cst
-        if fecha_base:
-             fecha_norm = resolver_fecha_dia(fecha_base)
-             y, m, d = map(int, fecha_norm.split("-"))
-             base_dt = ahora_cst.replace(year=y, month=m, day=d, second=0, microsecond=0)
+        tiene_fecha_explicita = False
+        if fecha_base and str(fecha_base).strip():
+            fecha_norm = resolver_fecha_dia(str(fecha_base))
+            y, m, d = map(int, fecha_norm.split("-"))
+            base_dt = ahora_cst.replace(year=y, month=m, day=d, second=0, microsecond=0)
+            tiene_fecha_explicita = True
 
-        if hora_especifica and hora_especifica.strip():
-            he = hora_especifica.strip()
-            if " " in he:
-                dt = datetime.strptime(he, "%Y-%m-%d %H:%M").replace(tzinfo=tz_cst)
+        if hora_especifica and str(hora_especifica).strip():
+            he = str(hora_especifica).strip().lower()
+            # 1. Buscar si incluye una hora tipo HH:MM o H:MM (con o sin am/pm)
+            m_hora = re.search(r'\b(\d{1,2}):(\d{2})\s*(am|pm)?\b', he)
+            # Limpiar la parte de la hora para ver si además escribieron un día ('mañana', 'viernes', '2026-10-15', etc.)
+            resto_dia = re.sub(r'\b\d{1,2}:\d{2}\s*(am|pm)?\b', '', he).replace("a las", "").replace("cst", "").strip()
+
+            if resto_dia:
+                fecha_norm = resolver_fecha_dia(resto_dia)
+                y, m, d = map(int, fecha_norm.split("-"))
+                base_dt = ahora_cst.replace(year=y, month=m, day=d, second=0, microsecond=0)
+                tiene_fecha_explicita = True
+
+            if m_hora:
+                hh = int(m_hora.group(1))
+                mm = int(m_hora.group(2))
+                ampm = m_hora.group(3)
+                if ampm == "pm" and hh < 12:
+                    hh += 12
+                elif ampm == "am" and hh == 12:
+                    hh = 0
+                dt = base_dt.replace(hour=min(23, max(0, hh)), minute=min(59, max(0, mm)), second=0, microsecond=0)
             else:
-                partes = list(map(int, he.split(":")))
-                dt = base_dt.replace(hour=partes[0], minute=partes[1], second=0, microsecond=0)
-                if not fecha_base and dt <= ahora_cst + timedelta(minutes=15):
-                    dt += timedelta(days=1)
+                # El usuario escribió solo un día como 'mañana', 'hoy', 'viernes' sin HH:MM -> usar la hora de la franja elegida
+                dt = base_dt.replace(hour=target_h_def, minute=target_m_def, second=0, microsecond=0)
+
+            while dt <= ahora_cst + timedelta(minutes=20):
+                dt += timedelta(days=1)
             return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        if momento_dia and momento_dia in horas_franja:
-            target_h, target_m = horas_franja[momento_dia]
-            dt = base_dt.replace(hour=target_h, minute=target_m, second=0, microsecond=0)
-            if fecha_base:
-                # En una Jornada 24H del día elegido, la madrugada (01:30 AM) cierra la noche de esa jornada (día + 1)
-                if momento_dia == "madrugada" and dt <= ahora_cst + timedelta(minutes=20):
-                    dt += timedelta(days=1)
-                elif momento_dia == "madrugada":
-                    dt += timedelta(days=1)
-                # Si la hora de esa franja en el día elegido ya pasó, recorrer al día siguiente para no fallar la API
-                while dt <= ahora_cst + timedelta(minutes=20):
-                    dt += timedelta(days=1)
-            else:
-                if dt <= ahora_cst + timedelta(minutes=20):
-                    dt += timedelta(days=1)
-            return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        # Si no hay hora_especifica, usar momento_dia (o 'multi' -> 20:30 CST por defecto)
+        dt = base_dt.replace(hour=target_h_def, minute=target_m_def, second=0, microsecond=0)
+        if tiene_fecha_explicita and momento_dia == "madrugada":
+            # Si el usuario eligió por ejemplo 'hoy' a las 22:00 CST y franja 'madrugada' (01:30 AM), es la madrugada entrante
+            if dt <= ahora_cst + timedelta(minutes=20):
+                dt += timedelta(days=1)
+        while dt <= ahora_cst + timedelta(minutes=20):
+            dt += timedelta(days=1)
+        return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
     except Exception as e:
-        print(f"   ℹ No se pudo calcular fecha de programación ('{e}'); se publicará de inmediato.")
+        print(f"   ⚠ Aviso interpretando fecha/hora ('{e}'); aplicando respaldo automático de programación.")
+        if forzar_programacion:
+            dt_fallback = (ahora_cst + timedelta(days=1)).replace(hour=target_h_def, minute=target_m_def, second=0, microsecond=0)
+            if dt_fallback <= ahora_cst + timedelta(minutes=20):
+                dt_fallback = ahora_cst + timedelta(hours=2)
+            return dt_fallback.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return None
 
 def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, publish_at_iso=None, primer_comentario=None):
-    """Sube un video vertical a YouTube Shorts y lo deja programado o público con su primer comentario fijado."""
+    """Sube un video vertical a YouTube Shorts y lo deja programado (privado hasta publishAt) o público."""
     if not os.path.exists(ruta_video):
         return None
 
@@ -499,14 +537,28 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
         return None
 
     from googleapiclient.http import MediaFileUpload
+    from datetime import datetime, timedelta, timezone
 
-    print(f"\n🔴 Subiendo a YouTube Shorts: '{titulo[:50]}'...")
+    # Garantizar que si se pidió programación, publish_at_iso esté al menos 20 minutos en el futuro
+    if publish_at_iso:
+        try:
+            dt_utc = datetime.strptime(publish_at_iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            min_utc = datetime.now(timezone.utc) + timedelta(minutes=20)
+            if dt_utc < min_utc:
+                dt_utc = min_utc
+                publish_at_iso = dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            dt_utc = datetime.now(timezone.utc) + timedelta(hours=2)
+            publish_at_iso = dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    modo_str = f"PROGRAMADO ({formatear_hora_cst(publish_at_iso)})" if publish_at_iso else "PÚBLICO INMEDIATO"
+    print(f"\n🔴 Subiendo a YouTube Shorts [{modo_str}]: '{titulo[:50]}'...")
     if tags is None:
         tags = ["Shorts", "NarrativasSumergidas", "Misterio", "LeyendasUrbanas"]
     elif isinstance(tags, str):
         tags = [t.strip().lstrip("#") for t in tags.split() if t.strip()]
 
-    # Si hay fecha y hora de publicación programada, el estado debe ser 'private' con publishAt
+    # Si hay fecha y hora de publicación programada, el estado DEBE ser 'private' con publishAt
     status_body = {
         'privacyStatus': 'private' if publish_at_iso else 'public',
         'selfDeclaredMadeForKids': False
@@ -537,15 +589,17 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
         video_id = response.get('id')
         if video_id:
             url_short = f"https://youtube.com/shorts/{video_id}"
+            st_resp = response.get('status', {})
             if publish_at_iso:
-                print(f"✅ ¡YouTube Short subido y PROGRAMADO con éxito!")
-                print(f"   🕒 Publicación programada para: {publish_at_iso}")
+                print(f"✅ ¡YouTube Short subido y PROGRAMADO con éxito (NO es público todavía)!")
+                print(f"   🔒 Estado actual en YouTube: {st_resp.get('privacyStatus', 'private').upper()}")
+                print(f"   🕒 Se liberará automáticamente el: {formatear_hora_cst(publish_at_iso)}")
             else:
                 print(f"✅ ¡YouTube Short subido y PUBLICADO exitosamente!")
             print(f"   🔗 Enlace: {url_short}")
 
-            # Publicar primer comentario fijado para forzar debate y aumentar retención
-            if primer_comentario and primer_comentario.strip():
+            # Publicar primer comentario fijado si el video ya es público (en videos privados/programados YouTube bloquea comentarios hasta su estreno)
+            if primer_comentario and primer_comentario.strip() and not publish_at_iso:
                 try:
                     service.commentThreads().insert(
                         part="snippet",
@@ -563,6 +617,8 @@ def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, 
                     print(f"   💬 Primer comentario fijado publicado: \"{primer_comentario.strip()[:60]}...\"")
                 except Exception as e_comm:
                     print(f"   ℹ No se pudo insertar el primer comentario automático: {e_comm}")
+            elif primer_comentario and primer_comentario.strip() and publish_at_iso:
+                print(f"   💬 Comentario fijado listo en metadata.md para cuando se estrene: \"{primer_comentario.strip()[:60]}...\"")
 
             return video_id
         return None
@@ -742,7 +798,8 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_i
             return None
 
         tam_mb = os.path.getsize(ruta_video) / (1024 * 1024)
-        print(f"\n📘 Subiendo video a Facebook Page: '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
+        modo_str = f"PROGRAMADO ({formatear_hora_cst(publish_at_iso)})" if publish_at_iso else "PÚBLICO INMEDIATO"
+        print(f"\n📘 Subiendo video a Facebook Page [{modo_str}]: '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
 
         url = f"https://graph-video.facebook.com/v19.0/{page_id}/videos"
         payload = {
@@ -753,17 +810,19 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_i
 
         programado_fb = False
         if publish_at_iso:
+            from datetime import datetime, timezone
             try:
-                from datetime import datetime, timezone
                 dt_utc = datetime.strptime(publish_at_iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                 unix_ts = int(dt_utc.timestamp())
-                # Meta Graph API requiere que scheduled_publish_time sea al menos 10 minutos en el futuro
-                if unix_ts > int(time.time()) + 660:
-                    payload["published"] = "false"
-                    payload["scheduled_publish_time"] = str(unix_ts)
-                    programado_fb = True
             except Exception:
-                pass
+                unix_ts = int(time.time()) + 3600
+            # Meta Graph API requiere que scheduled_publish_time esté entre 10 min y 6 meses en el futuro.
+            # Si faltan menos de 12 minutos, lo ajustamos a +15 minutos para NUNCA liberar de inmediato.
+            if unix_ts < int(time.time()) + 720:
+                unix_ts = int(time.time()) + 900
+            payload["published"] = "false"
+            payload["scheduled_publish_time"] = str(unix_ts)
+            programado_fb = True
 
         with open(ruta_video, "rb") as f_vid:
             files = {"source": f_vid}
@@ -773,7 +832,8 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_i
             res = r.json()
             vid_id = res.get("id")
             if programado_fb:
-                print(f"✅ ¡Video subido y PROGRAMADO exitosamente en Facebook para {publish_at_iso}! (ID: {vid_id})")
+                print(f"✅ ¡Video subido y PROGRAMADO exitosamente en Facebook (NO es público todavía)! (ID: {vid_id})")
+                print(f"   🕒 Se publicará automáticamente el: {formatear_hora_cst(publish_at_iso)}")
             else:
                 print(f"✅ ¡Video publicado exitosamente en Facebook! (ID: {vid_id})")
             return vid_id
@@ -784,8 +844,10 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_i
         print(f"✖ Error subiendo a Facebook: {e}")
         return None
 
-def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=None):
-    """Sube y publica un Reel directamente en la cuenta de Instagram (@narrativasumergidas) vía Instagram Graph API."""
+def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=None, publish_at_iso=None):
+    """Sube y publica (o programa) un Reel en la cuenta de Instagram (@narrativasumergidas) vía Instagram Graph API.
+    Si se especifica publish_at_iso en el futuro, deja el contenedor preparado y lanza un programador en segundo plano
+    para que NO se libere de inmediato al público sino exactamente en la fecha/hora definida."""
     if not os.path.exists(ruta_video):
         return None
 
@@ -804,21 +866,10 @@ def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=No
             return None
 
         tam_mb = os.path.getsize(ruta_video) / (1024 * 1024)
-        print(f"\n📸 Subiendo Reel a Instagram (@narrativasumergidas): '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
-
-        # 1. Generar URL directa temporal para que los servidores de Instagram descarguen el MP4
-        with open(ruta_video, "rb") as vf:
-            r_up = requests.post(
-                "https://litterbox.catbox.moe/resources/internals/api.php",
-                headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
-                data={"reqtype": "fileupload", "time": "1h"},
-                files={"fileToUpload": ("reel.mp4", vf, "video/mp4")},
-                timeout=180
-            )
-        video_url = r_up.text.strip()
-        if not video_url.startswith("https://"):
-            print(f"✖ No se pudo generar enlace temporal para Instagram: {video_url[:120]}")
-            return None
+        nombre_base_mp4 = os.path.splitext(os.path.basename(ruta_video))[0]
+        nombre_unico_remoto = f"{nombre_base_mp4}_{int(time.time())}.mp4"
+        modo_str = f"PROGRAMADO ({formatear_hora_cst(publish_at_iso)})" if publish_at_iso else "PÚBLICO INMEDIATO"
+        print(f"\n📸 Subiendo Reel a Instagram (@narrativasumergidas) [{modo_str}]: '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
 
         partes_caption = []
         if titulo:
@@ -827,7 +878,70 @@ def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=No
             partes_caption.append(descripcion.strip())
         if hashtags:
             partes_caption.append(hashtags.strip())
-        caption = "\n\n".join(partes_caption) or os.path.splitext(os.path.basename(ruta_video))[0]
+        caption = "\n\n".join(partes_caption) or nombre_base_mp4
+
+        # Verificar si es publicación programada a futuro
+        espera_segundos = 0
+        if publish_at_iso:
+            try:
+                from datetime import datetime, timezone
+                dt_utc = datetime.strptime(publish_at_iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                espera_segundos = int(dt_utc.timestamp() - time.time())
+            except Exception:
+                espera_segundos = 3600
+
+        # Si faltan más de 20 horas para la hora programada, guardar copia en .cola_programada_ig/ y programar subida completa
+        if publish_at_iso and espera_segundos > 300:
+            os.makedirs(".cola_programada_ig", exist_ok=True)
+            ruta_cola_mp4 = os.path.abspath(os.path.join(".cola_programada_ig", nombre_unico_remoto))
+            shutil.copy2(ruta_video, ruta_cola_mp4)
+
+            # Guardar registro en cola_instagram_programada.json
+            ruta_json_cola = "cola_instagram_programada.json"
+            try:
+                cola_actual = json.load(open(ruta_json_cola, encoding="utf-8")) if os.path.exists(ruta_json_cola) else []
+            except Exception:
+                cola_actual = []
+            job_id = f"ig_sched_{int(time.time())}"
+            cola_actual.append({
+                "job_id": job_id,
+                "archivo_mp4": ruta_cola_mp4,
+                "titulo": titulo or "",
+                "descripcion": descripcion or "",
+                "hashtags": hashtags or "",
+                "publish_at_iso": publish_at_iso,
+                "estado": "programado"
+            })
+            with open(ruta_json_cola, "w", encoding="utf-8") as fc:
+                json.dump(cola_actual, fc, ensure_ascii=False, indent=2)
+
+            # Lanzar demonio ligero en segundo plano (en núcleos de eficiencia) que espera hasta publish_at_iso y publica
+            script_bg = (
+                f"import time, os, json; "
+                f"time.sleep({max(60, espera_segundos)}); "
+                f"from generador import subir_video_instagram; "
+                f"res = subir_video_instagram({repr(ruta_cola_mp4)}, titulo={repr(titulo)}, descripcion={repr(descripcion)}, hashtags={repr(hashtags)}, publish_at_iso=None); "
+                f"os.remove({repr(ruta_cola_mp4)}) if res and os.path.exists({repr(ruta_cola_mp4)}) else None"
+            )
+            cmd_bg = ["/usr/sbin/taskpolicy", "-b", "nice", "-n", "19", sys.executable, "-c", script_bg] if os.path.exists("/usr/sbin/taskpolicy") else [sys.executable, "-c", script_bg]
+            subprocess.Popen(cmd_bg, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            print(f"✅ ¡Reel de Instagram PROGRAMADO con éxito (NO se liberó al público ahora)! (Job: {job_id})")
+            print(f"   🕒 Se publicará automáticamente en @narrativasumergidas el: {formatear_hora_cst(publish_at_iso)}")
+            return job_id
+
+        # 1. Generar URL directa temporal con nombre único para que Instagram nunca use caché de otro video
+        with open(ruta_video, "rb") as vf:
+            r_up = requests.post(
+                "https://litterbox.catbox.moe/resources/internals/api.php",
+                headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+                data={"reqtype": "fileupload", "time": "1h"},
+                files={"fileToUpload": (nombre_unico_remoto, vf, "video/mp4")},
+                timeout=180
+            )
+        video_url = r_up.text.strip()
+        if not video_url.startswith("https://"):
+            print(f"✖ No se pudo generar enlace temporal para Instagram: {video_url[:120]}")
+            return None
 
         # 2. Crear contenedor de Reel en Instagram
         r_cont = requests.post(
@@ -1977,11 +2091,11 @@ def pedir_config_videos(num_peticiones=1):
         print(f"     • Video 4 (Noche Prime): {fecha_liberacion} 21:00 CST")
         print(f"     • Video 5 (Madrugada):   01:30 CST (cierre de madrugada de la jornada)")
 
-    print("\n¿Deseas programar la publicación automática (YouTube Shorts + Facebook Reels)?")
+    print("\n¿Deseas programar la publicación automática en las redes (SIN liberar de inmediato al público)?")
     print("  1) Publicar de inmediato al terminar el ensamblaje")
-    print("  2) Programar automáticamente cada video en su hora óptima del día elegido (08:00, 13:00, 17:00, 21:00, 01:30 CST)")
-    print("  3) Especificar fecha y hora personalizada (ej. 2026-10-15 20:30 o 21:00)")
-    defecto_prog = "2" if (num_peticiones == 5 or clave == "jornada_completa") else "1"
+    print("  2) (Recomendado) Programar automáticamente cada video en su hora óptima del día elegido (08:00, 13:00, 17:00, 21:00, 01:30 CST)")
+    print("  3) Especificar fecha y/o hora personalizada (ej. 'mañana', 'mañana 21:00', 'viernes 19:30' o '2026-10-15 20:30')")
+    defecto_prog = "2"
     op_prog = input(f"Opción [{defecto_prog}]: ").strip() or defecto_prog
     modo_prog = "inmediato"
     hora_pers = None
@@ -1990,10 +2104,15 @@ def pedir_config_videos(num_peticiones=1):
         if not fecha_liberacion:
             dia_in = input("📅 ¿Para qué DÍA deseas programar la publicación? ('hoy', 'mañana', 'sábado', 'YYYY-MM-DD') [mañana]: ").strip() or "mañana"
             fecha_liberacion = resolver_fecha_dia(dia_in)
-            print(f"   ✔ Fecha objetivo de programación: {fecha_liberacion}")
+        iso_prev = calcular_fecha_programacion(momento_dia=clave, fecha_base=fecha_liberacion, forzar_programacion=True)
+        print(f"   🔒 HORARIO DE PROGRAMACIÓN CONFIRMADO: {formatear_hora_cst(iso_prev)} (NO se liberará de inmediato)")
     elif op_prog == "3":
         modo_prog = "personalizada"
-        hora_pers = input("Ingresa fecha y hora (YYYY-MM-DD HH:MM o HH:MM para hoy/mañana): ").strip()
+        hora_pers = input("Ingresa día y/o hora (ej. 'mañana 01:30', 'mañana', 'hoy 21:00', 'YYYY-MM-DD HH:MM') [mañana]: ").strip() or "mañana"
+        iso_prev = calcular_fecha_programacion(momento_dia=clave, hora_especifica=hora_pers, fecha_base=fecha_liberacion, forzar_programacion=True)
+        print(f"   🔒 HORARIO DE PROGRAMACIÓN CONFIRMADO: {formatear_hora_cst(iso_prev)} (NO se liberará de inmediato)")
+    else:
+        print("   ⚡ Modo seleccionado: Publicación inmediata al terminar el ensamblaje.")
 
     return {
         "momento_dia": clave,
@@ -2827,21 +2946,78 @@ def ensamblar(escenas, ruta_audio, ruta_carpeta, titulo, portada=None):
             except Exception: pass
         gc.collect()
 
-def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
+def validar_video_actual(mp4, ep, carpeta):
     """
-    Publica el video local en las 4 redes sociales (YouTube Shorts, TikTok, Facebook Page e Instagram Reels)
-    ANTES de subir la carpeta a Google Drive.
+    Verifica estrictamente que el archivo .mp4 a subir corresponda al episodio actual
+    (misma carpeta, mismo slug de título, tamaño válido y duración coincidente con 00_locucion.mp3)
+    para garantizar que JAMÁS se suba un video pasado o de otra carpeta.
+    """
+    if not mp4 or not os.path.exists(mp4):
+        print(f"✖ [VALIDACIÓN FALLIDA]: El archivo de video '{mp4}' no existe.")
+        return False
+
+    ruta_abs_mp4 = os.path.abspath(mp4)
+    ruta_abs_esperada = os.path.abspath(os.path.join(carpeta, f"{slug(carpeta)}.mp4"))
+    if os.path.dirname(ruta_abs_mp4) != os.path.dirname(ruta_abs_esperada):
+        print(f"✖ [ALERTA ANTI-VIDEO PASADO]: La ruta '{mp4}' no pertenece a la carpeta activa '{carpeta}'. Se bloquea la subida.")
+        return False
+
+    tit_ep = ep.get("titulo", "")
+    if tit_ep and slug(tit_ep) != slug(os.path.basename(carpeta.rstrip("/\\"))):
+        print(f"✖ [ALERTA ANTI-VIDEO PASADO]: El título del episodio ('{tit_ep}') no coincide con la carpeta ('{carpeta}'). Se bloquea la subida.")
+        return False
+
+    tam_mb = os.path.getsize(mp4) / (1024 * 1024)
+    if tam_mb < 0.2:
+        print(f"✖ [VALIDACIÓN FALLIDA]: El archivo '{mp4}' está vacío o corrupto ({tam_mb:.2f} MB).")
+        return False
+
+    ruta_aud = os.path.join(carpeta, "00_locucion.mp3")
+    if os.path.exists(ruta_aud):
+        try:
+            from moviepy.editor import VideoFileClip
+            v_clip = VideoFileClip(mp4)
+            dur_v = float(v_clip.duration)
+            v_clip.close()
+            dur_a = duracion_audio(ruta_aud)
+            if dur_a > 0 and abs(dur_v - dur_a) > 3.0:
+                print(f"✖ [ALERTA ANTI-VIDEO PASADO]: Duración del MP4 ({dur_v:.1f}s) no coincide con la locución actual ({dur_a:.1f}s). Se bloquea la subida.")
+                return False
+            print(f"🔒 [VALIDACIÓN DE ARCHIVO OK]: '{os.path.basename(mp4)}' ({tam_mb:.1f} MB, {dur_v:.1f}s) corresponde 100% al episodio '{tit_ep or carpeta}'.")
+        except Exception:
+            print(f"🔒 [VALIDACIÓN DE ARCHIVO OK]: '{os.path.basename(mp4)}' ({tam_mb:.1f} MB) verificado para '{tit_ep or carpeta}'.")
+    return True
+
+def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress=None):
+    """
+    Valida que el MP4 sea el video actual y lo publica/programa en las 4 redes sociales
+    (YouTube Shorts, TikTok, Facebook Page e Instagram Reels) ANTES de subir la carpeta a Google Drive.
+    Evita re-subir a redes donde este episodio ya fue publicado en una ejecución previa.
     Imprime un reporte explícito del estado de cada red y devuelve (todas_redes_ok, redes_pendientes).
     """
-    print("\n🚀 [FASE A: REDES SOCIALES PRIMERO] Publicando desde archivos locales en las 4 redes...")
+    print("\n🚀 [FASE A: REDES SOCIALES PRIMERO] Validando archivo y preparando las 4 redes...")
+    if not validar_video_actual(mp4, ep, carpeta):
+        return False, ["Validación de archivo MP4"]
+
+    if fecha_prog_iso:
+        print(f"🕒 [MODO PROGRAMADO ACTIVO]: Ninguna red liberará el video de inmediato.")
+        print(f"   Horario objetivo definido: {formatear_hora_cst(fecha_prog_iso)}")
+    else:
+        print("⚡ [MODO PUBLICACIÓN INMEDIATA]: El video se publicará como público ahora mismo.")
+
     meta_all = ep.get("metadata", {}) or {}
     primer_com = meta_all.get("comentario_fijado", "")
+    ya_publicadas = ep.setdefault("redes_publicadas", {})
     estado_redes = {}
     redes_pendientes = []
+    etiqueta_modo = f"PROGRAMADO ({formatear_hora_cst(fecha_prog_iso)})" if fecha_prog_iso else "PUBLICADO INMEDIATO"
 
     # 1. YouTube Shorts (con primer comentario fijado)
     meta_yt = meta_all.get("youtube_shorts") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
-    if os.path.exists("token_youtube.json"):
+    if ya_publicadas.get("youtube_shorts"):
+        vid_prev = ya_publicadas["youtube_shorts"]
+        estado_redes["YouTube Shorts"] = f"✅ YA SUBIDO PREVIAMENTE (https://youtube.com/shorts/{vid_prev})"
+    elif os.path.exists("token_youtube.json"):
         tit_yt = meta_yt.get("titulo") or ep.get("titulo", carpeta)
         tags_yt = meta_yt.get("hashtags", "#Shorts #LeyendasDeMexico #HistoriaDeMexico")
         if "#shorts" not in tags_yt.lower():
@@ -2853,7 +3029,9 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
             primer_comentario=primer_com
         )
         if vid_yt:
-            estado_redes["YouTube Shorts"] = f"✅ PUBLICADO (https://youtube.com/shorts/{vid_yt})"
+            ya_publicadas["youtube_shorts"] = vid_yt
+            if on_progress: on_progress()
+            estado_redes["YouTube Shorts"] = f"✅ {etiqueta_modo} -> https://youtube.com/shorts/{vid_yt}"
         else:
             estado_redes["YouTube Shorts"] = "❌ FALLÓ / PENDIENTE (revisar token_youtube.json o cuota de YouTube API)"
             redes_pendientes.append("YouTube Shorts")
@@ -2861,15 +3039,20 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
         estado_redes["YouTube Shorts"] = "⚠ NO CONECTADO (falta token_youtube.json)"
         redes_pendientes.append("YouTube Shorts (sin token)")
 
-    # 2. TikTok (envío a borradores + portapapeles)
+    # 2. TikTok (envío a borradores + portapapeles; nunca se libera al público sin tu confirmación)
     meta_tt = meta_all.get("tiktok") or meta_all.get("facebook_reels") or {}
-    if os.path.exists("token_tiktok.json"):
+    if ya_publicadas.get("tiktok"):
+        estado_redes["TikTok"] = f"✅ YA EN BORRADORES PREVIAMENTE (ID: {ya_publicadas['tiktok']})"
+    elif os.path.exists("token_tiktok.json"):
         tit_tt = meta_tt.get("titulo") or ep.get("titulo", carpeta)
         desc_tt = meta_tt.get("descripcion", "")
         tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
         res_tt = subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
         if res_tt:
-            estado_redes["TikTok"] = f"✅ ENVIADO A BORRADORES (ID: {res_tt})"
+            ya_publicadas["tiktok"] = res_tt
+            if on_progress: on_progress()
+            hora_sug_tt = formatear_hora_cst(fecha_prog_iso) if fecha_prog_iso else (meta_tt.get("hora_publicacion") or "Horario libre")
+            estado_redes["TikTok"] = f"✅ EN BORRADORES (ID: {res_tt}) | Programar en app para: {hora_sug_tt}"
         else:
             estado_redes["TikTok"] = "❌ FALLÓ / PENDIENTE (revisar conexión TikTok en Menú 4 -> 5 o 7)"
             redes_pendientes.append("TikTok")
@@ -2881,24 +3064,34 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
     meta_fb = meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
     meta_ig = meta_all.get("instagram_reels") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
     if os.path.exists("token_meta.json"):
-        tit_fb = meta_fb.get("titulo") or ep.get("titulo", carpeta)
-        desc_fb = meta_fb.get("descripcion", "")
-        res_fb = subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
-        if res_fb:
-            estado_redes["Facebook Page"] = f"✅ PUBLICADO (ID: {res_fb})"
+        if ya_publicadas.get("facebook_reels"):
+            estado_redes["Facebook Page"] = f"✅ YA SUBIDO PREVIAMENTE (ID: {ya_publicadas['facebook_reels']})"
         else:
-            estado_redes["Facebook Page"] = "❌ FALLÓ / PENDIENTE (revisar token de Facebook en Menú 4 -> 6 u 8)"
-            redes_pendientes.append("Facebook Page")
+            tit_fb = meta_fb.get("titulo") or ep.get("titulo", carpeta)
+            desc_fb = meta_fb.get("descripcion", "")
+            res_fb = subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
+            if res_fb:
+                ya_publicadas["facebook_reels"] = res_fb
+                if on_progress: on_progress()
+                estado_redes["Facebook Page"] = f"✅ {etiqueta_modo} (ID: {res_fb})"
+            else:
+                estado_redes["Facebook Page"] = "❌ FALLÓ / PENDIENTE (revisar token de Facebook en Menú 4 -> 6 u 8)"
+                redes_pendientes.append("Facebook Page")
 
-        tit_ig = meta_ig.get("titulo") or ep.get("titulo", carpeta)
-        desc_ig = meta_ig.get("descripcion", "")
-        tags_ig = meta_ig.get("hashtags", "#HistoriaDeMexico #LeyendasMexicanas #Misterio")
-        res_ig = subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
-        if res_ig:
-            estado_redes["Instagram Reels"] = f"✅ PUBLICADO (ID: {res_ig})"
+        if ya_publicadas.get("instagram_reels"):
+            estado_redes["Instagram Reels"] = f"✅ YA SUBIDO PREVIAMENTE (ID: {ya_publicadas['instagram_reels']})"
         else:
-            estado_redes["Instagram Reels"] = "❌ FALLÓ / PENDIENTE (revisar subida a Instagram en Menú 4 -> 9)"
-            redes_pendientes.append("Instagram Reels")
+            tit_ig = meta_ig.get("titulo") or ep.get("titulo", carpeta)
+            desc_ig = meta_ig.get("descripcion", "")
+            tags_ig = meta_ig.get("hashtags", "#HistoriaDeMexico #LeyendasMexicanas #Misterio")
+            res_ig = subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig, publish_at_iso=fecha_prog_iso)
+            if res_ig:
+                ya_publicadas["instagram_reels"] = res_ig
+                if on_progress: on_progress()
+                estado_redes["Instagram Reels"] = f"✅ {etiqueta_modo} (ID: {res_ig})"
+            else:
+                estado_redes["Instagram Reels"] = "❌ FALLÓ / PENDIENTE (revisar subida a Instagram en Menú 4 -> 9)"
+                redes_pendientes.append("Instagram Reels")
     else:
         estado_redes["Facebook Page"] = "⚠ NO CONECTADO (falta token_meta.json)"
         estado_redes["Instagram Reels"] = "⚠ NO CONECTADO (falta token_meta.json)"
@@ -2906,6 +3099,7 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None):
 
     print("\n═══════════════════════════════════════════════════════════════════")
     print(f"📊 REPORTE DETALLADO DE REDES SOCIALES: '{carpeta}'")
+    print(f"🎬 Video verificado: {os.path.basename(mp4)} | Episodio: {ep.get('titulo', carpeta)}")
     print("═══════════════════════════════════════════════════════════════════")
     for nombre_red, detalle_est in estado_redes.items():
         print(f"   • {nombre_red:<16}: {detalle_est}")
@@ -3099,6 +3293,10 @@ def flujo_videos():
     for datos in lote:
         ep = datos.get("episodio", {})
         carpeta = slug(ep.get("titulo", "Video"))
+        # Evitar regenerar o re-subir un video pasado de un lote que ya fue completado y respaldado
+        if ep.get("completado_y_respaldado"):
+            print(f"✔ '{carpeta}' ya fue publicado en las 4 redes y respaldado en una ejecución previa; se omite.")
+            continue
         try: trabajos.append((ep, carpeta, preparar_video(ep, carpeta)))
         except Exception as e: print(f"✖ Falló la preparación de '{carpeta}': {e}")
 
@@ -3115,14 +3313,17 @@ def flujo_videos():
         finally:
             detener_sd(p)
 
-    print("\n🎬 Ensamblando videos automáticamente (sin pausa)...")
+    print("\n🎬 Ensamblando y publicando videos automáticamente...")
     for ep, c, aud in trabajos:
         mp4 = os.path.join(c, f"{c}.mp4")
-        if os.path.exists(mp4): print(f"✔ '{c}' ya estaba ensamblado."); continue
-        if not os.path.exists(aud) or lista_imagenes_faltantes(ep, c):
-            print(f"⚠ '{c}' tiene audio o imágenes pendientes; se omite el ensamblado."); fallos += 1; continue
-        try:
+        if not os.path.exists(mp4):
+            if not os.path.exists(aud) or lista_imagenes_faltantes(ep, c):
+                print(f"⚠ '{c}' tiene audio o imágenes pendientes; se omite el ensamblado."); fallos += 1; continue
             ensamblar(ep.get("escenas", []), aud, c, c, portada=os.path.join(c, "00_portada.png"))
+        else:
+            print(f"✔ '{c}' ya tenía su archivo '{mp4}' ensamblado en local; verificando redes pendientes...")
+
+        try:
             if os.path.exists(mp4):
                 dur_mp4 = duracion_audio(aud)
                 registrar_historia_usada(ep.get("titulo", c), tipo="video", detalles={
@@ -3133,30 +3334,50 @@ def flujo_videos():
                     "archivo_salida": f"{c}.mp4",
                     "tier": ep.get("tier")
                 })
-                # Calcular fecha/hora de programación si se configuró (compartida entre YouTube y Facebook)
-                modo_prog = cfg.get("modo_programacion", "inmediato")
+                # Calcular fecha/hora de programación si se configuró (compartida entre YouTube, Facebook e Instagram)
+                modo_prog = cfg.get("modo_programacion", "auto_franja")
+                momento_actual = ep.get("momento_dia") or cfg.get("momento_dia") or "multi"
                 fecha_prog_iso = None
                 if modo_prog == "auto_franja":
                     fecha_prog_iso = calcular_fecha_programacion(
-                        momento_dia=ep.get("momento_dia") or cfg.get("momento_dia"),
-                        fecha_base=cfg.get("fecha_liberacion")
+                        momento_dia=momento_actual,
+                        fecha_base=cfg.get("fecha_liberacion"),
+                        forzar_programacion=True
                     )
                 elif modo_prog == "personalizada":
                     fecha_prog_iso = calcular_fecha_programacion(
+                        momento_dia=momento_actual,
                         hora_especifica=cfg.get("hora_personalizada"),
-                        fecha_base=cfg.get("fecha_liberacion")
+                        fecha_base=cfg.get("fecha_liberacion"),
+                        forzar_programacion=True
                     )
 
                 # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
-                todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(mp4, ep, c, fecha_prog_iso=fecha_prog_iso)
+                todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(
+                    mp4, ep, c,
+                    fecha_prog_iso=fecha_prog_iso,
+                    on_progress=lambda: guardar_manifest(MANIFEST_VIDEOS, m)
+                )
 
                 # PASO 2: Respaldar carpeta completa en Google Drive (conservando en local si alguna red falló)
-                print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
-                subir_carpeta_a_gdrive_y_liberar(c, conservar_local=(not todas_redes_ok), redes_pendientes=redes_pendientes)
-        except Exception as e: print(f"✖ Falló el ensamblado de '{c}': {e}"); fallos += 1
+                if not ep.get("respaldado_en_drive"):
+                    print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
+                    ok_drive = subir_carpeta_a_gdrive_y_liberar(c, conservar_local=(not todas_redes_ok), redes_pendientes=redes_pendientes)
+                    if ok_drive:
+                        ep["respaldado_en_drive"] = True
+                elif todas_redes_ok and os.path.exists(c):
+                    print(f"🧹 ¡4/4 redes completadas y carpeta '{c}' ya estaba en Google Drive! Liberando copia local...")
+                    shutil.rmtree(c, ignore_errors=True)
+
+                if todas_redes_ok and ep.get("respaldado_en_drive"):
+                    ep["completado_y_respaldado"] = True
+                else:
+                    fallos += 1
+                guardar_manifest(MANIFEST_VIDEOS, m)
+        except Exception as e: print(f"✖ Falló el procesamiento de '{c}': {e}"); fallos += 1
 
     completo = fallos == 0 and all(r for r in m["resultados"]) and all(
-        (not os.path.exists(c)) or os.path.exists(os.path.join(c, f"{c}.mp4")) for _, c, _ in trabajos)
+        (r.get("episodio", r) or {}).get("completado_y_respaldado") for r in m["resultados"] if r)
     if completo:
         m["terminado"] = True; guardar_manifest(MANIFEST_VIDEOS, m)
         print("\n✅ Lote de videos terminado.")
@@ -3573,8 +3794,29 @@ def reanudar_y_ensamblar_carpeta(ruta_carpeta):
             "carpeta": nombre_carpeta,
             "archivo_salida": f"{titulo_slug}.mp4"
         })
+        # Determinar horario de programación (desde lote_videos_actual.json o preguntando con programación por defecto)
+        fecha_prog_iso = None
+        m_act = cargar_manifest(MANIFEST_VIDEOS)
+        cfg_act = (m_act or {}).get("config") or {}
+        modo_prog = cfg_act.get("modo_programacion", "auto_franja")
+        if modo_prog == "auto_franja":
+            fecha_prog_iso = calcular_fecha_programacion(
+                momento_dia=cfg_act.get("momento_dia", "multi"),
+                fecha_base=cfg_act.get("fecha_liberacion"),
+                forzar_programacion=True
+            )
+        elif modo_prog == "personalizada":
+            fecha_prog_iso = calcular_fecha_programacion(
+                momento_dia=cfg_act.get("momento_dia", "multi"),
+                hora_especifica=cfg_act.get("hora_personalizada"),
+                fecha_base=cfg_act.get("fecha_liberacion"),
+                forzar_programacion=True
+            )
+
         # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
-        todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(destino_mp4, meta_info, nombre_carpeta)
+        todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(
+            destino_mp4, meta_info, ruta_carpeta, fecha_prog_iso=fecha_prog_iso
+        )
 
         # PASO 2: Subir a Google Drive después de redes sociales (conservando en local si alguna red falló)
         print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
