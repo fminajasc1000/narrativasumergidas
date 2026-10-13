@@ -2343,13 +2343,13 @@ def exportar_metadata(datos, ruta):
                 f.write(f"- Prompt: {e.get('prompt', '')}\n\n")
     except Exception as e: print(f"Error metadata: {e}")
 
-# Matriz de enrutamiento: folclore/arquitectura → YouTube Shorts, TikTok, Instagram, Facebook y Bilibili; viscerales → Facebook, TikTok y Bilibili
+# Matriz de enrutamiento: publicar siempre en las 4 redes principales + Bilibili
 REDES_VIDEO = ["youtube_shorts", "tiktok", "facebook_reels", "instagram_reels", "bilibili"]
 RUTEO_TIER = {
     "FOLCLORE": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"],
     "ARQUITECTURA": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"],
-    "MORBO": ["facebook_reels", "tiktok", "bilibili"],
-    "ABSURDO": ["facebook_reels", "tiktok", "bilibili"],
+    "MORBO": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"],
+    "ABSURDO": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"],
 }
 
 # Horarios de publicación recomendados (hora Ciudad de México, CST) calibrados por red y por momento del día
@@ -2894,12 +2894,15 @@ def flujo_videos():
                     )
 
                 # 1. Subida y programación 100% autónoma a YouTube Shorts (con primer comentario)
-                meta_yt = ep.get("metadata", {}).get("youtube_shorts", {})
-                primer_com = ep.get("metadata", {}).get("comentario_fijado", "")
-                if meta_yt:
-                    tit_yt = meta_yt.get("titulo", ep.get("titulo", c))
-                    desc_yt = meta_yt.get("descripcion", "") + "\n\n" + meta_yt.get("hashtags", "")
-                    tags_yt = meta_yt.get("hashtags", "")
+                meta_all = ep.get("metadata", {})
+                meta_yt = meta_all.get("youtube_shorts") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
+                primer_com = meta_all.get("comentario_fijado", "")
+                if os.path.exists("token_youtube.json"):
+                    tit_yt = meta_yt.get("titulo") or ep.get("titulo", c)
+                    tags_yt = meta_yt.get("hashtags", "#Shorts #LeyendasDeMexico #HistoriaDeMexico")
+                    if "#shorts" not in tags_yt.lower():
+                        tags_yt = "#Shorts " + tags_yt
+                    desc_yt = (meta_yt.get("descripcion", "") + "\n\n" + tags_yt).strip()
 
                     subir_y_programar_youtube_short(
                         mp4, tit_yt, desc_yt, tags=tags_yt,
@@ -2908,26 +2911,25 @@ def flujo_videos():
                     )
 
                 # 2. Subida automática a TikTok (si está conectada la cuenta)
-                meta_tt = ep.get("metadata", {}).get("tiktok", {})
-                if meta_tt or os.path.exists("token_tiktok.json"):
-                    tit_tt = (meta_tt or {}).get("titulo")
-                    desc_tt = (meta_tt or {}).get("descripcion")
-                    tags_tt = (meta_tt or {}).get("hashtags")
+                meta_tt = meta_all.get("tiktok") or meta_all.get("facebook_reels") or {}
+                if os.path.exists("token_tiktok.json"):
+                    tit_tt = meta_tt.get("titulo") or ep.get("titulo", c)
+                    desc_tt = meta_tt.get("descripcion", "")
+                    tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
                     subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
 
                 # 3. Subida automática a Facebook Page e Instagram Reels (si están conectadas las cuentas)
-                meta_fb = ep.get("metadata", {}).get("facebook_reels", {})
-                meta_ig = ep.get("metadata", {}).get("instagram_reels", {})
+                meta_fb = meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
+                meta_ig = meta_all.get("instagram_reels") or meta_all.get("facebook_reels") or meta_all.get("tiktok") or {}
                 if os.path.exists("token_meta.json"):
-                    tit_fb = (meta_fb or {}).get("titulo")
-                    desc_fb = (meta_fb or {}).get("descripcion")
+                    tit_fb = meta_fb.get("titulo") or ep.get("titulo", c)
+                    desc_fb = meta_fb.get("descripcion", "")
                     subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
 
-                    if meta_ig:
-                        tit_ig = meta_ig.get("titulo")
-                        desc_ig = meta_ig.get("descripcion")
-                        tags_ig = meta_ig.get("hashtags")
-                        subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
+                    tit_ig = meta_ig.get("titulo") or ep.get("titulo", c)
+                    desc_ig = meta_ig.get("descripcion", "")
+                    tags_ig = meta_ig.get("hashtags", "#HistoriaDeMexico #LeyendasMexicanas #Misterio")
+                    subir_video_instagram(mp4, titulo=tit_ig, descripcion=desc_ig, hashtags=tags_ig)
 
                 # 4. Subir carpeta completa a Google Drive y liberar disco en la Mac
                 subir_carpeta_a_gdrive_y_liberar(c)

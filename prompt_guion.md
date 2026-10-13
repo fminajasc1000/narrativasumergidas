@@ -20,14 +20,9 @@ Elige UNO:
 - "MORBO": gore médico histórico, procedimientos, castigos, cuerpo humano, casos sangrientos.
 - (Eliminado el tier TRAGEDIA: está prohibido generar tragedias internacionales sin componente sobrenatural.)
 
-ENRUTAMIENTO (campo "enrutamiento": {"publicar": [...], "omitir": [...]}):
-- ABSURDO → publicar: facebook_reels, tiktok, bilibili. omitir: youtube_shorts, instagram_reels.
-- ARQUITECTURA → publicar: youtube_shorts, instagram_reels, tiktok, facebook_reels, bilibili. omitir: [].
-- FOLCLORE → publicar: youtube_shorts, tiktok, instagram_reels, facebook_reels, bilibili. omitir: [].
-- MORBO → publicar: tiktok, facebook_reels, bilibili. omitir: instagram_reels (y youtube_shorts si es muy explícito).
-- (Viscerales: gore/escatología → SOLO facebook_reels y tiktok, para proteger la retención de YouTube. El código Python aplica este ruteo de forma obligatoria.)
-Genera metadata SOLO de las redes en "publicar" (las omitidas se dejan fuera del JSON de metadata).
-Si el usuario te da tema/historia, respétalo, pero clasifícalo y enrútalo igual.
+ENRUTAMIENTO (campo "enrutamiento": {"publicar": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "bilibili"], "omitir": []}):
+- Todos los tiers generan metadata completa para las 5 redes (youtube_shorts, tiktok, instagram_reels, facebook_reels, bilibili), adaptando el ángulo psicológico a cada plataforma (documental/histórico en YouTube, estético/guardable en Instagram, shock en TikTok y debate moral en Facebook).
+Si el usuario te da tema/historia, respétalo y clasifícalo en su tier correspondiente.
 
 ═══ ESTRUCTURA DEL GUION ═══
 1. GANCHO (0-3s, máx. 18 palabras): una afirmación visual, chocante o contraintuitiva que obligue a quedarse. Empieza en el momento más extremo, NUNCA con "Hoy te voy a contar". Plantea un LOOP ABIERTO (una pregunta o promesa) que solo se resuelve al final.
