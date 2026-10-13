@@ -16,12 +16,15 @@
   {
     "titulo": "El Náufrago de Costa Azul: 438 días a la deriva desde Chiapas",
     "fecha": "2026-10-13 08:20:44",
-    "ultima_actualizacion": "2026-10-13 08:20:44",
+    "ultima_actualizacion": "2026-10-13 09:26:29",
     "tipo": "video",
     "slug": "el_náufrago_de_costa_azul_438_días_a_la_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "MORBO",
+    "duracion_audio_s": 115.5,
+    "num_imagenes": 24,
     "carpeta": "el_náufrago_de_costa_azul_438_días_a_la_",
+    "archivo_salida": "el_náufrago_de_costa_azul_438_días_a_la_.mp4",
     "momento_dia": "mediodia"
   },
   {
