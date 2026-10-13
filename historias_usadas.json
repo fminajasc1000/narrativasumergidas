@@ -2,12 +2,15 @@
   {
     "titulo": "Clipperton: la isla mexicana que fue olvidada y el 'rey' que la gobernó",
     "fecha": "2026-10-12 20:45:04",
-    "ultima_actualizacion": "2026-10-12 20:45:04",
+    "ultima_actualizacion": "2026-10-12 22:01:33",
     "tipo": "video",
     "slug": "clipperton_la_isla_mexicana_que_fue_olvi",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "MORBO",
+    "duracion_audio_s": 108.1,
+    "num_imagenes": 24,
     "carpeta": "clipperton_la_isla_mexicana_que_fue_olvi",
+    "archivo_salida": "clipperton_la_isla_mexicana_que_fue_olvi.mp4",
     "momento_dia": "madrugada"
   },
   {
