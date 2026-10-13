@@ -32,12 +32,15 @@
   {
     "titulo": "La Guerra de los Pasteles: la pastelería de Tacubaya y la pierna con funeral de Estado",
     "fecha": "2026-10-12 17:25:02",
-    "ultima_actualizacion": "2026-10-12 17:25:02",
+    "ultima_actualizacion": "2026-10-12 18:23:14",
     "tipo": "video",
     "slug": "la_guerra_de_los_pasteles_la_pastelería_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "ABSURDO",
+    "duracion_audio_s": 108.0,
+    "num_imagenes": 26,
     "carpeta": "la_guerra_de_los_pasteles_la_pastelería_",
+    "archivo_salida": "la_guerra_de_los_pasteles_la_pastelería_.mp4",
     "momento_dia": "noche"
   },
   {
