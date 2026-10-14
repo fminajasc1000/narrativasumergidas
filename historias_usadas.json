@@ -94,12 +94,15 @@
   {
     "titulo": "La Planchada: la enfermera que sigue de guardia en el Hospital Juárez",
     "fecha": "2026-10-13 18:32:02",
-    "ultima_actualizacion": "2026-10-13 18:32:02",
+    "ultima_actualizacion": "2026-10-13 19:40:58",
     "tipo": "video",
     "slug": "la_planchada_la_enfermera_que_sigue_de_g",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 113.5,
+    "num_imagenes": 25,
     "carpeta": "la_planchada_la_enfermera_que_sigue_de_g",
+    "archivo_salida": "la_planchada_la_enfermera_que_sigue_de_g.mp4",
     "momento_dia": "noche"
   },
   {
