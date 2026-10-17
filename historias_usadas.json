@@ -244,12 +244,15 @@
   {
     "titulo": "Real de Catorce: el túnel de Ogarrio que respira",
     "fecha": "2026-10-17 06:39:11",
-    "ultima_actualizacion": "2026-10-17 06:39:11",
+    "ultima_actualizacion": "2026-10-17 11:31:53",
     "tipo": "video",
     "slug": "real_de_catorce_el_túnel_de_ogarrio_que_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "ARQUITECTURA",
+    "duracion_audio_s": 111.1,
+    "num_imagenes": 26,
     "carpeta": "real_de_catorce_el_túnel_de_ogarrio_que_",
+    "archivo_salida": "real_de_catorce_el_túnel_de_ogarrio_que_.mp4",
     "momento_dia": "madrugada"
   },
   {
