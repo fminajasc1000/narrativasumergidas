@@ -66,12 +66,15 @@
   {
     "titulo": "Juliane Koepcke: la niña que cayó 3,000 metros y siguió el agua",
     "fecha": "2026-10-17 06:29:41",
-    "ultima_actualizacion": "2026-10-17 06:29:41",
+    "ultima_actualizacion": "2026-10-17 10:58:38",
     "tipo": "video",
     "slug": "juliane_koepcke_la_niña_que_cayó_3000_me",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "MORBO",
+    "duracion_audio_s": 106.2,
+    "num_imagenes": 19,
     "carpeta": "juliane_koepcke_la_niña_que_cayó_3000_me",
+    "archivo_salida": "juliane_koepcke_la_niña_que_cayó_3000_me.mp4",
     "momento_dia": "mediodia"
   },
   {
