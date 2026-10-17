@@ -119,12 +119,15 @@
   {
     "titulo": "La Mulata de Córdoba: el dibujo que escapó de la Inquisición",
     "fecha": "2026-10-16 23:01:18",
-    "ultima_actualizacion": "2026-10-16 23:01:18",
+    "ultima_actualizacion": "2026-10-17 04:06:50",
     "tipo": "video",
     "slug": "la_mulata_de_córdoba_el_dibujo_que_escap",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 106.8,
+    "num_imagenes": 25,
     "carpeta": "la_mulata_de_córdoba_el_dibujo_que_escap",
+    "archivo_salida": "la_mulata_de_córdoba_el_dibujo_que_escap.mp4",
     "momento_dia": "tarde"
   },
   {
