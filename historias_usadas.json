@@ -196,12 +196,15 @@
   {
     "titulo": "San Pascualito Rey: el esqueleto de Tuxtla que cobra favores",
     "fecha": "2026-10-16 22:55:25",
-    "ultima_actualizacion": "2026-10-16 22:55:25",
+    "ultima_actualizacion": "2026-10-17 03:45:09",
     "tipo": "video",
     "slug": "san_pascualito_rey_el_esqueleto_de_tuxtl",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 109.2,
+    "num_imagenes": 22,
     "carpeta": "san_pascualito_rey_el_esqueleto_de_tuxtl",
+    "archivo_salida": "san_pascualito_rey_el_esqueleto_de_tuxtl.mp4",
     "momento_dia": "manana"
   }
 ]
