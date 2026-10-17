@@ -30,12 +30,15 @@
   {
     "titulo": "El Niño Fidencio de Espinazo: el muerto que sigue operando",
     "fecha": "2026-10-17 06:36:20",
-    "ultima_actualizacion": "2026-10-17 06:36:20",
+    "ultima_actualizacion": "2026-10-17 11:21:07",
     "tipo": "video",
     "slug": "el_niño_fidencio_de_espinazo_el_muerto_q",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 115.5,
+    "num_imagenes": 25,
     "carpeta": "el_niño_fidencio_de_espinazo_el_muerto_q",
+    "archivo_salida": "el_niño_fidencio_de_espinazo_el_muerto_q.mp4",
     "momento_dia": "noche"
   },
   {
