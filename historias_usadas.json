@@ -99,12 +99,15 @@
   {
     "titulo": "La Llorona del Zócalo: el presagio que lloró sobre Tenochtitlan",
     "fecha": "2026-10-16 22:58:18",
-    "ultima_actualizacion": "2026-10-16 22:58:18",
+    "ultima_actualizacion": "2026-10-17 03:56:38",
     "tipo": "video",
     "slug": "la_llorona_del_zócalo_el_presagio_que_ll",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 114.9,
+    "num_imagenes": 26,
     "carpeta": "la_llorona_del_zócalo_el_presagio_que_ll",
+    "archivo_salida": "la_llorona_del_zócalo_el_presagio_que_ll.mp4",
     "momento_dia": "mediodia"
   },
   {
