@@ -55,12 +55,15 @@
   {
     "titulo": "Islas Marías: la cárcel sin muros donde el mar cobraba las fugas",
     "fecha": "2026-10-17 06:32:51",
-    "ultima_actualizacion": "2026-10-17 06:32:51",
+    "ultima_actualizacion": "2026-10-17 11:09:38",
     "tipo": "video",
     "slug": "islas_marías_la_cárcel_sin_muros_donde_e",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "ARQUITECTURA",
+    "duracion_audio_s": 112.7,
+    "num_imagenes": 26,
     "carpeta": "islas_marías_la_cárcel_sin_muros_donde_e",
+    "archivo_salida": "islas_marías_la_cárcel_sin_muros_donde_e.mp4",
     "momento_dia": "tarde"
   },
   {
