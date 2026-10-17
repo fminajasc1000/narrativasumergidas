@@ -189,12 +189,15 @@
   {
     "titulo": "La Velada de María Sabina: el ritual mazateco que sigue vivo en secreto",
     "fecha": "2026-10-17 06:25:55",
-    "ultima_actualizacion": "2026-10-17 06:25:55",
+    "ultima_actualizacion": "2026-10-17 10:49:00",
     "tipo": "video",
     "slug": "la_velada_de_maría_sabina_el_ritual_maza",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 117.1,
+    "num_imagenes": 11,
     "carpeta": "la_velada_de_maría_sabina_el_ritual_maza",
+    "archivo_salida": "la_velada_de_maría_sabina_el_ritual_maza.mp4",
     "momento_dia": "manana"
   },
   {
