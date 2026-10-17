@@ -185,12 +185,15 @@
   {
     "titulo": "San Juan Chamula: la iglesia sin curas donde grabar está prohibido",
     "fecha": "2026-10-16 23:04:25",
-    "ultima_actualizacion": "2026-10-16 23:04:25",
+    "ultima_actualizacion": "2026-10-17 04:18:08",
     "tipo": "video",
     "slug": "san_juan_chamula_la_iglesia_sin_curas_do",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 114.2,
+    "num_imagenes": 26,
     "carpeta": "san_juan_chamula_la_iglesia_sin_curas_do",
+    "archivo_salida": "san_juan_chamula_la_iglesia_sin_curas_do.mp4",
     "momento_dia": "noche"
   },
   {
