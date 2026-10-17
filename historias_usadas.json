@@ -148,5 +148,16 @@
     "fecha": "2026-10-11 15:14",
     "tipo": "video",
     "slug": "san_juan_parangaricutiro_el_pueblo_que_s"
+  },
+  {
+    "titulo": "San Pascualito Rey: el esqueleto de Tuxtla que cobra favores",
+    "fecha": "2026-10-16 22:55:25",
+    "ultima_actualizacion": "2026-10-16 22:55:25",
+    "tipo": "video",
+    "slug": "san_pascualito_rey_el_esqueleto_de_tuxtl",
+    "estado": "guion_listo",
+    "tier": "FOLCLORE",
+    "carpeta": "san_pascualito_rey_el_esqueleto_de_tuxtl",
+    "momento_dia": "manana"
   }
 ]
