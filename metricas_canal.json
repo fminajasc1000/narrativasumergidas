@@ -1,7 +1,7 @@
 {
-  "fecha_analisis": "2026-10-12 16:24:18",
+  "fecha_analisis": "2026-10-13 11:23:25",
   "total_videos_analizados": 15,
-  "promedio_vistas": 399.9,
+  "promedio_vistas": 428.1,
   "todos_youtube": [
     {
       "id": "nUg7UvAfH-Q",
@@ -15,56 +15,74 @@
     {
       "id": "vCQpGZ_6pjM",
       "titulo": "La CASA DE LAS BRUJAS de la colonia Roma 👁️ El edificio que te mira #shorts",
-      "vistas": 1004,
+      "vistas": 1006,
       "likes": 49,
       "comentarios": 0,
-      "ratio_engagement": 4.88,
+      "ratio_engagement": 4.87,
       "publicado": "2026-10-02"
     },
     {
       "id": "9J4hK5JSIP4",
       "titulo": "Lecumberri: la cárcel panóptica de México y sus leyendas | Palacio Negro",
-      "vistas": 862,
+      "vistas": 891,
       "likes": 34,
       "comentarios": 0,
-      "ratio_engagement": 3.94,
+      "ratio_engagement": 3.82,
       "publicado": "2026-10-10"
-    },
-    {
-      "id": "wjCpHbvBm3s",
-      "titulo": "¿El cuerpo del emperador vendido a pedazos? 💀👑 #fyp #history  #peliculas #terrorymisterio",
-      "vistas": 668,
-      "likes": 41,
-      "comentarios": 2,
-      "ratio_engagement": 6.44,
-      "publicado": "2026-09-26"
     },
     {
       "id": "Xk3g_1QC3ak",
       "titulo": "La Mansión Winchester: Historia Real de la Casa Construida para Engañar a los Muertos.",
-      "vistas": 659,
+      "vistas": 667,
       "likes": 25,
       "comentarios": 0,
-      "ratio_engagement": 3.79,
+      "ratio_engagement": 3.75,
       "publicado": "2026-10-10"
+    },
+    {
+      "id": "6hiKXh_NcBE",
+      "titulo": "ISLA CLIPPERTON de México 🏝️ Leyenda de Acapulco #shorts",
+      "vistas": 588,
+      "likes": 29,
+      "comentarios": 0,
+      "ratio_engagement": 4.93,
+      "publicado": "2026-10-13"
+    },
+    {
+      "id": "N4aK6sBReQk",
+      "titulo": "La Guerra de los Pasteles de Tacubaya 🥐 La pierna con funeral de Estado #shorts",
+      "vistas": 575,
+      "likes": 20,
+      "comentarios": 0,
+      "ratio_engagement": 3.48,
+      "publicado": "2026-10-13"
     },
     {
       "id": "QhFuYd71qMg",
       "titulo": "Los ABANDONARON en medio del océano 🌊 Caso REAL #peliculas #narrativassumergidas #terrorymisterio",
-      "vistas": 506,
+      "vistas": 510,
       "likes": 22,
       "comentarios": 0,
-      "ratio_engagement": 4.35,
+      "ratio_engagement": 4.31,
       "publicado": "2026-10-07"
     },
     {
       "id": "x4zbwLrDPak",
       "titulo": "Los Graniceros del Popocatépetl: el ritual secreto de México que aún se practica.  #leyendas",
-      "vistas": 337,
-      "likes": 23,
+      "vistas": 342,
+      "likes": 24,
       "comentarios": 0,
-      "ratio_engagement": 6.82,
+      "ratio_engagement": 7.02,
       "publicado": "2026-10-12"
+    },
+    {
+      "id": "2azftRuKwdo",
+      "titulo": "El faro abandonado que guarda cenizas humanas #shorts #fyp #peliculas #terrorymisterio",
+      "vistas": 170,
+      "likes": 15,
+      "comentarios": 0,
+      "ratio_engagement": 8.82,
+      "publicado": "2026-10-08"
     },
     {
       "id": "7kDEAN4rVSM",
@@ -76,15 +94,6 @@
       "publicado": "2026-09-28"
     },
     {
-      "id": "2azftRuKwdo",
-      "titulo": "El faro abandonado que guarda cenizas humanas #shorts #fyp #peliculas #terrorymisterio",
-      "vistas": 167,
-      "likes": 15,
-      "comentarios": 0,
-      "ratio_engagement": 8.98,
-      "publicado": "2026-10-08"
-    },
-    {
       "id": "Qak5JJK0smc",
       "titulo": "El PEDO más letal de la historia 💨 (sí, es real) #shorts",
       "vistas": 144,
@@ -92,15 +101,6 @@
       "comentarios": 1,
       "ratio_engagement": 10.42,
       "publicado": "2026-10-01"
-    },
-    {
-      "id": "bR819T_lE2g",
-      "titulo": "¿La madre más cruel de la historia? 🥀 #shorts",
-      "vistas": 127,
-      "likes": 18,
-      "comentarios": 1,
-      "ratio_engagement": 14.96,
-      "publicado": "2026-09-25"
     },
     {
       "id": "crXsfXOjPZE",
@@ -114,7 +114,7 @@
     {
       "id": "396CEtH2Csw",
       "titulo": "Subieron para salvarse… y el humo los sigúió. Trajedia de Kaprun.",
-      "vistas": 14,
+      "vistas": 15,
       "likes": 0,
       "comentarios": 0,
       "ratio_engagement": 0.0,
@@ -132,7 +132,7 @@
     {
       "id": "QL5rshWHz90",
       "titulo": "La Isla de las Muñecas: la leyenda de Xochimilco que nadie quiere visitar de noche",
-      "vistas": 6,
+      "vistas": 9,
       "likes": 0,
       "comentarios": 0,
       "ratio_engagement": 0.0,
@@ -152,46 +152,55 @@
     {
       "id": "vCQpGZ_6pjM",
       "titulo": "La CASA DE LAS BRUJAS de la colonia Roma 👁️ El edificio que te mira #shorts",
-      "vistas": 1004,
+      "vistas": 1006,
       "likes": 49,
       "comentarios": 0,
-      "ratio_engagement": 4.88,
+      "ratio_engagement": 4.87,
       "publicado": "2026-10-02"
     },
     {
       "id": "9J4hK5JSIP4",
       "titulo": "Lecumberri: la cárcel panóptica de México y sus leyendas | Palacio Negro",
-      "vistas": 862,
+      "vistas": 891,
       "likes": 34,
       "comentarios": 0,
-      "ratio_engagement": 3.94,
+      "ratio_engagement": 3.82,
       "publicado": "2026-10-10"
-    },
-    {
-      "id": "wjCpHbvBm3s",
-      "titulo": "¿El cuerpo del emperador vendido a pedazos? 💀👑 #fyp #history  #peliculas #terrorymisterio",
-      "vistas": 668,
-      "likes": 41,
-      "comentarios": 2,
-      "ratio_engagement": 6.44,
-      "publicado": "2026-09-26"
     },
     {
       "id": "Xk3g_1QC3ak",
       "titulo": "La Mansión Winchester: Historia Real de la Casa Construida para Engañar a los Muertos.",
-      "vistas": 659,
+      "vistas": 667,
       "likes": 25,
       "comentarios": 0,
-      "ratio_engagement": 3.79,
+      "ratio_engagement": 3.75,
       "publicado": "2026-10-10"
+    },
+    {
+      "id": "6hiKXh_NcBE",
+      "titulo": "ISLA CLIPPERTON de México 🏝️ Leyenda de Acapulco #shorts",
+      "vistas": 588,
+      "likes": 29,
+      "comentarios": 0,
+      "ratio_engagement": 4.93,
+      "publicado": "2026-10-13"
+    },
+    {
+      "id": "N4aK6sBReQk",
+      "titulo": "La Guerra de los Pasteles de Tacubaya 🥐 La pierna con funeral de Estado #shorts",
+      "vistas": 575,
+      "likes": 20,
+      "comentarios": 0,
+      "ratio_engagement": 3.48,
+      "publicado": "2026-10-13"
     },
     {
       "id": "QhFuYd71qMg",
       "titulo": "Los ABANDONARON en medio del océano 🌊 Caso REAL #peliculas #narrativassumergidas #terrorymisterio",
-      "vistas": 506,
+      "vistas": 510,
       "likes": 22,
       "comentarios": 0,
-      "ratio_engagement": 4.35,
+      "ratio_engagement": 4.31,
       "publicado": "2026-10-07"
     }
   ],
@@ -199,11 +208,20 @@
     {
       "id": "x4zbwLrDPak",
       "titulo": "Los Graniceros del Popocatépetl: el ritual secreto de México que aún se practica.  #leyendas",
-      "vistas": 337,
-      "likes": 23,
+      "vistas": 342,
+      "likes": 24,
       "comentarios": 0,
-      "ratio_engagement": 6.82,
+      "ratio_engagement": 7.02,
       "publicado": "2026-10-12"
+    },
+    {
+      "id": "2azftRuKwdo",
+      "titulo": "El faro abandonado que guarda cenizas humanas #shorts #fyp #peliculas #terrorymisterio",
+      "vistas": 170,
+      "likes": 15,
+      "comentarios": 0,
+      "ratio_engagement": 8.82,
+      "publicado": "2026-10-08"
     },
     {
       "id": "7kDEAN4rVSM",
@@ -215,15 +233,6 @@
       "publicado": "2026-09-28"
     },
     {
-      "id": "2azftRuKwdo",
-      "titulo": "El faro abandonado que guarda cenizas humanas #shorts #fyp #peliculas #terrorymisterio",
-      "vistas": 167,
-      "likes": 15,
-      "comentarios": 0,
-      "ratio_engagement": 8.98,
-      "publicado": "2026-10-08"
-    },
-    {
       "id": "Qak5JJK0smc",
       "titulo": "El PEDO más letal de la historia 💨 (sí, es real) #shorts",
       "vistas": 144,
@@ -231,15 +240,6 @@
       "comentarios": 1,
       "ratio_engagement": 10.42,
       "publicado": "2026-10-01"
-    },
-    {
-      "id": "bR819T_lE2g",
-      "titulo": "¿La madre más cruel de la historia? 🥀 #shorts",
-      "vistas": 127,
-      "likes": 18,
-      "comentarios": 1,
-      "ratio_engagement": 14.96,
-      "publicado": "2026-09-25"
     }
   ],
   "videos_bajos": [
@@ -255,7 +255,7 @@
     {
       "id": "396CEtH2Csw",
       "titulo": "Subieron para salvarse… y el humo los sigúió. Trajedia de Kaprun.",
-      "vistas": 14,
+      "vistas": 15,
       "likes": 0,
       "comentarios": 0,
       "ratio_engagement": 0.0,
@@ -273,7 +273,7 @@
     {
       "id": "QL5rshWHz90",
       "titulo": "La Isla de las Muñecas: la leyenda de Xochimilco que nadie quiere visitar de noche",
-      "vistas": 6,
+      "vistas": 9,
       "likes": 0,
       "comentarios": 0,
       "ratio_engagement": 0.0,
@@ -287,104 +287,131 @@
           "id": "1158791430643856_122124576393306929",
           "texto": "Jerusalén, alrededor del año 48 d.C. Miles de peregrinos cel",
           "fecha": "2026-10-01",
-          "compartidos": 113
-        },
-        {
-          "id": "1158791430643856_122122546761306929",
-          "texto": "LO DESENTERRÓ PARA JUZGARLO. 🤯 Conoce el evento más macabro y vengativo del Vaticano",
-          "fecha": "2026-09-14",
-          "compartidos": 2
+          "compartidos": 114,
+          "vistas": 59315
         },
         {
           "id": "1158791430643856_122125311621306929",
           "texto": "Un conteo mal hecho. Dos buceadores solos en el océano. Una ",
           "fecha": "2026-10-07",
-          "compartidos": 1
+          "compartidos": 1,
+          "vistas": 1075
         },
         {
           "id": "1158791430643856_122124803055306929",
           "texto": "En los años 50, levantar la colonia Caracoles requirió de un",
           "fecha": "2026-10-02",
-          "compartidos": 1
-        },
-        {
-          "id": "1158791430643856_122125917543306929",
-          "texto": "El ritual que en México aún se hace a escondidas  La neta, e",
-          "fecha": "2026-10-12",
-          "compartidos": 0
-        },
-        {
-          "id": "1158791430643856_122125429557306929",
-          "texto": "Un tren de esquiadores, un calefactor defectuoso y un túnel ",
-          "fecha": "2026-10-07",
-          "compartidos": 0
-        },
-        {
-          "id": "1158791430643856_122125402911306929",
-          "texto": "Un faro aislado en el Pacífico, un naufragio sin sobrevivien",
-          "fecha": "2026-10-07",
-          "compartidos": 0
+          "compartidos": 1,
+          "vistas": 1023
         },
         {
           "id": "1158791430643856_122124705243306929",
           "texto": "Frente a la Plaza Río de Janeiro, en la colonia Roma de la C",
           "fecha": "2026-10-02",
-          "compartidos": 0
+          "compartidos": 0,
+          "vistas": 452
         },
         {
-          "id": "1158791430643856_122124333249306929",
-          "texto": "Colonia Árbol Grande, Ciudad Madero, 1973. La mujer más gene",
-          "fecha": "2026-09-29",
-          "compartidos": 0
-        },
-        {
-          "id": "1158791430643856_122124204843306929",
-          "texto": "Doce horas de parto, sin médico, sin partera y completamente",
-          "fecha": "2026-09-28",
-          "compartidos": 0
+          "id": "1158791430643856_122125917543306929",
+          "texto": "El ritual que en México aún se hace a escondidas  La neta, e",
+          "fecha": "2026-10-12",
+          "compartidos": 0,
+          "vistas": 388
         },
         {
           "id": "1158791430643856_122124200307306929",
           "texto": "Jugaban con fuego radiactivo usando un simple destornillador",
           "fecha": "2026-09-28",
-          "compartidos": 0
+          "compartidos": 0,
+          "vistas": 358
         },
         {
-          "id": "1158791430643856_122123947605306929",
-          "texto": "La profanación más oscura de la historia de México. 🥀 Conoce",
-          "fecha": "2026-09-26",
-          "compartidos": 0
+          "id": "1158791430643856_122124333249306929",
+          "texto": "Colonia Árbol Grande, Ciudad Madero, 1973. La mujer más gene",
+          "fecha": "2026-09-29",
+          "compartidos": 0,
+          "vistas": 352
+        },
+        {
+          "id": "1158791430643856_122124204843306929",
+          "texto": "Doce horas de parto, sin médico, sin partera y completamente",
+          "fecha": "2026-09-28",
+          "compartidos": 0,
+          "vistas": 307
+        },
+        {
+          "id": "1158791430643856_122125429557306929",
+          "texto": "Un tren de esquiadores, un calefactor defectuoso y un túnel ",
+          "fecha": "2026-10-07",
+          "compartidos": 0,
+          "vistas": 289
         },
         {
           "id": "1158791430643856_122123825121306929",
           "texto": "¿Hasta dónde llega la crueldad de una familia por mantener l",
           "fecha": "2026-09-25",
-          "compartidos": 0
+          "compartidos": 0,
+          "vistas": 241
         },
         {
-          "id": "1158791430643856_122123650545306929",
-          "texto": "La Castañeda fue el infierno donde los ricos de México sepul",
-          "fecha": "2026-09-23",
-          "compartidos": 0
+          "id": "1158791430643856_122123947605306929",
+          "texto": "La profanación más oscura de la historia de México. 🥀 Conoce",
+          "fecha": "2026-09-26",
+          "compartidos": 0,
+          "vistas": 123
         },
         {
-          "id": "1158791430643856_122123526291306929",
-          "texto": "EL MÉDICO SE EQUIVOCÓ Y LA ENTERRARON VIVA. 🤯 Conoce la maca",
-          "fecha": "2026-09-22",
-          "compartidos": 0
+          "id": "1158791430643856_122125402911306929",
+          "texto": "Un faro aislado en el Pacífico, un naufragio sin sobrevivien",
+          "fecha": "2026-10-07",
+          "compartidos": 0,
+          "vistas": 59
+        },
+        {
+          "id": "1158791430643856_122126008587306929",
+          "texto": "La Isla de las Muñecas: ¿qué le pasó a don Julián? 💀🛶  Dicen",
+          "fecha": "2026-10-12",
+          "compartidos": 0,
+          "vistas": 5
+        },
+        {
+          "id": "1158791430643856_122126062605306929",
+          "texto": "Océano Pacífico, 1917. Una guarnición mexicana quedó aislada",
+          "fecha": "2026-10-13",
+          "compartidos": 0,
+          "vistas": 4
+        },
+        {
+          "id": "1158791430643856_122126057883306929",
+          "texto": "Tacubaya, 1832. Un grupo de soldados entra a una pastelería ",
+          "fecha": "2026-10-13",
+          "compartidos": 0,
+          "vistas": 1
         }
       ],
       "instagram": [
         {
+          "id": "17912770995507582",
+          "caption": "La Isla de las Muñecas | Dato guardable  Una chinampa, cient",
+          "vistas": 337,
+          "alcance": 277,
+          "likes": 25,
+          "comentarios": 0,
+          "guardados": 3,
+          "compartidos": 0,
+          "interacciones": 28,
+          "fecha": "2026-10-12"
+        },
+        {
           "id": "18077261891405353",
           "caption": "Frente a la Plaza Río de Janeiro, en la colonia Roma de la C",
-          "vistas": 211,
-          "alcance": 177,
-          "likes": 8,
+          "vistas": 213,
+          "alcance": 178,
+          "likes": 9,
           "comentarios": 0,
           "guardados": 4,
           "compartidos": 0,
-          "interacciones": 13,
+          "interacciones": 14,
           "fecha": "2026-10-02"
         },
         {
@@ -400,16 +427,28 @@
           "fecha": "2026-09-28"
         },
         {
-          "id": "17974402466935152",
-          "caption": "El macabro secreto del emperador Maximiliano en Querétaro. 💀",
-          "vistas": 207,
-          "alcance": 180,
+          "id": "18005570177790865",
+          "caption": "Isla Clipperton: el dato guardable  📍 Isla Clipperton, a 1,2",
+          "vistas": 210,
+          "alcance": 177,
           "likes": 7,
-          "comentarios": 0,
+          "comentarios": 1,
           "guardados": 0,
-          "compartidos": 2,
-          "interacciones": 10,
-          "fecha": "2026-09-26"
+          "compartidos": 0,
+          "interacciones": 8,
+          "fecha": "2026-10-13"
+        },
+        {
+          "id": "17912506089296128",
+          "caption": "Tacubaya, 1832: la pastelería que desató una guerra con Fran",
+          "vistas": 196,
+          "alcance": 146,
+          "likes": 11,
+          "comentarios": 0,
+          "guardados": 2,
+          "compartidos": 1,
+          "interacciones": 14,
+          "fecha": "2026-10-13"
         },
         {
           "id": "18104395904120179",
@@ -426,8 +465,8 @@
         {
           "id": "18134208217657674",
           "caption": "Graniceros: los elegidos por el rayo  Cuevas, ofrendas de mo",
-          "vistas": 144,
-          "alcance": 135,
+          "vistas": 150,
+          "alcance": 138,
           "likes": 1,
           "comentarios": 0,
           "guardados": 0,
@@ -438,8 +477,8 @@
         {
           "id": "18050880716602633",
           "caption": "Seis galerías. Una torre central. Una vigilancia que, según ",
-          "vistas": 124,
-          "alcance": 110,
+          "vistas": 128,
+          "alcance": 112,
           "likes": 4,
           "comentarios": 0,
           "guardados": 1,
@@ -462,26 +501,14 @@
         {
           "id": "18009826454995897",
           "caption": "Subir fue su sentencia.  Solo 12 sobrevivieron al infirmo de",
-          "vistas": 24,
-          "alcance": 126,
+          "vistas": 25,
+          "alcance": 127,
           "likes": 4,
           "comentarios": 1,
           "guardados": 0,
           "compartidos": 0,
           "interacciones": 5,
           "fecha": "2026-10-07"
-        },
-        {
-          "id": "18248990590314342",
-          "caption": "Detrás del lujo de la aristocracia francesa se escondía un d",
-          "vistas": 21,
-          "alcance": 13,
-          "likes": 0,
-          "comentarios": 0,
-          "guardados": 0,
-          "compartidos": 0,
-          "interacciones": 0,
-          "fecha": "2026-09-25"
         },
         {
           "id": "17956831773014970",
@@ -520,22 +547,10 @@
           "fecha": "2026-10-07"
         },
         {
-          "id": "17912770995507582",
-          "caption": "La Isla de las Muñecas | Dato guardable  Una chinampa, cient",
-          "vistas": 2,
-          "alcance": 0,
-          "likes": 0,
-          "comentarios": 0,
-          "guardados": 0,
-          "compartidos": 0,
-          "interacciones": 0,
-          "fecha": "2026-10-12"
-        },
-        {
           "id": "18011355752969448",
           "caption": "El faro donde nadie vive.. pero está lleno de muertos.  Till",
-          "vistas": 2,
-          "alcance": 1,
+          "vistas": 6,
+          "alcance": 2,
           "likes": 0,
           "comentarios": 0,
           "guardados": 0,
@@ -546,8 +561,8 @@
         {
           "id": "18177847375446855",
           "caption": "Nueve peldaños. Un techo. Ningún destino. 🕯️  Una casa que n",
-          "vistas": 1,
-          "alcance": 1,
+          "vistas": 3,
+          "alcance": 2,
           "likes": 0,
           "comentarios": 0,
           "guardados": 0,
@@ -561,15 +576,15 @@
       {
         "id": "7690803045201972500",
         "titulo": "Dicen que en esta iglesia de Ciudad Madero dormía ",
-        "vistas": 31253,
-        "likes": 1703,
-        "comentarios": 128,
-        "compartidos": 1219
+        "vistas": 32061,
+        "likes": 1746,
+        "comentarios": 134,
+        "compartidos": 1245
       },
       {
         "id": "7692184110902594823",
         "titulo": "El pacto oscuro del Señor Pelayo que construyó una",
-        "vistas": 859,
+        "vistas": 865,
         "likes": 32,
         "comentarios": 1,
         "compartidos": 6
@@ -577,15 +592,15 @@
       {
         "id": "7690460518942788884",
         "titulo": "Se hizo una cesárea a si misma para salvar a su hi",
-        "vistas": 793,
-        "likes": 76,
+        "vistas": 799,
+        "likes": 77,
         "comentarios": 6,
         "compartidos": 1
       },
       {
         "id": "7691908313579097364",
         "titulo": "Dicen que este edificio de la colonia Roma te mira",
-        "vistas": 697,
+        "vistas": 700,
         "likes": 49,
         "comentarios": 3,
         "compartidos": 1
@@ -593,47 +608,31 @@
       {
         "id": "7691513309593488660",
         "titulo": "Un soldado romano se tiró un pedo… y la historia l",
-        "vistas": 582,
+        "vistas": 587,
         "likes": 26,
         "comentarios": 1,
         "compartidos": 3
       },
       {
-        "id": "7690435253810367764",
-        "titulo": "¿Un destello azul que te desintegra vivo? ☢️ El er",
-        "vistas": 580,
-        "likes": 34,
-        "comentarios": 0,
-        "compartidos": 0
-      },
-      {
-        "id": "7689707292572421396",
-        "titulo": "El doctor que debía cuidarlo en la muerte terminó ",
-        "vistas": 559,
-        "likes": 33,
-        "comentarios": 3,
-        "compartidos": 1
-      },
-      {
-        "id": "7689333035010985224",
-        "titulo": "La pudrió en vida por enamorarse del hombre equivo",
-        "vistas": 547,
-        "likes": 42,
-        "comentarios": 3,
-        "compartidos": 0
-      },
-      {
         "id": "7694036230572477717",
         "titulo": "El túnel que se convirtió en chimenea. Tu instinto",
-        "vistas": 540,
+        "vistas": 547,
         "likes": 17,
         "comentarios": 1,
         "compartidos": 0
       },
       {
+        "id": "7695551688505052436",
+        "titulo": "Un rayo te elige y no puedes negarte. En los puebl",
+        "vistas": 475,
+        "likes": 38,
+        "comentarios": 0,
+        "compartidos": 1
+      },
+      {
         "id": "7693973963562667284",
         "titulo": "Este faro está lleno de muertos… y es real. Lo apa",
-        "vistas": 448,
+        "vistas": 453,
         "likes": 21,
         "comentarios": 1,
         "compartidos": 0
@@ -641,7 +640,7 @@
       {
         "id": "7693741707816488212",
         "titulo": "La pareja que el océano nunca devolvió. Su último ",
-        "vistas": 434,
+        "vistas": 442,
         "likes": 12,
         "comentarios": 1,
         "compartidos": 0
@@ -649,55 +648,71 @@
       {
         "id": "7694901757172010260",
         "titulo": "Esta escalera no lleva a ningún lado... y su dueña",
-        "vistas": 407,
+        "vistas": 417,
         "likes": 22,
         "comentarios": 1,
         "compartidos": 0
       },
       {
-        "id": "7695551688505052436",
-        "titulo": "Un rayo te elige y no puedes negarte. En los puebl",
-        "vistas": 359,
-        "likes": 32,
+        "id": "7695979450114051349",
+        "titulo": "Una pastelería de Tacubaya provocó una guerra Una ",
+        "vistas": 362,
+        "likes": 13,
         "comentarios": 0,
-        "compartidos": 1
+        "compartidos": 2
       },
       {
-        "id": "7695049750063680786",
-        "titulo": "Esta cárcel te observa… incluso cerrada desde 1976",
-        "vistas": 137,
+        "id": "7695901508684041492",
+        "titulo": "Colgó muñecas 30 años … y ella cobró.  Está leyend",
+        "vistas": 163,
         "likes": 9,
         "comentarios": 0,
         "compartidos": 0
       },
       {
-        "id": "7695901508684041492",
+        "id": "7695049750063680786",
+        "titulo": "Esta cárcel te observa… incluso cerrada desde 1976",
+        "vistas": 145,
+        "likes": 9,
+        "comentarios": 0,
+        "compartidos": 0
+      },
+      {
+        "id": "7695977921516817665",
         "titulo": "Colgó muñecas 30 años … y ella cobró.  Está leyend",
-        "vistas": 21,
-        "likes": 1,
+        "vistas": 106,
+        "likes": 5,
+        "comentarios": 0,
+        "compartidos": 0
+      },
+      {
+        "id": "7696195289979522324",
+        "titulo": "Zarpo 12 horas… y reapareció 438 días despues. Dos",
+        "vistas": 15,
+        "likes": 0,
         "comentarios": 0,
         "compartidos": 0
       }
     ]
   },
   "optimizacion_prompts_ia": {
-    "diagnostico_global": "TikTok depende de un solo outlier: La Vampira de Ciudad Madero suma 31,253 vistas (90% de las vistas de TikTok), con 3.9% de compartidos (1,219) y 1,252 vistas en YT. En YT, IG y FB gana lo que ancla a un lugar físico real, como la Casa de las Brujas (YT 1,004 vistas y 4.88% de engagement; IG con los únicos 4 guardados fuertes) o la fecha y el sitio de Jerusalén en FB (113 compartidos contra 0-2 del resto). Falla todo lo que arranca sin lugar mexicano reconocible (Kaprun 14 vistas, destornillador 0 interacciones, buzos 1 compartido) y falla la conversación: 2 comentarios en los 5 top de YT y 0 comentarios en 6 posts de IG (919 de alcance).",
+    "diagnostico_global": "El canal gana con lugares físicos reales de México envueltos en una leyenda ('Dicen que…'): La Vampira de Ciudad Madero llegó a 32,061 vistas, 1,745 likes y 1,245 compartidos en TikTok, y La Casa de las Brujas, Lecumberri y Winchester superan las 650 vistas en YT. Cada red premia algo distinto: en FB el ancla histórica con fecha y dilema moral (Jerusalén 48 d.C.: 59,315 vistas y 114 compartidos), en IG el dato accionable (Roma: 2.2% de guardados sobre alcance) y en YT el título limpio con nombre propio y lugar. Fallan los temas sin lugar visitable o extranjeros (Kaprun 15, Cesárea 10) y los títulos con hashtags en exceso o faltas ortográficas (Pelayo 73, Kaprun). Los comentarios en YT son 0 en los 9 shorts analizados. La muestra es pequeña, así que las metas de abajo son hipótesis a validar.",
     "reglas_guion": [
-      "GANCHO 0-3s + LOOP ABIERTO. Las primeras 8-10 palabras (≈3 s) siguen la fórmula [«Dicen que» o «Frente a»] + [lugar real nombrado] + [una figura o hecho imposible]. Es la estructura de La Vampira («Dicen que en esta iglesia de Ciudad Madero dormía una vampira») y de la Casa de las Brujas («este edificio de la colonia Roma te mira»). Mide lo mismo en cada video: nombre del lugar en las primeras 5 palabras, una sola promesa, ningún dato resuelto. El enigma (quién, qué o por qué) no se revela antes de la palabra ~190 (≈75 s). La última frase debe retomar la primera con un giro, para que el replay cierre el loop. Evita arrancar con el evento o la cifra sin lugar («Un destornillador resbaló…», «Subieron para salvarse…»): esos tres posts sumaron 14 vistas en YT y 0 interacciones en IG. Meta: primera frase ≤ 3 s y gancho con topónimo en el 100% de los guiones.",
-      "TEMÁTICA Y RITMO 215-280 PALABRAS / 85-115 s. Mezcla semanal sugerida: 60% leyendas con sitio visitable en México (iglesia de San Juan Bosco en Cd. Madero, Plaza Río de Janeiro en la Roma, Lecumberri en CDMX), 25% historia macabra icónica con edificio o personaje reconocible (Winchester 659 vistas, Maximiliano 668 con 6.44% de engagement) y 15% experimental. Máximo 1 tragedia técnica o de supervivencia sin sitio mexicano por semana: Kaprun y la cesárea sumaron 24 vistas en YT. Ritmo: 10-13 palabras por escena (≈4.5 s), ninguna oración de más de 14 palabras y un total de 18-25 escenas. RE-GANCHO A MITAD en la palabra ~110-130 (≈45-55 s, escenas 10-12) con una frase giro tipo «Pero lo más perturbador no es eso…» seguida de un dato nuevo y concreto, nunca un recordatorio. Antes de escribir, verifica que el lugar tenga dirección o colonia comprobable.",
-      "REVELACIONES CADA ~5 s Y CIERRE A/B. Cada escena (≈4.5 s) introduce un dato nuevo y verificable: nombre, año, cifra, objeto o testimonio. Nunca dos escenas seguidas sin dato nuevo. Las dos escenas finales (≈9 s, 20-25 palabras) llevan una oración de cierre y una pregunta dicotómica con opciones de 1-3 palabras que se contesten con una letra: «¿Enferma o criatura? Responde A o B». Esto responde al problema de comentarios (2 en los 5 top de YT, 0 en IG). Fija el comentario con las opciones A/B y responde los primeros 5 comentarios en los primeros 60 min. Metas: ≥ 1 comentario por cada 100 vistas en YT y ≥ 1% en TikTok (La Vampira hoy: 0.41%).",
-      "TÍTULOS Y COPYS POR RED. YT (SEO documental): [FIGURA o LUGAR en MAYÚSCULA] + de + [lugar real] + 1 emoji + «Leyenda de [ciudad/colonia]» + #shorts, ≤ 70 caracteres y keyword en los primeros 40. Es el patrón de los 3 mejores. Máximo 3 hashtags relevantes (quita #peliculas, #cine y #fyp en leyendas locales) y revisa ortografía antes de publicar (los títulos de Kaprun tenían «sigúió» y «Trajedia»). Primeras 120 caracteres de la descripción: lugar + año + «leyenda urbana». TIKTOK (shock/curiosidad): primera línea ≤ 90 caracteres con «Dicen que…» o un contraste imposible, el mismo texto del gancho en pantalla en los primeros 2 s, 3 hashtags (1 de ciudad, 1 de nicho como #leyendasdemexico, 1 amplio), y pregunta de comentario en la última línea. Meta: ≥ 2% de compartidos. INSTAGRAM (dato guardable): línea 1 = dirección o ubicación + dato (el post con «Frente a la Plaza Río de Janeiro…» logró 4 guardados y 13 interacciones, el mejor). Siguen 3 datos numerados (año, cifra, nombre), CTA «Guárdalo para tu ruta de leyendas», geotag y ≤ 5 hashtags. Meta: guardados ≥ 2% del alcance (hoy 2.26% el mejor, 0-0.9% el resto). FACEBOOK (ancla histórica + debate moral): línea 1 = «Ciudad, año.» + escena colectiva (el post «Jerusalén, alrededor del año 48 d.C. Miles de peregrinos…» logró 113 compartidos; el de MAYÚSCULAS + 🤯 logró 2). Cierra con un dilema moral de 2 bandos («¿Justicia o venganza?») y evita el clickbait en mayúsculas. Meta: ≥ 10 compartidos por post."
+      "REGLA 1 · GANCHO 0-3s Y LOOP ABIERTO: La primera frase tiene máximo 9 palabras (≈3s a 2.5 palabras/s), sin saludo ni presentación del canal, y sigue la fórmula 'Dicen que + lugar físico real + anomalía concreta', cortada en suspenso. Ejemplo: 'Dicen que en esta iglesia de Ciudad Madero dormía…'. Esa fórmula dio 32,061 vistas en TikTok (5.4% de likes, 3.9% de compartidos, 134 comentarios) y 1,252 en YT, el top de Shorts. La misma estructura en Casa de las Brujas llegó a 700 vistas en TikTok y 1,006 en YT, así que la fórmula solo funciona con una anomalía visual y concreta (dormía, te mira) y con el nombre del lugar en las primeras 5 palabras. La pregunta abierta del gancho se resuelve después del 75% del video (segundo ≈85-90 en un video de 115s), y la última frase retoma las palabras del gancho para provocar la repetición. Metas: retención a 3s ≥70% (viewed vs swiped away en YT) y repeticiones ≥10% de las vistas.",
+      "REGLA 2 · TEMÁTICA, RITMO Y RE-GANCHO: Al menos el 70% de la producción mensual debe ser un lugar físico de México con colonia o ciudad identificable y una leyenda o hecho documentable (Vampira de Cd. Madero, Casa de las Brujas de la Roma, Lecumberri). Como máximo 1 de cada 5 videos puede ser tragedia extranjera o historia de supervivencia sin lugar visitable (Kaprun 15 vistas, Cesárea 10). Guion de 215-280 palabras (85-115s, ≈2.4-2.5 palabras/s) con este reparto: gancho 8-9 palabras; contexto del lugar 40-50; desarrollo hasta la palabra ~110; RE-GANCHO entre las palabras 110 y 140 (segundo 45-55) con una frase tipo 'Pero lo que nadie cuenta es…' que abre un dato nuevo y contradice lo anterior; clímax en las palabras 200-240; cierre de 25-30 palabras. Equivale a 11-12 palabras por escena (18-25 escenas de ~4.5s). Si el borrador queda fuera de 215-280 palabras, se recorta o amplía antes de generar imágenes.",
+      "REGLA 3 · REVELACIONES CADA ~5s Y CIERRE A/B: Cada bloque de 11-12 palabras (una escena de ~4.5s) debe aportar un dato nuevo y verificable (fecha, nombre propio, cifra, objeto o consecuencia), lo que da 18-25 revelaciones por video. Las frases miden como máximo 14 palabras, sin adjetivos de relleno ('increíble', 'misterioso') y con ≥1 sustantivo concreto cada una. Las últimas 12-15 palabras son una pregunta dicotómica con ambas opciones defendibles, por ejemplo: '¿Fue una vampira real o una mujer enferma condenada por su pueblo? Responde A o B.' Después de publicar: fijar un comentario propio con las opciones A/B en los primeros 10 minutos y responder los primeros 5 comentarios en menos de 60 minutos. Metas: YT ≥3 comentarios por cada 1,000 vistas (hoy 0 en 9 shorts) y TikTok mantener ≥0.4% de comentarios sobre vistas (La Vampira: 0.42%).",
+      "REGLA 4 · METADATA POR RED. YT (SEO documental): título ≤80 caracteres con el formato [Nombre propio destacado en MAYÚSCULA] + lugar + 1 emoji + 'Leyenda de [ciudad]' o 'Historia real', como en los 2 títulos top ('La VAMPIRA de la iglesia de San Juan Bosco 🦇 Leyenda de Ciudad Madero #shorts'). Máximo 3 hashtags (Pelayo, con 6 hashtags, tuvo 73 vistas), revisión ortográfica obligatoria (Kaprun tenía 'sigúió' y 'Trajedia' y llegó a 15 vistas) y el lugar siempre en el título (Cesárea, sin lugar, tuvo 10). Primeras 2 líneas de la descripción con lugar + ciudad + año. TIKTOK (shock/curiosidad): copy ≤100 caracteres que arranca con 'Dicen que…' o con una contradicción, sin revelar el final, más 3-4 hashtags y un detalle regional (identidad local = compartidos: 3.9% en La Vampira frente a 0.1% en Cesárea). IG (dato guardable): la caption abre con 'Dato guardable:' seguido de 3 viñetas accionables (colonia o dirección, año, qué mirar o cómo llegar). La etiqueta sola no basta: Clipperton la llevó y tuvo 0 guardados, mientras que Roma, con datos concretos, tuvo 4 guardados sobre 178 de alcance. FB (compartidos): la primera línea es un ancla histórica 'Lugar, año.' (Jerusalén, alrededor del año 48 d.C.) más un conflicto moral y la pregunta '¿Quién tuvo la culpa?'. El soldado romano llevó 587 vistas en TikTok y, en FB, 59,315 vistas y 114 compartidos. Meta FB: ≥1.5 compartidos por cada 1,000 vistas (hoy 0-1 en los posts de ~1k)."
     ],
     "reglas_escenas": [
-      "ESCENA 1 (01_gancho.png) Y RETENCIÓN VISUAL 0-3 s. El frame debe mostrar la promesa literal del gancho: si el gancho dice «iglesia donde dormía una vampira», la escena 1 es la fachada de esa iglesia, con un único foco de luz motivado (ventana encendida, puerta entreabierta o farol) que sea el punto más claro del encuadre y ocupe 15-25% del cuadro, ubicado en un tercio. Prompt de arquitectura u objeto: 'no humans, empty scene' obligatorio, más 'negative space at top' porque lleva texto del gancho (≤ 6 palabras en ese espacio, visibles desde el segundo 0.3). Movimiento: zoom_in lento hacia el foco de luz, entrada en cut, sin fade. La escena 2 debe cambiar de escala de plano (de general a detalle, o viceversa) y entrar con cut a los ≈4.5 s para evitar una segunda imagen estática parecida. Sin rostros en la escena 1, salvo un retrato con desgaste de época si el gancho es una figura.",
-      "ESTÉTICA ARQUITECTÓNICA/FOLCLÓRICA E ILUMINACIÓN. Define en estilo_visual_global, una sola vez, la paleta (máx. 3 colores dominantes, p. ej. negro azulado, ámbar sodio, hueso), el contraste bajo-clave y el grano. En los prompts individuales no escribas ninguna palabra de estilo, medio, lente, grano, artista ni calidad. Solo describe contenido: sujeto, materiales, desgaste, fuente de luz física (candle, window light, streetlamp, moonlight), clima y hora. Arquitectura y objetos: 'no humans, empty scene' en el 100% de esas escenas, con texturas verificables (pintura descascarada, estuco agrietado, cantera, tezontle, herrería oxidada, adoquín mojado, niebla baja). Retratos: desgaste contextual de época explícito (ropa de luto de la época, cuello manchado, piel agrietada, polvo en pestañas). Distribución sugerida en 22 escenas: ≈70% arquitectura y espacios, 20% objetos y detalles, 10% retratos. Luz clave motivada por una sola fuente en ≥ 85% de las escenas (evita luz de día plana). Para guardados en IG y reconocimiento en YT, el lugar real reconocible (fachada, plaza, torre central de Lecumberri) aparece en ≥ 3 escenas. Reserva 1-2 escenas diurnas o sepia solo para los datos históricos.",
-      "ALTERNANCIA DE PLANOS, MOVIMIENTOS Y TRANSICIONES (18-25 escenas, ≈4.5 s cada una, 4-5 s de rango). Distribución orientativa en 22 escenas: ≈6 generales (zoom_in o slow_drift), ≈8 medios (pan_left y pan_right alternados), ≈5 detalles (zoom_in) y ≈3 revelaciones verticales (tilt_up en torres, campanarios y fachadas). Nunca dos escenas consecutivas con el mismo plano ni con el mismo movimiento. Máximo 2 slow_drift seguidos. Alterna la dirección de los pan. Transiciones: ≈60-65% cut (cada dato nuevo), ≈25-30% crossfade (saltos de tiempo y contemplación), máx. 2 fade_black por video (antes del re-gancho en las escenas 10-12 y antes de la escena final). Las escenas 10-12 (≈45-55 s) llevan el cambio visual más fuerte: detalle extremo de un objeto o rostro desgastado en cut. La última escena reencuadra la escena 1 en otro momento (amanecer, luz apagada) con 'negative space at top' para colocar la pregunta A/B.",
-      "PORTADAS A Y B. PORTADA A (YT Shorts / IG, arquitectura): 'no humans, empty scene' + 'negative space at top' para un título de ≤ 4 palabras en MAYÚSCULAS. El edificio ocupa el tercio central-inferior con silueta clara, un solo punto de luz cálida (ventana o puerta) y el sitio reconocible. Mantén todo lo importante dentro del recuadro central 4:5 para que la rejilla de IG no lo recorte. Es el formato de la Casa de las Brujas (YT 1,004 vistas, 4.88% de engagement; IG con los únicos 4 guardados fuertes). PORTADA B (TikTok / FB, rostro o detalle perturbador): primer plano que ocupe 60-70% del cuadro, con los ojos en el tercio superior, y un desgaste de época explícito (porcelana agrietada, velo de luto manchado, catarata, encaje roto) o un objeto inquietante (muñeca sin ojo, llave oxidada, puerta sellada). Texto de ≤ 3 palabras, solo con 'negative space at top' si lleva texto. Debe ser un frame de la escena 1 o 10-12 para cumplir la promesa. Plan: alternar A y B en los próximos 6 videos y registrar CTR en YT Studio y tasa de reproducción en TikTok. Meta provisional de CTR: ≥ 6% con portada A en YT."
+      "REGLA 1 · ESCENA 1 (01_gancho.png): Debe ser la imagen más perturbadora y literal de las 18-25 escenas, no un establishing neutro, y ilustrar exactamente la primera frase hablada (la iglesia, la ventana que mira). Un único punto focal que ocupe ≥40% del cuadro y 'negative space at top' en el 30% superior para un texto de ≤6 palabras en alto contraste. Si es arquitectura u objeto, el prompt lleva 'no humans, empty scene'. Si es un retrato, lleva desgaste contextual de época (ropa raída, hollín, piel curtida, tela manchada). Prompt individual sin estilos (nada de 'cinematic', '8k', 'photorealistic' ni 'masterpiece'); eso va solo en estilo_visual_global. Movimiento obligatorio desde el frame 0 (zoom_in lento) y transición de entrada en cut, nunca fade_black. La escena 2 (segundos 4.5-9) cambia de ángulo y de distancia respecto a la 1. Meta: retención a 3s ≥70% en YT y TikTok.",
+      "REGLA 2 · ESTÉTICA ARQUITECTÓNICA/FOLCLÓRICA E ILUMINACIÓN: Al menos el 60% de las escenas son arquitectura u objeto con 'no humans, empty scene' (fachadas, ventanas, pasillos, altares, veladoras, cruces, ofrendas), porque los lugares son el activo que sostiene los guardados en IG (Roma 4 guardados, Tacubaya 2, Isla de las Muñecas 3) y las vistas en YT (Casa de las Brujas 1,006). Cada escena describe UNA sola fuente de luz motivada dentro del propio prompt (farola de sodio ámbar, una ventana encendida, una vela, luz de luna filtrada) sobre sombras frías azul-negro, con niebla, humedad o polvo como atmósfera. Se evitan las escenas con luz plana de día. Paleta y hora del día coherentes en ≥80% de las escenas. Los retratos (≤4 por video) llevan desgaste de época visible en ropa, piel y textura. Cero palabras de estilo o calidad en los prompts individuales; solo en estilo_visual_global.",
+      "REGLA 3 · PLANOS, MOVIMIENTOS Y TRANSICIONES (ejemplo con 22 escenas, ~4.5s ±0.5s cada una, 85-115s totales): Distribución mínima: ≥6 planos generales de lugar (pan_left/pan_right), ≥8 detalles u objetos (zoom_in), ≥4 contrapicados de fachada o torre (tilt_up) y ≤4 retratos (slow_drift). No se repite el mismo movimiento más de 2 escenas seguidas ni el mismo tipo de plano 2 veces consecutivas. Transiciones: crossfade en 60-70% de los cortes para continuidad; cut en 25-30%, alineado con cada revelación o dato fuerte y con el clímax; fade_black solo 2-3 veces por video (cambio de capítulo ≈ escena 6, re-gancho ≈ escenas 10-12, antes del cierre) y nunca en la escena 1. El re-gancho (segundos 45-55) debe verse: pasar de exterior amplio a detalle extremo con un cut. La última escena repite el encuadre de la escena 1, pero cambiado (luz apagada, puerta abierta, objeto desplazado) para reforzar el loop.",
+      "REGLA 4 · PORTADAS A Y B: PORTADA A (YT/IG, arquitectura): fachada completa en contrapicado, 'no humans, empty scene', 'negative space at top' para un título de ≤4 palabras en mayúsculas (ej.: 'LA CASA QUE TE MIRA'), con UNA ventana o puerta iluminada en cálido como único acento sobre un entorno azul-negro. Debe leerse con claridad a 150 px de ancho. PORTADA B (TikTok/FB, rostro o detalle): primer plano de un rostro con desgaste contextual de época (piel curtida, hollín, ropa raída, ojos mirando al lente) o de un detalle perturbador (muñeca rota, dientes, ojo tras un cristal), con 'negative space at top' para ≤4 palabras de texto. Un solo elemento perturbador por portada, sin collage. Prueba de CTR: alternar A y B en 2 semanas de publicaciones; si una variante supera a la otra en ≥15% de vistas o CTR en su red, se estandariza en esa red."
     ],
     "reglas_foto": [
-      "DIAPOSITIVA 1 Y RETENCIÓN DE DESLIZAMIENTO (IG y FB). La diapositiva 1 usa la Portada A ('no humans, empty scene' + 'negative space at top'): lugar reconocible, un punto de luz, y un título de ≤ 7 palabras con la fórmula «Dicen que [lugar real]…» o «Frente a [lugar]…». La diapositiva 2 aporta el primer dato nuevo, nunca un repaso. Cada diapositiva lleva un solo dato y ≤ 25 palabras en el espacio superior libre. Usa 7-10 diapositivas, con el indicador «1/8» y una promesa sin resolver que obligue a deslizar. En IG, ubicación geolocalizada desde el primer post. En FB, el texto de apoyo empieza con «Ciudad, año.» más una escena colectiva (patrón de los 113 compartidos de Jerusalén). Metas: ≥ 40% de quienes ven la diapositiva 1 llegan a la 5, y 0 diapositivas sin dato nuevo.",
-      "MAXIMIZAR GUARDADOS EN IG Y COMPARTIDOS EN FB. IG: estructura de «mini-guía de ruta». Incluye una diapositiva con la dirección completa (calle o plaza, colonia, alcaldía o municipio) y el cómo llegar, y otra con una línea de tiempo de 4-5 fechas. Cierra con «Guárdalo para tu ruta de leyendas». La ubicación concreta explica por qué «Frente a la Plaza Río de Janeiro…» fue el post más guardado. Meta: guardados ≥ 2.5% del alcance (el mejor actual es 2.26%) y compartidos ≥ 1%. FB: cada 3 posts, 1 con ancla histórica universal «Ciudad, año» + conflicto moral, como la publicación de Jerusalén (113 compartidos), y los demás con un lugar mexicano. Sin titulares en MAYÚSCULAS con 🤯 (2 compartidos). Cierra con una frase reenviable («Mándaselo a quien defendería al otro bando»). Meta: ≥ 10 compartidos por post.",
-      "DILEMAS MORALES Y ENCUESTAS A/B. La última diapositiva (con 'negative space at top') plantea un dilema de 2 bandos con opciones de 1-3 palabras: «¿Víctima o culpable?», «¿Justicia o venganza?», «¿Leyenda o encubrimiento?». Repite la misma pregunta como primera línea del pie y pide «Responde A o B + una palabra de por qué». Contesta los primeros 5 comentarios en los primeros 60 min y fija el comentario con las opciones. En IG, publica la misma pregunta en Stories con sticker de encuesta en las siguientes 24 h para llevar tráfico al post. Metas: comentarios ≥ 1.5% del alcance en IG (hoy 0 en 6 posts) y ≥ 5 comentarios por post en FB. Mide cada dilema y deja de usar los que queden en 0 tras 3 usos."
+      "REGLA 1 · DIAPOSITIVA 1 Y RETENCIÓN DE DESLIZAMIENTO: La diapositiva 1 usa la imagen más inquietante de la historia, con 'negative space at top' (30% superior) para una afirmación o pregunta de ≤8 palabras que abra un loop sin resolverlo ('Esta casa lleva 100 años mirando a la Roma'). No lleva logo grande ni presentación. La diapositiva 2 entrega una primera revelación concreta (fecha, nombre o cifra) para recompensar el primer deslizamiento, y desde ahí se da 1 dato nuevo por diapositiva. Largo recomendado: 7-9 diapositivas, con la resolución del misterio en la penúltima. Metas: ≥50% del alcance llega a la diapositiva 3 y IG/FB se comparan con el rendimiento previo (IG hoy 146-277 de alcance por post).",
+      "REGLA 2 · GUARDADOS EN IG Y COMPARTIDOS EN FB: IG: la última diapositiva es una tarjeta 'Dato guardable' con 3 datos accionables y verificables (colonia o dirección, año, qué mirar/cómo llegar o mejor horario) y el CTA 'Guarda esto para tu ruta de leyendas'. Meta: ≥1.5% de guardados sobre alcance (Roma 2.2%, Tacubaya 1.4%, Isla de las Muñecas 1.1%, Clipperton 0% y destornillador 0%). FB: la diapositiva 1 y la primera línea del texto llevan el ancla 'Lugar, año' y un conflicto moral tipo Jerusalén 48 d.C. (59,315 vistas, 114 compartidos), con texto de 120-180 palabras y una frase pensada para compartir ('Mándaselo a quien…'). Meta FB: ≥1.5 compartidos por cada 1,000 vistas.",
+      "REGLA 3 · DILEMAS MORALES Y ENCUESTAS A/B PARA COMENTARIOS: Cada carrusel cierra con un dilema real, con dos posturas defendibles y ligadas al hecho histórico (ej.: '¿Se castiga al soldado o al pueblo que se amotinó? A o B'), nunca una pregunta con respuesta obvia. Las respuestas piden una sola letra para bajar la fricción. Se fija un comentario propio con las opciones A/B en los primeros 10 minutos y se responden los primeros 5 comentarios en menos de 60 minutos. Metas: IG ≥0.5% de comentarios sobre alcance (hoy 1 comentario en 6 posts) y FB comentarios ≥ compartidos."
     ]
   }
 }

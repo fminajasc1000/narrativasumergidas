@@ -68,6 +68,28 @@ FUENTE_IMPACT = "/System/Library/Fonts/Supplemental/Impact.ttf"
 DURACION_PORTADA = 0.35  # segundos que la portada aparece como primer frame del video (0 = desactivar)
 MAX_DURACION_S = 120  # límite de locución: arriba de esto Shorts penaliza (ideal 85-115 s)
 
+# Subida a TikTok paramétrica (0 = desactivada por defecto para no bloquear el flujo por API;
+# prepara el .mp4, metadata y portadas en la Mac mini y copia copy al portapapeles)
+SUBIR_TIKTOK_AUTOMATICO = os.environ.get("SUBIR_TIKTOK_AUTOMATICO", "0").lower() in ("1", "true", "yes")
+
+def actualizar_variable_env(clave, valor, ruta=".env"):
+    """Actualiza o inserta una variable en el archivo .env y en os.environ."""
+    lineas = []
+    encontrada = False
+    if os.path.exists(ruta):
+        with open(ruta, "r", encoding="utf-8") as f:
+            for l in f:
+                if l.strip().startswith(f"{clave}=") or l.strip().startswith(f"{clave} ="):
+                    lineas.append(f"{clave}=\"{valor}\"\n")
+                    encontrada = True
+                else:
+                    lineas.append(l)
+    if not encontrada:
+        lineas.append(f"{clave}=\"{valor}\"\n")
+    with open(ruta, "w", encoding="utf-8") as f:
+        f.writelines(lineas)
+    os.environ[clave] = str(valor)
+
 TEMAS_AZAR = [
     # Ponderados según rendimiento real: arquitectura/folclore (YouTube+IG), morbo (TikTok), absurdo (Facebook)
     "casa, mansión o edificio histórico de México con pasado macabro", "prisión, hospital o manicomio abandonado de Latinoamérica",
@@ -253,10 +275,93 @@ def obtener_servicio_drive():
         print(f"⚠ Error conectando con servicio Google Drive: {e}")
         return None
 
+def es_archivo_portada(nombre):
+    """Identifica imágenes de portada que deben conservarse en la Mac para YouTube, TikTok y Bilibili."""
+    n = nombre.lower()
+    return "portada" in n and n.endswith(".png")
+
+def purgar_archivos_intermedios_local(ruta_carpeta):
+    """
+    Optimiza el almacenamiento local de la Mac mini tras confirmar el respaldo 100% en Google Drive.
+    Regla estricta:
+    - CONSERVA ÚNICAMENTE en la Mac mini:
+      1) El video final (.mp4) para subir a TikTok y Bilibili.
+      2) La metadata completa ('metadata.md') con títulos, hashtags y horarios.
+      3) Las imágenes de portada ('00_portada*.png' o '*portada*.png').
+    - ELIMINA del disco local los archivos intermedios pesados:
+      - Todas las imágenes de escenas intermedias ('01_*.png', '02_*.png', '*_base.png', etc.)
+      - El archivo de locución ('00_locucion.mp3')
+      - Cualquier video temporal o parcial ('*.parcial.mp4', 'temp*.mp4')
+    """
+    if not os.path.exists(ruta_carpeta):
+        return
+
+    nombre_c = os.path.basename(ruta_carpeta.rstrip("/\\"))
+    es_carrusel = "historia_foto" in nombre_c
+
+    eliminados = 0
+    bytes_liberados = 0
+    conservados = []
+
+    for nom in os.listdir(ruta_carpeta):
+        ruta_arch = os.path.join(ruta_carpeta, nom)
+        if not os.path.isfile(ruta_arch):
+            continue
+
+        n_low = nom.lower()
+
+        # En carruseles de fotos (FB/IG/YT): conservar diapositivas finales rotuladas y metadata
+        if es_carrusel:
+            if n_low == "metadata.md" or (n_low.endswith(".png") and not "_base" in n_low):
+                conservados.append(nom)
+                continue
+            try:
+                tam = os.path.getsize(ruta_arch)
+                os.remove(ruta_arch)
+                eliminados += 1
+                bytes_liberados += tam
+            except Exception:
+                pass
+            continue
+
+        # En videos verticales:
+        # 1. Conservar video .mp4 final
+        if n_low.endswith(".mp4") and not n_low.endswith(".parcial.mp4") and not n_low.startswith("temp"):
+            conservados.append(nom)
+            continue
+
+        # 2. Conservar metadata.md
+        if n_low == "metadata.md":
+            conservados.append(nom)
+            continue
+
+        # 3. Conservar imágenes de portada (00_portada.png, 00_portada_tiktok.png, 00_portada_bilibili.png, etc.)
+        if es_archivo_portada(nom):
+            conservados.append(nom)
+            continue
+
+        # El resto son escenas intermedias (01-26_*.png), bases y locución mp3
+        try:
+            tam = os.path.getsize(ruta_arch)
+            os.remove(ruta_arch)
+            eliminados += 1
+            bytes_liberados += tam
+        except Exception as e:
+            print(f"   ⚠ No se pudo eliminar temporal local '{nom}': {e}")
+
+    mb_lib = bytes_liberados / (1024 * 1024)
+    print(f"\n🧹 [DISCO MAC MINI OPTIMIZADO - {nombre_c}]:")
+    print(f"   ✔ Se eliminaron {eliminados} archivos intermedios pesados ({mb_lib:.1f} MB liberados tras respaldo en Google Drive).")
+    print(f"   📁 Conservados localmente en la Mac para subir a TikTok y Bilibili:")
+    for c_nom in sorted(conservados):
+        print(f"      • {c_nom}")
+
 def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID, conservar_local=False, redes_pendientes=None):
     """Sube recursivamente una carpeta y todos sus archivos a Google Drive como respaldo.
-    Se ejecuta DESPUÉS de publicar en las 4 redes sociales. Si conservar_local=True (ej. si falló alguna red),
-    conserva la carpeta local en la Mac para poder reintentar."""
+    Se ejecuta DESPUÉS de publicar en las 4 redes sociales.
+    Al confirmar el respaldo 100% en la nube:
+    - Purgará los archivos intermedios pesados (escenas y audios) para liberar disco local.
+    - Conservará permanentemente en la Mac mini el video .mp4, metadata.md y portadas para TikTok y Bilibili."""
     if not os.path.exists(ruta_carpeta):
         return False
 
@@ -311,22 +416,23 @@ def subir_carpeta_a_gdrive_y_liberar(ruta_carpeta, parent_id=GDRIVE_FOLDER_ID, c
             else:
                 print(" ✖")
 
-        # 3. Validar integridad de subida antes de liberar la Mac local
+        # 3. Validar integridad de subida antes de optimizar la Mac local
         if subidos == len(archivos_locales):
             print(f"✅ Carpeta '{nombre_carpeta}' respaldada completa en Google Drive ({subidos}/{len(archivos_locales)} archivos).")
             print(f"🔒 [Regla Google Drive]: Solo agregar contenido nuevo; PROHIBIDO eliminar nada de la nube.")
+
+            # Purgar archivos intermedios pesados de la Mac conservando .mp4, metadata y portadas
+            purgar_archivos_intermedios_local(ruta_carpeta)
+
             if conservar_local:
                 detalle_redes = ", ".join(redes_pendientes) if redes_pendientes else "alguna red social"
-                print(f"📌 Se conserva la carpeta local '{ruta_carpeta}' en la Mac porque quedó pendiente: [{detalle_redes}].")
-                print(f"   💡 Puedes reintentar subir solo a la red pendiente desde el menú Opción 4 (Panel de Redes).")
+                print(f"📌 Se conservan el video .mp4, metadata y portadas en la Mac porque quedó pendiente: [{detalle_redes}].")
+                print(f"   💡 Puedes reintentar subir solo a la red pendiente desde el menú Opción 5 (Panel de Redes).")
             else:
-                print(f"🧹 ¡4/4 redes sociales publicadas con éxito! Eliminando carpeta temporal '{ruta_carpeta}' de la Mac local...")
-                shutil.rmtree(ruta_carpeta, ignore_errors=True)
-                if not os.path.exists(ruta_carpeta):
-                    print(f"✔ Espacio en disco de la Mac liberado exitosamente.")
+                print(f"✔ Publicación automatizada procesada al 100%. Video y metadata listos en la Mac para TikTok y Bilibili.")
             return True
         else:
-            print(f"⚠ Solo se subieron {subidos} de {len(archivos_locales)} archivos a Drive. Se conserva en la Mac por seguridad.")
+            print(f"⚠ Solo se subieron {subidos} de {len(archivos_locales)} archivos a Drive. Se conservan todos los archivos en la Mac por seguridad.")
             return False
 
     except Exception as e:
@@ -525,6 +631,120 @@ def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_ba
                 dt_fallback = ahora_cst + timedelta(hours=2)
             return dt_fallback.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return None
+
+# ---------------------------------------------------------------------------
+# CALENDARIO Y PROGRAMACIÓN DE SEMANA COMPLETA (LUNES A DOMINGO)
+# ---------------------------------------------------------------------------
+CALENDARIO_SEMANA_COMPLETA = [
+    {
+        "dia": "Lunes",
+        "num_dia": 0,
+        "hora_cst": (20, 0),
+        "momento": "noche",
+        "enfoque": "Comienzo de semana: misterio histórico profundo y atmósfera intrigante",
+        "horario_str": "20:00 CST"
+    },
+    {
+        "dia": "Martes",
+        "num_dia": 1,
+        "hora_cst": (20, 30),
+        "momento": "noche",
+        "enfoque": "Pico nocturno: leyendas urbanas oscuras y giros inesperados",
+        "horario_str": "20:30 CST"
+    },
+    {
+        "dia": "Miércoles",
+        "num_dia": 2,
+        "hora_cst": (20, 0),
+        "momento": "noche",
+        "enfoque": "Mitad de semana: arquitectura maldita y lugares prohibidos",
+        "horario_str": "20:00 CST"
+    },
+    {
+        "dia": "Jueves",
+        "num_dia": 3,
+        "hora_cst": (20, 30),
+        "momento": "noche",
+        "enfoque": "Noche Prime: folclore y enigmas no resueltos de alta retención",
+        "horario_str": "20:30 CST"
+    },
+    {
+        "dia": "Viernes",
+        "num_dia": 4,
+        "hora_cst": (19, 30),
+        "momento": "tarde",
+        "enfoque": "Viernes de terror y desconexión laboral: shock visual y tensión",
+        "horario_str": "19:30 CST"
+    },
+    {
+        "dia": "Sábado",
+        "num_dia": 5,
+        "hora_cst": (19, 0),
+        "momento": "tarde",
+        "enfoque": "Fin de semana ocio: misterio cautivador y debate comunitario",
+        "horario_str": "19:00 CST"
+    },
+    {
+        "dia": "Domingo",
+        "num_dia": 6,
+        "hora_cst": (21, 0),
+        "momento": "noche",
+        "enfoque": "Domingo Prime: máxima audiencia en cama, introspección y leyendas extremas",
+        "horario_str": "21:00 CST"
+    }
+]
+
+def resolver_fechas_semana_completa(referencia_semana=None):
+    """Calcula las fechas exactas y horas óptimas de Lunes a Domingo.
+    Devuelve lista de 7 dicts con día, fecha, horario_str, momento, enfoque, fecha_prog_iso y dt_cst."""
+    from datetime import datetime, timedelta, timezone
+    tz_cst = timezone(timedelta(hours=-6))
+    ahora_cst = datetime.now(tz_cst)
+
+    ref_str = str(referencia_semana or "").strip().lower()
+    if not ref_str or ref_str in ("proxima", "próxima", "siguiente"):
+        dias_para_lunes = (0 - ahora_cst.weekday()) % 7
+        if dias_para_lunes == 0:
+            dias_para_lunes = 7  # Próximo lunes
+        lunes_dt = (ahora_cst + timedelta(days=dias_para_lunes)).date()
+    elif ref_str in ("actual", "esta", "esta semana", "hoy"):
+        dias_desde_lunes = ahora_cst.weekday()
+        lunes_dt = (ahora_cst - timedelta(days=dias_desde_lunes)).date()
+    else:
+        ref_norm = resolver_fecha_dia(ref_str)
+        try:
+            ref_dt = datetime.strptime(ref_norm, "%Y-%m-%d").date()
+            lunes_dt = ref_dt - timedelta(days=ref_dt.weekday())
+        except Exception:
+            dias_para_lunes = (0 - ahora_cst.weekday()) % 7
+            if dias_para_lunes == 0: dias_para_lunes = 7
+            lunes_dt = (ahora_cst + timedelta(days=dias_para_lunes)).date()
+
+    res = []
+    for item in CALENDARIO_SEMANA_COMPLETA:
+        idx_dia = item["num_dia"]
+        fecha_dia = lunes_dt + timedelta(days=idx_dia)
+        fecha_str = fecha_dia.strftime("%Y-%m-%d")
+        h, m = item["hora_cst"]
+
+        dt_cst = datetime(fecha_dia.year, fecha_dia.month, fecha_dia.day, h, m, 0, tzinfo=tz_cst)
+        # Si la fecha/hora ya quedó en el pasado respecto a ahora, avanzar 1 semana para asegurar programación futura
+        if dt_cst <= ahora_cst + timedelta(minutes=20):
+            dt_cst += timedelta(days=7)
+            fecha_str = dt_cst.strftime("%Y-%m-%d")
+
+        iso_utc = dt_cst.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        res.append({
+            "dia": item["dia"],
+            "fecha": fecha_str,
+            "horario_str": item["horario_str"],
+            "momento": item["momento"],
+            "enfoque": item["enfoque"],
+            "fecha_prog_iso": iso_utc,
+            "dt_cst": dt_cst
+        })
+    return res
 
 def subir_y_programar_youtube_short(ruta_video, titulo, descripcion, tags=None, publish_at_iso=None, primer_comentario=None):
     """Sube un video vertical a YouTube Shorts y lo deja programado (privado hasta publishAt) o público."""
@@ -1968,9 +2188,30 @@ def mostrar_metricas_tiktok():
     total_s = sum(v.get("compartidos", 0) for v in datos)
     print(f"📊 Totales analizados: {len(datos)} videos | {total_v:,} vistas | {total_l:,} likes | {total_s:,} compartidos\n")
 
+def toggle_tiktok_automatico():
+    global SUBIR_TIKTOK_AUTOMATICO
+    print("\n" + "═" * 65)
+    print("⚙️ CONFIGURACIÓN PARAMÉTRICA DE SUBIDA A TIKTOK")
+    print("═" * 65)
+    est = "ACTIVADA (Intentar envío por API)" if SUBIR_TIKTOK_AUTOMATICO else "DESACTIVADA (Preparar en local para Mac y copiar portapapeles)"
+    print(f"Estado actual: {est}")
+    print("\nOpciones:")
+    print("  1) DESACTIVADA (Recomendado): Conserva el .mp4, metadata y portadas en la Mac mini,")
+    print("     y copia automáticamente el copy + hashtags al portapapeles para subir sin errores ni bloqueos de API.")
+    print("  2) ACTIVADA: Intentar subida automática vía API oficial (requiere token_tiktok.json activo).")
+    print("  0) Cancelar sin cambios")
+    op = input("\nElige una opción [1]: ").strip() or "1"
+    if op == "0":
+        return
+    nuevo_val = (op == "2")
+    actualizar_variable_env("SUBIR_TIKTOK_AUTOMATICO", "1" if nuevo_val else "0")
+    SUBIR_TIKTOK_AUTOMATICO = nuevo_val
+    print(f"✔ Configuración actualizada: {'ACTIVADA (API)' if SUBIR_TIKTOK_AUTOMATICO else 'DESACTIVADA (Preparar en Mac mini)'}")
+
 def menu_rendimiento_redes():
     """Menú interactivo para gestionar métricas, conexiones sociales y feedback algorítmico."""
     while True:
+        est_tk = "ACTIVADA (API)" if SUBIR_TIKTOK_AUTOMATICO else "DESACTIVADA (Preparar en Mac)"
         print("\n" + "═" * 65)
         print("📊 PANEL DE RENDIMIENTO Y REDES SOCIALES")
         print("═" * 65)
@@ -1983,6 +2224,7 @@ def menu_rendimiento_redes():
         print("  7) Probar subir un video a TikTok (enviar a borradores)")
         print("  8) Probar subir un video a Facebook Page (publicar video)")
         print("  9) Probar subir un video a Instagram (@narrativasumergidas Reel)")
+        print(f" 10) Configurar subida a TikTok por API [Estado: {est_tk}]")
         print("  0) Volver al menú principal")
         op = input("Elige una opción: ").strip()
         if op == "1":
@@ -2015,8 +2257,11 @@ def menu_rendimiento_redes():
                 subir_video_instagram(ruta_v)
             else:
                 print(f"✖ El archivo '{ruta_v}' no existe.")
+        elif op == "10":
+            toggle_tiktok_automatico()
         elif op == "0":
             break
+
 
 # ---------------------------------------------------------------------------
 # UTILIDADES
@@ -2038,13 +2283,85 @@ def pedir_multilinea(msg):
         lineas.append(l)
     return "\n".join(lineas).strip()
 
+def pedir_config_semana_completa():
+    """Configura el lote semanal de 7 videos (Lunes a Domingo) con programación automática y horarios óptimos."""
+    print("\n" + "═" * 70)
+    print("📅 GENERACIÓN DE SEMANA COMPLETA (7 VIDEOS: LUNES A DOMINGO)")
+    print("═" * 70)
+    print("El sistema programará 1 video diario con horario prime-time calibrado:")
+    print("  • Lunes:     20:00 CST | Comienzo de semana, misterio histórico profundo")
+    print("  • Martes:    20:30 CST | Pico nocturno, leyendas urbanas oscuras")
+    print("  • Miércoles: 20:00 CST | Mitad de semana, arquitectura maldita")
+    print("  • Jueves:    20:30 CST | Noche prime previo a fin de semana, enigmas")
+    print("  • Viernes:   19:30 CST | Viernes de terror y desconexión laboral")
+    print("  • Sábado:    19:00 CST | Fin de semana ocio, debate comunitario")
+    print("  • Domingo:   21:00 CST | Domingo prime, máxima retención en cama")
+    print("═" * 70)
+
+    print("\n¿Para qué semana deseas programar?")
+    print("  1) Próxima semana entrante (Recomendado)")
+    print("  2) Semana actual (días restantes / en curso)")
+    print("  3) Especificar fecha de inicio o semana (ej. '2026-10-19', 'próximo lunes')")
+    op_sem = input("Opción [1]: ").strip() or "1"
+    ref_sem = "proxima"
+    if op_sem == "2":
+        ref_sem = "actual"
+    elif op_sem == "3":
+        ref_sem = input("Fecha o referencia de inicio [próxima]: ").strip() or "proxima"
+
+    fechas_semana = resolver_fechas_semana_completa(ref_sem)
+    print(f"\n🗓️ Calendario semanal confirmado ({fechas_semana[0]['fecha']} al {fechas_semana[-1]['fecha']}):")
+    for f in fechas_semana:
+        print(f"   • {f['dia']:<9} ({f['fecha']}): {f['horario_str']} -> {f['enfoque']}")
+
+    print("\n¿Cómo deseas definir los 7 temas de la semana?")
+    print("  1) 100% Automático / Tendencias (Claude selecciona 7 misterios virales)")
+    print("  2) Ingresar los 7 temas (uno por día o separados por '|')")
+    op_temas = input("Opción [1]: ").strip() or "1"
+
+    temas_usuario = []
+    if op_temas == "2":
+        entrada = input("\nIngresa los 7 temas separados por '|' (o presiona ENTER para pedir día a día):\n").strip()
+        if entrada and "|" in entrada:
+            temas_usuario = [t.strip() for t in entrada.split("|") if t.strip()]
+        if len(temas_usuario) < 7:
+            print("Ingresa el tema para cada día (presiona ENTER para dejar que Claude elija al azar):")
+            for f in fechas_semana[len(temas_usuario):]:
+                t = input(f"   • Tema para {f['dia']} ({f['fecha']}): ").strip()
+                temas_usuario.append(t if t else None)
+
+    peticiones = []
+    for idx, f in enumerate(fechas_semana):
+        tema_txt = temas_usuario[idx] if idx < len(temas_usuario) else None
+        peticiones.append({
+            "tipo": "tema",
+            "texto": tema_txt,
+            "dia_semana": f["dia"],
+            "fecha_liberacion": f["fecha"],
+            "hora_programacion": f["horario_str"],
+            "momento_dia": f["momento"],
+            "enfoque_dia": f["enfoque"],
+            "fecha_prog_iso": f["fecha_prog_iso"]
+        })
+
+    config = {
+        "momento_dia": "semana_completa",
+        "modo_programacion": "semana_completa",
+        "fecha_liberacion": f"{fechas_semana[0]['fecha']} al {fechas_semana[-1]['fecha']}",
+        "fechas_semana": fechas_semana
+    }
+    return peticiones, config
+
 def pedir_modo(etiqueta):
     """Devuelve la lista de 'peticiones'. Opción 2 admite varios temas y N por tema (o N sobre un solo tema)."""
     print(f"\n¿Cómo quieres definir {etiqueta}?")
     print("  1) Aleatorio")
     print("  2) Yo doy el TEMA (uno o varios separados por |; puedo pedir N por tema)")
     print("  3) Yo doy la HISTORIA completa (se adapta tal cual)")
+    print("  4) Semana Completa (7 videos: Lunes a Domingo con programación automática)")
     modo = input("Opción [1]: ").strip() or "1"
+    if modo == "4":
+        return pedir_config_semana_completa()
     if modo == "3":
         return [{"tipo": "historia", "texto": pedir_multilinea("Pega tu historia")}]
     if modo == "2":
@@ -2065,6 +2382,7 @@ FRANJAS_DIA = {
     "5": ("Noche Prime (20:00 - 23:00 CST: máxima oscuridad, terror inmersivo)", "noche"),
     "6": ("Madrugada / Insomnio (00:00 - 04:00 CST: paranoia y misterio para desvelados)", "madrugada"),
     "7": ("Jornada 24H Completa (1 por franja: Mañana, Mediodía, Tarde, Noche y Madrugada)", "jornada_completa"),
+    "8": ("Semana Completa (Lunes a Domingo: 1 video diario con horario prime-time calibrado)", "semana_completa"),
 }
 
 ORDEN_5_FRANJAS = ["manana", "mediodia", "tarde", "noche", "madrugada"]
@@ -2144,10 +2462,17 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
                 "- En 'metadata.calendario_publicacion', indica qué día de la semana y qué ventana de horario son ideales para este contenido según su tier.\n"
                 "- Si consideras que el caso es tan amplio que debería convertirse en serie de 2 o 3 partes para no saturar al espectador, señálalo en 'calendario_publicacion.estrategia_escalonada'.\n")
 
-    momento = peticion.get("momento_dia")
-    fecha_lib = peticion.get("fecha_liberacion")
-    txt_dia_lib = f" (DÍA DE LIBERACIÓN OBJETIVO: {fecha_lib})" if fecha_lib else ""
-    if momento and momento != "multi":
+    dia_sem = peticion.get("dia_semana")
+    hora_prog = peticion.get("hora_programacion")
+    enfoque_d = peticion.get("enfoque_dia")
+    if dia_sem and fecha_lib:
+        msg += (f"\n\n📅 CALENDARIO SEMANAL CALIBRADO ({dia_sem.upper()} {fecha_lib} a las {hora_prog}):\n"
+                f"- Este video se publicará el día {dia_sem} {fecha_lib} a las {hora_prog}.\n"
+                f"- Enfoque psicológico del día: {enfoque_d or 'Máximo enganche y misterio'}.\n"
+                f"- Adapta el ritmo, el gancho inicial y la iluminación de las escenas para la audiencia de {dia_sem}.\n"
+                f"- OBLIGATORIO: En la metadata de CADA red social, el campo 'hora_publicacion' DEBE colocar: '{dia_sem} {fecha_lib} a las {hora_prog}'.\n"
+                f"- En 'metadata.calendario_publicacion', fija la fecha '{fecha_lib}' en la ventana de '{hora_prog}'.\n")
+    elif momento and momento != "multi":
         descripciones = {
             "manana": "MAÑANA (07:00-10:00 CST: camino al trabajo/estudio, tono intrigante y dato insólito matutino)",
             "mediodia": "MEDIODÍA (12:00-15:00 CST: break de comida/almuerzo, misterio envolvente)",
@@ -2787,8 +3112,9 @@ def generar_datos_completos(peticion, evitar=(), guion_previo=None, on_guion=Non
         escenas = ajustar_cuota_escenas(escenas, n_escenas_objetivo)
 
     ep["escenas"] = escenas
-    if peticion.get("momento_dia"):
-        ep["momento_dia"] = peticion.get("momento_dia")
+    for k in ("momento_dia", "dia_semana", "fecha_liberacion", "hora_programacion", "enfoque_dia", "fecha_prog_iso"):
+        if peticion.get(k):
+            ep[k] = peticion[k]
     return datos_guion
 
 def mover_clip(clip_img, mov="zoom_in", dur=4.0):
@@ -3039,14 +3365,35 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress
         estado_redes["YouTube Shorts"] = "⚠ NO CONECTADO (falta token_youtube.json)"
         redes_pendientes.append("YouTube Shorts (sin token)")
 
-    # 2. TikTok (envío a borradores + portapapeles; nunca se libera al público sin tu confirmación)
+    # 2. TikTok (modo paramétrico: preparado en local o subida por API)
     meta_tt = meta_all.get("tiktok") or meta_all.get("facebook_reels") or {}
+    tit_tt = meta_tt.get("titulo") or ep.get("titulo", carpeta)
+    desc_tt = meta_tt.get("descripcion", "")
+    tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
+    caption_tt = f"{tit_tt}\n\n{desc_tt}\n\n{tags_tt}".strip()
+
     if ya_publicadas.get("tiktok"):
-        estado_redes["TikTok"] = f"✅ YA EN BORRADORES PREVIAMENTE (ID: {ya_publicadas['tiktok']})"
+        estado_redes["TikTok"] = f"✅ YA PROCESADO PREVIAMENTE (ID: {ya_publicadas['tiktok']})"
+    elif not SUBIR_TIKTOK_AUTOMATICO:
+        clip_ok = False
+        try:
+            subprocess.run(["pbcopy"], input=caption_tt.encode("utf-8"), check=True)
+            clip_ok = True
+        except Exception:
+            pass
+        clip_str = " (📋 Copy copiado al Portapapeles Mac)" if clip_ok else ""
+        hora_tt = formatear_hora_cst(fecha_prog_iso) if fecha_prog_iso else (meta_tt.get("hora_publicacion") or "Horario libre")
+        estado_redes["TikTok"] = f"📁 PREPARADO EN LOCAL{clip_str} | Publicar: {hora_tt}"
+        ya_publicadas["tiktok"] = "local_preparado"
+        if on_progress: on_progress()
+        print(f"ℹ [TIKTOK PARAMÉTRICO]: Subida por API desactivada (SUBIR_TIKTOK_AUTOMATICO=0).")
+        print(f"   🎬 Video conservado en Mac mini: '{os.path.basename(mp4)}'")
+        print(f"   🕒 Horario recomendado: {hora_tt}")
+        if clip_ok:
+            print("   📋 ¡Título, copy y hashtags copiados a tu Portapapeles para pegar directo en TikTok!")
+        else:
+            print(f"   📋 Copy listo en metadata.md:\n      {tit_tt} {tags_tt}")
     elif os.path.exists("token_tiktok.json"):
-        tit_tt = meta_tt.get("titulo") or ep.get("titulo", carpeta)
-        desc_tt = meta_tt.get("descripcion", "")
-        tags_tt = meta_tt.get("hashtags", "#parati #historiasreales #misterio")
         res_tt = subir_video_tiktok(mp4, titulo=tit_tt, descripcion=desc_tt, hashtags=tags_tt)
         if res_tt:
             ya_publicadas["tiktok"] = res_tt
@@ -3054,7 +3401,7 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress
             hora_sug_tt = formatear_hora_cst(fecha_prog_iso) if fecha_prog_iso else (meta_tt.get("hora_publicacion") or "Horario libre")
             estado_redes["TikTok"] = f"✅ EN BORRADORES (ID: {res_tt}) | Programar en app para: {hora_sug_tt}"
         else:
-            estado_redes["TikTok"] = "❌ FALLÓ / PENDIENTE (revisar conexión TikTok en Menú 4 -> 5 o 7)"
+            estado_redes["TikTok"] = "❌ FALLÓ / PENDIENTE (revisar conexión TikTok en Menú -> Panel de Redes)"
             redes_pendientes.append("TikTok")
     else:
         estado_redes["TikTok"] = "⚠ NO CONECTADO (falta token_tiktok.json)"
@@ -3075,7 +3422,7 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress
                 if on_progress: on_progress()
                 estado_redes["Facebook Page"] = f"✅ {etiqueta_modo} (ID: {res_fb})"
             else:
-                estado_redes["Facebook Page"] = "❌ FALLÓ / PENDIENTE (revisar token de Facebook en Menú 4 -> 6 u 8)"
+                estado_redes["Facebook Page"] = "❌ FALLÓ / PENDIENTE (revisar token de Facebook en Menú -> Panel de Redes)"
                 redes_pendientes.append("Facebook Page")
 
         if ya_publicadas.get("instagram_reels"):
@@ -3090,12 +3437,18 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress
                 if on_progress: on_progress()
                 estado_redes["Instagram Reels"] = f"✅ {etiqueta_modo} (ID: {res_ig})"
             else:
-                estado_redes["Instagram Reels"] = "❌ FALLÓ / PENDIENTE (revisar subida a Instagram en Menú 4 -> 9)"
+                estado_redes["Instagram Reels"] = "❌ FALLÓ / PENDIENTE (revisar subida a Instagram en Menú -> Panel de Redes)"
                 redes_pendientes.append("Instagram Reels")
     else:
         estado_redes["Facebook Page"] = "⚠ NO CONECTADO (falta token_meta.json)"
         estado_redes["Instagram Reels"] = "⚠ NO CONECTADO (falta token_meta.json)"
         redes_pendientes.extend(["Facebook Page (sin token)", "Instagram Reels (sin token)"])
+
+    # 4. Bilibili (preparado en local con video, portada horizontal 16:9 y metadata bilingüe)
+    meta_bili = meta_all.get("bilibili") or {}
+    port_bili = os.path.join(carpeta, "00_portada_bilibili.png")
+    port_bili_ok = "✔ Portada horizontal 16:9" if os.path.exists(port_bili) else "Sin portada"
+    estado_redes["Bilibili"] = f"📁 PREPARADO EN LOCAL [{port_bili_ok}] | Video .mp4 y tags bilingües en metadata.md"
 
     print("\n═══════════════════════════════════════════════════════════════════")
     print(f"📊 REPORTE DETALLADO DE REDES SOCIALES: '{carpeta}'")
@@ -3106,7 +3459,8 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress
     if redes_pendientes:
         print(f"\n   ⚠️ REDES PENDIENTES ({len(redes_pendientes)}): {', '.join(redes_pendientes)}")
     else:
-        print("\n   🎉 ¡4 DE 4 REDES SOCIALES COMPLETADAS EXITOSAMENTE!")
+        print("\n   🎉 ¡REDES SOCIALES PROCESADAS EXITOSAMENTE!")
+        print("   📲 Video .mp4, metadata y portadas conservados en la Mac mini para TikTok y Bilibili.")
     print("═══════════════════════════════════════════════════════════════════")
 
     return (len(redes_pendientes) == 0), redes_pendientes
@@ -3219,8 +3573,12 @@ def elegir_lote(ruta, etiqueta, pedir_config=None):
         hechos = sum(1 for r in m.get("resultados", []) if r)
         if input(f"⏯ Hay un lote de {etiqueta} sin terminar ({hechos}/{len(m.get('resultados', []))} guiones listos). ¿Reanudarlo? [S/n]: ").strip().lower() != "n":
             return m
-    peticiones = pedir_modo(etiqueta)
-    cfg = pedir_config(len(peticiones)) if pedir_config else {}
+    res_pedir = pedir_modo(etiqueta)
+    if isinstance(res_pedir, tuple):
+        peticiones, cfg = res_pedir
+    else:
+        peticiones = res_pedir
+        cfg = pedir_config(len(peticiones)) if pedir_config else {}
     m = {"peticiones": peticiones, "resultados": [None] * len(peticiones), "parciales": {}, "terminado": False,
          "config": cfg}
     guardar_manifest(ruta, m)
@@ -3258,15 +3616,26 @@ def completar_guiones(m, ruta, generar):
             registrar_historia_usada(tit, tipo=tipo_contenido, detalles=detalles_ini)
             if tit not in historias_historicas: historias_historicas.append(tit)
 
-def flujo_videos():
-    m = elegir_lote(MANIFEST_VIDEOS, "videos", pedir_config_videos)
+def flujo_videos(manifest_preparado=None):
+    if manifest_preparado:
+        m = manifest_preparado
+    else:
+        m = elegir_lote(MANIFEST_VIDEOS, "videos", pedir_config_videos)
     cfg = m.get("config") or {}
     momento = cfg.get("momento_dia", "multi")
     fecha_lib = cfg.get("fecha_liberacion")
     peticiones = m.get("peticiones", [])
 
+    # Si se eligió semana completa
+    if momento == "semana_completa":
+        print(f"\n📅 Programación de Semana Completa (Lunes a Domingo):")
+        for idx, pet in enumerate(peticiones):
+            dia_nom = pet.get("dia_semana", f"Día {idx+1}")
+            f_lib = pet.get("fecha_liberacion", "")
+            h_prog = pet.get("hora_programacion", "")
+            print(f"   • {dia_nom:<9} ({f_lib}): {h_prog} | {pet.get('enfoque_dia', '')}")
     # Si se eligió jornada completa o hay exactamente 5 peticiones y momento es jornada_completa
-    if momento == "jornada_completa" or (len(peticiones) == 5 and momento == "jornada_completa"):
+    elif momento == "jornada_completa" or (len(peticiones) == 5 and momento == "jornada_completa"):
         for idx, pet in enumerate(peticiones):
             franja = ORDEN_5_FRANJAS[idx % len(ORDEN_5_FRANJAS)]
             pet["momento_dia"] = franja
@@ -3334,23 +3703,24 @@ def flujo_videos():
                     "archivo_salida": f"{c}.mp4",
                     "tier": ep.get("tier")
                 })
-                # Calcular fecha/hora de programación si se configuró (compartida entre YouTube, Facebook e Instagram)
+                # Determinar fecha/hora de programación ISO
                 modo_prog = cfg.get("modo_programacion", "auto_franja")
                 momento_actual = ep.get("momento_dia") or cfg.get("momento_dia") or "multi"
-                fecha_prog_iso = None
-                if modo_prog == "auto_franja":
-                    fecha_prog_iso = calcular_fecha_programacion(
-                        momento_dia=momento_actual,
-                        fecha_base=cfg.get("fecha_liberacion"),
-                        forzar_programacion=True
-                    )
-                elif modo_prog == "personalizada":
-                    fecha_prog_iso = calcular_fecha_programacion(
-                        momento_dia=momento_actual,
-                        hora_especifica=cfg.get("hora_personalizada"),
-                        fecha_base=cfg.get("fecha_liberacion"),
-                        forzar_programacion=True
-                    )
+                fecha_prog_iso = ep.get("fecha_prog_iso")
+                if not fecha_prog_iso:
+                    if modo_prog == "auto_franja":
+                        fecha_prog_iso = calcular_fecha_programacion(
+                            momento_dia=momento_actual,
+                            fecha_base=ep.get("fecha_liberacion") or cfg.get("fecha_liberacion"),
+                            forzar_programacion=True
+                        )
+                    elif modo_prog == "personalizada":
+                        fecha_prog_iso = calcular_fecha_programacion(
+                            momento_dia=momento_actual,
+                            hora_especifica=cfg.get("hora_personalizada"),
+                            fecha_base=ep.get("fecha_liberacion") or cfg.get("fecha_liberacion"),
+                            forzar_programacion=True
+                        )
 
                 # PASO 1: Publicar primero en las 4 redes sociales mientras los archivos están en local
                 todas_redes_ok, redes_pendientes = publicar_video_en_4_redes(
@@ -3359,15 +3729,15 @@ def flujo_videos():
                     on_progress=lambda: guardar_manifest(MANIFEST_VIDEOS, m)
                 )
 
-                # PASO 2: Respaldar carpeta completa en Google Drive (conservando en local si alguna red falló)
+                # PASO 2: Respaldar carpeta completa en Google Drive y optimizar Mac local
                 if not ep.get("respaldado_en_drive"):
                     print("\n☁️ [FASE B: RESPALDO EN GOOGLE DRIVE] Subiendo carpeta tras procesar redes sociales...")
                     ok_drive = subir_carpeta_a_gdrive_y_liberar(c, conservar_local=(not todas_redes_ok), redes_pendientes=redes_pendientes)
                     if ok_drive:
                         ep["respaldado_en_drive"] = True
                 elif todas_redes_ok and os.path.exists(c):
-                    print(f"🧹 ¡4/4 redes completadas y carpeta '{c}' ya estaba en Google Drive! Liberando copia local...")
-                    shutil.rmtree(c, ignore_errors=True)
+                    print(f"🧹 ¡Redes completadas y carpeta '{c}' ya respaldada en Google Drive! Optimizando archivos en la Mac...")
+                    purgar_archivos_intermedios_local(c)
 
                 if todas_redes_ok and ep.get("respaldado_en_drive"):
                     ep["completado_y_respaldado"] = True
@@ -3884,6 +4254,19 @@ def menu_reanudar_carpeta(todos=None):
     except ValueError:
         print("Opción no reconocida.")
 
+def flujo_semana_completa():
+    """Flujo directo para generar y programar los 7 videos de la semana (Lunes a Domingo)."""
+    peticiones, cfg_sem = pedir_config_semana_completa()
+    m = {
+        "peticiones": peticiones,
+        "config": cfg_sem,
+        "parciales": {},
+        "resultados": [None] * len(peticiones),
+        "terminado": False
+    }
+    guardar_manifest(MANIFEST_VIDEOS, m)
+    flujo_videos(manifest_preparado=m)
+
 # ---------------------------------------------------------------------------
 # MENÚ
 # ---------------------------------------------------------------------------
@@ -3896,16 +4279,19 @@ def iniciar():
 
         print("\n===== NARRATIVAS SUMERGIDAS =====")
         print("  1) Videos verticales (uno o varios)")
-        print("  2) Historias fotográficas (carruseles FB / IG / YouTube)")
-        print(f"  3) Reanudar / Ensamblar carpeta existente (MP3 + imágenes){aviso}")
-        print("  4) Rendimiento y Redes Sociales (Métricas, Conexiones & Feedback IA)")
+        print("  2) Semana Completa (7 videos: Lunes a Domingo con programación automática)")
+        print("  3) Historias fotográficas (carruseles FB / IG / YouTube)")
+        print(f"  4) Reanudar / Ensamblar carpeta existente (MP3 + imágenes){aviso}")
+        print("  5) Rendimiento y Redes Sociales (Métricas, Conexiones & Feedback IA)")
         print("  0) Salir")
         op = input("Opción: ").strip()
         if op == "1": flujo_videos()
-        elif op == "2": flujo_historias_foto()
-        elif op == "3": menu_reanudar_carpeta(carpetas)
-        elif op == "4": menu_rendimiento_redes()
+        elif op == "2": flujo_semana_completa()
+        elif op == "3": flujo_historias_foto()
+        elif op == "4": menu_reanudar_carpeta(carpetas)
+        elif op == "5": menu_rendimiento_redes()
         elif op == "0": break
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] in ("--analizar", "-a", "analizar"):
