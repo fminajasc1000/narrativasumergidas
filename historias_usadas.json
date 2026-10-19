@@ -314,12 +314,15 @@
   {
     "titulo": "Pozos: el pueblo fantasma donde los mineros pican hacia arriba",
     "fecha": "2026-10-18 18:53:54",
-    "ultima_actualizacion": "2026-10-18 18:53:54",
+    "ultima_actualizacion": "2026-10-19 09:02:19",
     "tipo": "video",
     "slug": "pozos_el_pueblo_fantasma_donde_los_miner",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "ARQUITECTURA",
+    "duracion_audio_s": 105.5,
+    "num_imagenes": 10,
     "carpeta": "pozos_el_pueblo_fantasma_donde_los_miner",
+    "archivo_salida": "pozos_el_pueblo_fantasma_donde_los_miner.mp4",
     "momento_dia": "tarde"
   },
   {
