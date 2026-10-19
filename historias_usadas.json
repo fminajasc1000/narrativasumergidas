@@ -211,12 +211,15 @@
   {
     "titulo": "La Novia sin Sombra de la Calzada de los Muertos (Teotihuacán, 2 de noviembre)",
     "fecha": "2026-10-18 18:38:38",
-    "ultima_actualizacion": "2026-10-18 18:38:38",
+    "ultima_actualizacion": "2026-10-19 01:21:28",
     "tipo": "video",
     "slug": "la_novia_sin_sombra_de_la_calzada_de_los",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 118.3,
+    "num_imagenes": 20,
     "carpeta": "la_novia_sin_sombra_de_la_calzada_de_los",
+    "archivo_salida": "la_novia_sin_sombra_de_la_calzada_de_los.mp4",
     "momento_dia": "noche"
   },
   {
