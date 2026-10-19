@@ -95,6 +95,17 @@
     "momento_dia": "mediodia"
   },
   {
+    "titulo": "La Alumbrada de Mixquic: la tumba sin vela que toca tu puerta",
+    "fecha": "2026-10-18 18:47:47",
+    "ultima_actualizacion": "2026-10-18 18:47:47",
+    "tipo": "video",
+    "slug": "la_alumbrada_de_mixquic_la_tumba_sin_vel",
+    "estado": "guion_listo",
+    "tier": "FOLCLORE",
+    "carpeta": "la_alumbrada_de_mixquic_la_tumba_sin_vel",
+    "momento_dia": "noche"
+  },
+  {
     "titulo": "La Casa de las Escaleras al Techo: El Laberinto de Sarah Winchester",
     "fecha": "2026-10-11 15:14",
     "tipo": "video",
