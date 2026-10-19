@@ -705,11 +705,14 @@ def resolver_fechas_semana_completa(referencia_semana=None):
     if not ref_str or ref_str in ("proxima", "próxima", "siguiente"):
         dias_para_lunes = (0 - ahora_cst.weekday()) % 7
         if dias_para_lunes == 0:
-            dias_para_lunes = 7  # Próximo lunes
+            dias_para_lunes = 7  # Si hoy es lunes, la próxima semana completa empieza el siguiente lunes
         lunes_dt = (ahora_cst + timedelta(days=dias_para_lunes)).date()
     elif ref_str in ("actual", "esta", "esta semana", "hoy"):
-        dias_desde_lunes = ahora_cst.weekday()
-        lunes_dt = (ahora_cst - timedelta(days=dias_desde_lunes)).date()
+        lunes_dt = (ahora_cst - timedelta(days=ahora_cst.weekday())).date()
+        if ahora_cst.weekday() >= 4:
+            dias_para_lunes = (0 - ahora_cst.weekday()) % 7
+            if dias_para_lunes == 0: dias_para_lunes = 7
+            lunes_dt = (ahora_cst + timedelta(days=dias_para_lunes)).date()
     else:
         ref_norm = resolver_fecha_dia(ref_str)
         try:
@@ -720,6 +723,11 @@ def resolver_fechas_semana_completa(referencia_semana=None):
             if dias_para_lunes == 0: dias_para_lunes = 7
             lunes_dt = (ahora_cst + timedelta(days=dias_para_lunes)).date()
 
+    # Si el lunes de la semana a las 20:00 CST ya quedó en el pasado, avanzar el bloque semanal completo 7 días
+    dt_lunes = datetime(lunes_dt.year, lunes_dt.month, lunes_dt.day, 20, 0, tzinfo=tz_cst)
+    if dt_lunes <= ahora_cst + timedelta(minutes=20):
+        lunes_dt += timedelta(days=7)
+
     res = []
     for item in CALENDARIO_SEMANA_COMPLETA:
         idx_dia = item["num_dia"]
@@ -728,11 +736,6 @@ def resolver_fechas_semana_completa(referencia_semana=None):
         h, m = item["hora_cst"]
 
         dt_cst = datetime(fecha_dia.year, fecha_dia.month, fecha_dia.day, h, m, 0, tzinfo=tz_cst)
-        # Si la fecha/hora ya quedó en el pasado respecto a ahora, avanzar 1 semana para asegurar programación futura
-        if dt_cst <= ahora_cst + timedelta(minutes=20):
-            dt_cst += timedelta(days=7)
-            fecha_str = dt_cst.strftime("%Y-%m-%d")
-
         iso_utc = dt_cst.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         res.append({
@@ -2465,6 +2468,9 @@ def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     dia_sem = peticion.get("dia_semana")
     hora_prog = peticion.get("hora_programacion")
     enfoque_d = peticion.get("enfoque_dia")
+    momento = peticion.get("momento_dia")
+    fecha_lib = peticion.get("fecha_liberacion")
+    txt_dia_lib = f" (DÍA DE LIBERACIÓN OBJETIVO: {fecha_lib})" if fecha_lib else ""
     if dia_sem and fecha_lib:
         msg += (f"\n\n📅 CALENDARIO SEMANAL CALIBRADO ({dia_sem.upper()} {fecha_lib} a las {hora_prog}):\n"
                 f"- Este video se publicará el día {dia_sem} {fecha_lib} a las {hora_prog}.\n"
