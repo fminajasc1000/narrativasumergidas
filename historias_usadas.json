@@ -268,12 +268,15 @@
   {
     "titulo": "La niña Nachito y los ataúdes que suben: Panteón de Belén, Guadalajara",
     "fecha": "2026-10-18 18:44:42",
-    "ultima_actualizacion": "2026-10-18 18:44:42",
+    "ultima_actualizacion": "2026-10-19 08:36:50",
     "tipo": "video",
     "slug": "la_niña_nachito_y_los_ataúdes_que_suben_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 107.1,
+    "num_imagenes": 25,
     "carpeta": "la_niña_nachito_y_los_ataúdes_que_suben_",
+    "archivo_salida": "la_niña_nachito_y_los_ataúdes_que_suben_.mp4",
     "momento_dia": "noche"
   },
   {
