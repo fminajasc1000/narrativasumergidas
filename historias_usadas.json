@@ -100,12 +100,15 @@
   {
     "titulo": "La Alumbrada de Mixquic: la tumba sin vela que toca tu puerta",
     "fecha": "2026-10-18 18:47:47",
-    "ultima_actualizacion": "2026-10-18 18:47:47",
+    "ultima_actualizacion": "2026-10-19 08:45:52",
     "tipo": "video",
     "slug": "la_alumbrada_de_mixquic_la_tumba_sin_vel",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 110.8,
+    "num_imagenes": 15,
     "carpeta": "la_alumbrada_de_mixquic_la_tumba_sin_vel",
+    "archivo_salida": "la_alumbrada_de_mixquic_la_tumba_sin_vel.mp4",
     "momento_dia": "noche"
   },
   {
