@@ -44,6 +44,11 @@ Se te indicará el TIER de la historia (ABSURDO, ARQUITECTURA, FOLCLORE, MORBO):
 - Mediodía / Tarde: "harsh stark midday sun, sharp dramatic shadows pouring through arches, dusty shafts of light"
 - Crepúsculo / Atardecer: "cinematic golden hour, deep amber and blood-orange sunset light, long eerie shadows"
 - Noche / Madrugada: "pitch darkness, dramatic single candlelight or lantern chiaroscuro, pale moonlit mist"
+13. SINTONÍA VISUAL ESTACIONAL Y EFEMÉRIDES (v4.5): Si el mensaje incluye la directriz `🕯️ EFEMÉRIDE Y TEMPORADA CULTURAL ACTIVA` (ej. Día de Muertos, Octubre Sobrenatural, Semana Santa, etc.):
+- Integra sutilmente los elementos estacionales en al menos el 40% de las escenas y en las portadas.
+- Para DÍA DE MUERTOS / NOVIEMBRE: usa "golden cempasúchil marigold flower petals scattered on wet cobblestones or antique stone, thick fragrant copal incense smoke hanging in night air, flickering beeswax votive candles in darkness, decaying colonial baroque cemetery, authentic Mexican gothic folklore atmosphere".
+- PROHIBICIÓN ESTRICTA ANTI-CLICHÉ: Prohibido incluir adornos plásticos de Halloween estadounidense (cero calabazas talladas de plástico, cero telarañas sintéticas, cero caricaturas o catrinas de carnaval). Debe sentirse solemne, ancestral, misterioso y gótico virreinal.
+
 
 ═══ 📊 CALIBRACIÓN DINÁMICA MULTIRRED (AUTO-OPTIMIZADA POR IA) ═══
 Última actualización de métricas reales (YT + TikTok + IG + FB): 2026-10-13 11:24

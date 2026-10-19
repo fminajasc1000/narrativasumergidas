@@ -98,6 +98,233 @@ TEMAS_AZAR = [
     "procedimiento médico o castigo histórico macabro (morbo médico)", "hecho histórico absurdo, bizarro e indignante que parece mentira",
     "ritual folclórico que aún se practica en secreto", "caso de supervivencia extrema olvidado"]
 
+# ---------------------------------------------------------------------------
+# EFEMÉRIDES, FESTIVIDADES Y CALENDARIO CULTURAL (MÉXICO Y LATAM)
+# ---------------------------------------------------------------------------
+EVENTOS_CALENDARIO_ANUAL = [
+    {
+        "id": "dia_de_muertos",
+        "nombre": "Temporada de Día de Muertos y Culto a los Difuntos en México",
+        "mes_inicio": 10, "dia_inicio": 12,
+        "mes_fin": 11, "dia_fin": 8,
+        "clima_cultural": "Auge anual masivo de búsquedas sobre ánimas en pena, cempasúchil, Mictlán, ofrendas, panteones iluminados y leyendas de cementerios.",
+        "temas_sugeridos": [
+            "Panteón colonial de México en Día de Muertos (San Andrés Mixquic, Panteón de Belén o Janitzio)",
+            "La leyenda del Mictlán y las 9 regiones del inframundo mexica que cruzan las almas",
+            "El ánima en pena que regresa a cobrar una promesa olvidada en la noche de difuntos",
+            "La ofrenda sellada de una casona colonial con flores de cempasúchil y copal",
+            "El perro xoloitzcuintle que guía a las almas perdidas a través del río de la muerte",
+            "La tumba de la niña Nachito en el Panteón de Belén y el misterio de los ataúdes en la superficie",
+            "La mujer vestida de novia que se aparece en la calzada de los muertos el 2 de noviembre"
+        ],
+        "sdxl_visuales": "golden cempasúchil marigold petals scattered on wet ancient stone floor, thick aromatic copal incense smoke in air, beeswax candle flames flickering in darkness, decaying colonial stone tomb, authentic Mexican Day of the Dead gothic atmosphere, candlelight illuminating antique cemetery at twilight, hyperrealistic 8k sharp focus",
+        "hashtags": "#DiaDeMuertos #LeyendasMexicanas #Mictlan #Panteones #TradicionMexicana #Misterio"
+    },
+    {
+        "id": "revolucion_mexicana",
+        "nombre": "Aniversario de la Revolución Mexicana y Crímenes de Época",
+        "mes_inicio": 11, "dia_inicio": 9,
+        "mes_fin": 11, "dia_fin": 25,
+        "clima_cultural": "Trenes militares fantasmas, fusilamientos al amanecer, túneles secretos y tesoros malditos de la bola.",
+        "temas_sugeridos": [
+            "El tren militar revolucionario que descarriló con oro maldito",
+            "Fusilamientos clandestinos y soldaderas fantasma en haciendas del Porfiriato",
+            "Túneles secretos de la Revolución Mexicana donde quedaron soldados emparedados",
+            "La hacienda abandonada donde el paredón de fusilamiento aún sangra"
+        ],
+        "sdxl_visuales": "1910 Mexican Revolution atmosphere, vintage sepia tones, dusty adobe walls, abandoned train tracks, early 20th century armed soldiers with bandoliers, dramatic twilight shadows",
+        "hashtags": "#RevolucionMexicana #HistoriaDeMexico #LeyendasReales #HaciendasMalditas"
+    },
+    {
+        "id": "navidad_oscura",
+        "nombre": "Solsticio de Invierno, Posadas y Leyendas Navideñas Oscuras",
+        "mes_inicio": 12, "dia_inicio": 1,
+        "mes_fin": 12, "dia_fin": 31,
+        "clima_cultural": "Misterios de invierno, casonas heladas, el diablo en las pastorelas y pactos de Nochevieja.",
+        "temas_sugeridos": [
+            "La aparición del Diablo en una pastorela o baile colonial de Nochebuena",
+            "La casona virreinal donde nadie sobrevivió a la cena de Navidad",
+            "El pacto de medianoche en el último minuto del año en un convento abandonado",
+            "Entidades de frío sepulcral y sombras en casonas de cantera en invierno"
+        ],
+        "sdxl_visuales": "freezing cold winter mist, dark colonial stone arches, flickering candle in heavy darkness, frost on iron gates, ominous antique Christmas atmosphere, cinematic low lighting",
+        "hashtags": "#NavidadOscura #LeyendasDeInvierno #MisteriosDeNavidad #TerrorNavideno"
+    },
+    {
+        "id": "ano_nuevo_reyes",
+        "nombre": "Año Nuevo, Brujería Colonial y Día de Reyes",
+        "mes_inicio": 1, "dia_inicio": 1,
+        "mes_fin": 1, "dia_fin": 15,
+        "clima_cultural": "Rituales de inicio de año prohibidos por la Inquisición, tesoros ocultos y apariciones de enero.",
+        "temas_sugeridos": [
+            "El ritual secreto de año nuevo que la Santa Inquisición castigó en la hoguera",
+            "La estatua colonial que lloraba sangre en la víspera de Reyes",
+            "El tesoro de oro enterrado bajo el piso del templo colonial"
+        ],
+        "sdxl_visuales": "candlelit Spanish Inquisition interrogation room, ancient parchment, antique wax seals, cold january night, cobblestone street in mist",
+        "hashtags": "#AñoNuevoOscuro #SantaInquisicion #LeyendasColoniales #Misterios"
+    },
+    {
+        "id": "san_valentin_negro",
+        "nombre": "San Valentín Negro: Crímenes Pasionales y Amores Malditos",
+        "mes_inicio": 2, "dia_inicio": 1,
+        "mes_fin": 2, "dia_fin": 18,
+        "clima_cultural": "Amores prohibidos de convento, amantes emparedados vivos en casonas coloniales y cartas escritas con sangre.",
+        "temas_sugeridos": [
+            "La monja emparedada en el convento por un amor prohibido",
+            "El callejón del beso oscuro: el crimen pasional del siglo XVIII",
+            "El novio cadáver del Palacio de la Autonomía",
+            "La mujer que envenenó la boda en la hacienda de San Antonio"
+        ],
+        "sdxl_visuales": "18th century colonial Mexican bedroom, dried wilted roses, torn bloodstained love letters, antique bridal gown in decay, dramatic baroque chiaroscuro lighting",
+        "hashtags": "#SanValentinNegro #CrimenesPasionales #AmoresMalditos #LeyendasDeAmor"
+    },
+    {
+        "id": "semana_santa_oscura",
+        "nombre": "Cuaresma y Semana Santa Oscura",
+        "mes_inicio": 3, "dia_inicio": 15,
+        "mes_fin": 4, "dia_fin": 15,
+        "clima_cultural": "El diablo suelto en Viernes Santo, procesiones del silencio, judas ardientes y leyendas de la pasión.",
+        "temas_sugeridos": [
+            "El hombre que abrió su negocio en Viernes Santo y atendió al diablo",
+            "La procesión del silencio donde apareció una sombra sin pies",
+            "La maldición del mar rojo en las playas de Veracruz en Semana Santa",
+            "El judas de cartón que cobró vida en la hoguera"
+        ],
+        "sdxl_visuales": "Good Friday solemn procession, hooded penitents with torches, dark baroque Mexican church, purple velvet cloth covering saints, ominous shadows, incense smoke",
+        "hashtags": "#SemanaSantaOscura #ProcesionDelSilencio #ViernesSanto #LeyendasMexicanas"
+    },
+    {
+        "id": "dia_del_nino_juguetes",
+        "nombre": "Día del Niño: Orfanatos Abandonados, Duendes y Juguetes Malditos",
+        "mes_inicio": 4, "dia_inicio": 20,
+        "mes_fin": 5, "dia_fin": 2,
+        "clima_cultural": "Chaneques y duendes en bosques mexicanos, muñecas de Xochimilco y orfanatos antiguos.",
+        "temas_sugeridos": [
+            "La Isla de las Muñecas de Xochimilco y el espíritu de la niña",
+            "El antiguo hospicio infantil donde los juguetes cambian de lugar",
+            "Los chaneques del bosque de Catemaco que se llevan a los niños traviesos",
+            "El carrusel abandonado que gira solo a la medianoche"
+        ],
+        "sdxl_visuales": "decaying antique porcelain dolls, abandoned 1940s orphanage dormitory, rusty playground swings moving in wind, misty canal of Xochimilco, eerie atmospheric lighting",
+        "hashtags": "#DiaDelNinoOscuro #IslaDeLasMunecas #Chaneques #JuguetesMalditos"
+    },
+    {
+        "id": "dia_de_las_madres",
+        "nombre": "Día de las Madres: La Llorona y Enfermeras Legendarias",
+        "mes_inicio": 5, "dia_inicio": 3,
+        "mes_fin": 5, "dia_fin": 15,
+        "clima_cultural": "El origen prehispánico y virreinal de La Llorona (Cihuacóatl), La Planchada y madres de ultratumba.",
+        "temas_sugeridos": [
+            "El verdadero origen virreinal de La Llorona en el Zócalo de CDMX",
+            "La Planchada: la enfermera Eulalia que sigue cuidando enfermos",
+            "La madre del panteón de Dolores que desenterró a su hijo",
+            "La leyenda de la madre protectora de la mina de Guanajuato"
+        ],
+        "sdxl_visuales": "ghostly woman in white veil floating above colonial riverbank, moonlit ancient lake, vintage 1930s hospital corridor with pristine nurse silhouette, emotional gothic horror",
+        "hashtags": "#LaLlorona #LaPlanchada #DiaDeLasMadres #LeyendasDeMexico"
+    },
+    {
+        "id": "noche_de_san_juan",
+        "nombre": "Noche de San Juan y Solsticio de Verano",
+        "mes_inicio": 6, "dia_inicio": 18,
+        "mes_fin": 6, "dia_fin": 30,
+        "clima_cultural": "La noche del 24 de junio cuando las puertas del infierno se abren y los tesoros emiten llamas azules.",
+        "temas_sugeridos": [
+            "La Noche de San Juan: cuando el diablo visita las cantinas",
+            "El tesoro de Moctezuma que arde con fuego fatuo azul el 24 de junio",
+            "Brujas de Catemaco reunidas en el solsticio de verano"
+        ],
+        "sdxl_visuales": "eerie blue will-o-the-wisp flames over colonial ruins, midnight bonfire in dense tropical jungle, silhouette of shadowy figure at crossroad, mystical summer solstice atmosphere",
+        "hashtags": "#NocheDeSanJuan #FuegoFatuo #BrujasDeCatemaco #Misterio"
+    },
+    {
+        "id": "canicula_desiertos",
+        "nombre": "La Canícula: Calor Sofocante, Desiertos y Pueblos Fantasma",
+        "mes_inicio": 7, "dia_inicio": 15,
+        "mes_fin": 8, "dia_fin": 25,
+        "clima_cultural": "Apariciones bajo el sol de 45°C, pueblos mineros fantasmas de Real de Catorce y la Zona del Silencio.",
+        "temas_sugeridos": [
+            "Real de Catorce y el minero que murió de sed emparedado",
+            "La Zona del Silencio en Coahuila: el meteorito y las sombras del desierto",
+            "El autobús fantasma de la carretera de Mapimí en plena canícula",
+            "La hacienda abandonada en el desierto de Sonora donde el pozo tiene sangre"
+        ],
+        "sdxl_visuales": "scorching cracked desert earth, blistering sun haze, ghost town crumbling stone ruins, eerie heat distortion, antique wind turbine creaking",
+        "hashtags": "#Canicula #ZonaDelSilencio #PueblosFantasma #RealDeCatorce"
+    },
+    {
+        "id": "mes_patrio",
+        "nombre": "Mes Patrio: La Inquisición, Conspiraciones y Terror Histórico",
+        "mes_inicio": 9, "dia_inicio": 1,
+        "mes_fin": 9, "dia_fin": 30,
+        "clima_cultural": "Fantasmas del Castillo de Chapultepec, la Alhóndiga de Granaditas, conspiraciones sangrientas y campanas malditas.",
+        "temas_sugeridos": [
+            "La Alhóndiga de Granaditas y las cabezas colgadas en jaulas de hierro",
+            "Las ánimas de los cadetes y emperatriz Carlota en el Castillo de Chapultepec",
+            "El cura fusilado cuya campana suena sola a medianoche",
+            "El terremoto colonial del 19 de septiembre de 1787 en costas mexicanas"
+        ],
+        "sdxl_visuales": "monumental 19th century Chapultepec castle at twilight, iron hanging cages with dark silhouettes, colonial bell tower striking midnight, dramatic patriotic historic horror",
+        "hashtags": "#MesPatrio #HistoriaDeMexico #Alhondiga #CastilloDeChapultepec"
+    },
+    {
+        "id": "octubre_brujeria_nahuales",
+        "nombre": "Octubre de Brujería, Nahuales y Antesala de Difuntos",
+        "mes_inicio": 10, "dia_inicio": 1,
+        "mes_fin": 10, "dia_fin": 26,
+        "clima_cultural": "Mes de nahuales en Tlaxcala, brujas en bolas de fuego en cerros y vampiros coloniales.",
+        "temas_sugeridos": [
+            "Los nahuales de Tlaxcala: hombres que se convierten en bestias en octubre",
+            "La Vampira de la iglesia de San Juan de Dios y la tumba de Belén",
+            "Las bolas de fuego que saltan entre los cerros de Xochimilco",
+            "La bruja de la colonia Roma que usaba el reloj de arena"
+        ],
+        "sdxl_visuales": "full moon illuminating dark colonial rooftop, mysterious shape-shifting beast silhouette in shadows, flying ball of fire over misty Mexican hills, gothic cobblestone alley",
+        "hashtags": "#OctubreDeMisterio #Nahuales #BrujasDeMexico #LeyendasUrbanas"
+    }
+]
+
+def obtener_evento_o_temporada_actual(fecha_ref=None):
+    """Detecta efemérides culturales y estacionales para una fecha (ej. Día de Muertos, Revolución, Mes Patrio)."""
+    from datetime import datetime, date
+    if not fecha_ref:
+        fecha_dt = datetime.now().date()
+    elif isinstance(fecha_ref, (datetime, date)):
+        fecha_dt = fecha_ref if isinstance(fecha_ref, date) else fecha_ref.date()
+    else:
+        try:
+            fecha_dt = datetime.strptime(str(fecha_ref)[:10], "%Y-%m-%d").date()
+        except Exception:
+            fecha_dt = datetime.now().date()
+
+    mes = fecha_dt.month
+    dia = fecha_dt.day
+
+    eventos_coincidentes = []
+    for ev in EVENTOS_CALENDARIO_ANUAL:
+        m_ini, d_ini = ev["mes_inicio"], ev["dia_inicio"]
+        m_fin, d_fin = ev["mes_fin"], ev["dia_fin"]
+
+        if m_ini <= m_fin:
+            en_rango = (m_ini < mes < m_fin) or \
+                       (mes == m_ini and dia >= d_ini) or \
+                       (mes == m_fin and dia <= d_fin)
+        else:
+            en_rango = (mes == m_ini and dia >= d_ini) or (mes == m_fin and dia <= d_fin) or (mes > m_ini or mes < m_fin)
+
+        if en_rango:
+            eventos_coincidentes.append(ev)
+
+    if not eventos_coincidentes:
+        return None
+
+    # Si coincide Día de Muertos, priorizarlo por su enorme impacto algorítmico anual
+    for ev in eventos_coincidentes:
+        if ev["id"] == "dia_de_muertos":
+            return ev
+    return eventos_coincidentes[0]
+
 # Ubicación dual del historial: en el repo (versionado) y en el Home del usuario (a prueba de borrados de carpetas)
 ARCHIVO_HISTORIAS_LOCAL = os.path.abspath("historias_usadas.json")
 ARCHIVO_HISTORIAS_HOME = os.path.expanduser("~/.narrativas_historias_usadas.json")
@@ -2317,6 +2544,12 @@ def pedir_config_semana_completa():
     for f in fechas_semana:
         print(f"   • {f['dia']:<9} ({f['fecha']}): {f['horario_str']} -> {f['enfoque']}")
 
+    ev_sem = obtener_evento_o_temporada_actual(fechas_semana[0]["fecha"])
+    if ev_sem:
+        print(f"\n🕯️ [TEMPORADA / EFEMÉRIDE DETECTADA]: {ev_sem['nombre']}")
+        print(f"   💡 {ev_sem['clima_cultural']}")
+        print(f"   ✨ Claude integrará atmósfera, elementos visuales SDXL y hashtags de esta festividad.")
+
     print("\n¿Cómo deseas definir los 7 temas de la semana?")
     print("  1) 100% Automático / Tendencias (Claude selecciona 7 misterios virales)")
     print("  2) Ingresar los 7 temas (uno por día o separados por '|')")
@@ -2445,8 +2678,30 @@ def pedir_config_videos(num_peticiones=1):
 def construir_mensaje(peticion, evitar, prefijo="Historia sobre"):
     if peticion["tipo"] == "historia":
         return f"Adapta ESTA historia proporcionada por el creador (no inventes otra):\n\n{peticion['texto']}"
-    tema = peticion["texto"] or f"Evento real o leyenda urbana oscura sobre: {random.choice(TEMAS_AZAR)}"
+
+    # Detección de efemérides y eventos relevantes estacionales (Día de Muertos, Mes Patrio, etc.)
+    fecha_lib = peticion.get("fecha_liberacion")
+    evento_estacional = obtener_evento_o_temporada_actual(fecha_lib)
+
+    if peticion.get("texto"):
+        tema = peticion["texto"]
+    elif evento_estacional and evento_estacional.get("temas_sugeridos"):
+        # Priorizar temas estacionales de alto impacto algorítmico
+        pool = evento_estacional["temas_sugeridos"] * 2 + TEMAS_AZAR
+        tema = f"Evento real o leyenda folclórica oscura sobre: {random.choice(pool)}"
+    else:
+        tema = f"Evento real o leyenda urbana oscura sobre: {random.choice(TEMAS_AZAR)}"
+
     msg = f"{prefijo}: {tema}"
+
+    # Inyectar directrices de la efeméride/temporada activa
+    if evento_estacional:
+        msg += (f"\n\n🕯️ EFEMÉRIDE Y TEMPORADA CULTURAL ACTIVA: {evento_estacional['nombre'].upper()}\n"
+                f"- Clima cultural y algoritmo: {evento_estacional['clima_cultural']}\n"
+                f"- REGLA DE ORO ESTACIONAL: Aprovecha el pico algorítmico de esta festividad. "
+                f"Si el tema lo permite o si es un tema folclórico/arquitectónico, ambienta la historia con la atmósfera de esta temporada.\n"
+                f"- ELEMENTOS VISUALES SDXL OBLIGATORIOS: En las escenas de SDXL Lightning, incluye detalles visuales de la temporada ({evento_estacional['sdxl_visuales']}).\n"
+                f"- HASHTAGS SUGERIDOS EN METADATA: {evento_estacional['hashtags']}.\n")
     if peticion.get("de", 1) > 1:
         v = peticion['variante']
         total = peticion['de']
@@ -4284,6 +4539,9 @@ def iniciar():
         aviso = f" (¡{len(pendientes)} pendiente(s) de ensamblar!)" if pendientes else ""
 
         print("\n===== NARRATIVAS SUMERGIDAS =====")
+        ev_hoy = obtener_evento_o_temporada_actual()
+        if ev_hoy:
+            print(f"  🕯️ [TEMPORADA CULTURAL ACTIVA]: {ev_hoy['nombre']}")
         print("  1) Videos verticales (uno o varios)")
         print("  2) Semana Completa (7 videos: Lunes a Domingo con programación automática)")
         print("  3) Historias fotográficas (carruseles FB / IG / YouTube)")

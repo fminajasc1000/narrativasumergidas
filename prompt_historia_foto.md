@@ -32,6 +32,10 @@ REGLAS DE PROMPTS DE IMAGEN (SDXL, en inglés):
    - Diapositivas intermedias: Alterna primer plano de detalle (objeto misterioso, documento, retrato desgastado de época) y planos medios del entorno.
    - Penúltima (Clímax): El encuadre más tenso o perturbador.
    - Última (Comunidad): Composición abierta que acompañe el reto o votación final.
+10. EFEMÉRIDES Y TEMPORADAS CULTURALES (v4.5): Si se te indica una temporada cultural activa (ej. Día de Muertos, Octubre Sobrenatural, Semana Santa Oscura, etc.):
+   - Conecta la historia con la fecha/temporada o crea una 'Ruta de Leyendas' / caso folclórico ambientado en la festividad.
+   - En DÍA DE MUERTOS: incluye detalles visuales auténticos (panteones virreinales, alfombras de pétalos de cempasúchil, humo denso de copal, veladoras de cera en la oscuridad) y copys que inviten a guardar el post como 'ruta de misterio de temporada'.
+   - Prohibido clichés comerciales de Halloween gringo; profundidad gótica y folclórica mexicana/latinoamericana auténtica.
 
 REGLAS DE METADATA:
 - facebook: ángulo polémico/dilema moral, clickbait ético ("¿Qué opinas de esta atrocidad?"), pide etiquetar a alguien. instagram: visual, estético, dato curioso GUARDABLE ("guarda esto"), invita a compartir. youtube_community: pregunta directa + encuesta.
