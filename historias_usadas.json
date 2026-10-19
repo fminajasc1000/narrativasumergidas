@@ -362,12 +362,15 @@
   {
     "titulo": "San Juan de Ulúa: las Tinajas donde el mar entraba cada noche",
     "fecha": "2026-10-18 18:56:47",
-    "ultima_actualizacion": "2026-10-18 18:56:47",
+    "ultima_actualizacion": "2026-10-19 09:10:50",
     "tipo": "video",
     "slug": "san_juan_de_ulúa_las_tinajas_donde_el_ma",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "ARQUITECTURA",
+    "duracion_audio_s": 110.2,
+    "num_imagenes": 18,
     "carpeta": "san_juan_de_ulúa_las_tinajas_donde_el_ma",
+    "archivo_salida": "san_juan_de_ulúa_las_tinajas_donde_el_ma.mp4",
     "momento_dia": "noche"
   },
   {
