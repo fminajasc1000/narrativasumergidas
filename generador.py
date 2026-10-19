@@ -742,7 +742,7 @@ def resolver_fechas_semana_completa(referencia_semana=None):
             "momento": item["momento"],
             "enfoque": item["enfoque"],
             "fecha_prog_iso": iso_utc,
-            "dt_cst": dt_cst
+            "hora_cst": f"{h:02d}:{m:02d}"
         })
     return res
 
@@ -3562,7 +3562,7 @@ def cargar_manifest(ruta):
     except Exception: return None
 
 def guardar_manifest(ruta, m):
-    with open(ruta, "w", encoding="utf-8") as f: json.dump(m, f, ensure_ascii=False, indent=2)
+    with open(ruta, "w", encoding="utf-8") as f: json.dump(m, f, ensure_ascii=False, indent=2, default=str)
 
 def titulo_de(d):
     return (d.get("episodio", d) or {}).get("titulo", "")
