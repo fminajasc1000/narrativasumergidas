@@ -206,12 +206,15 @@
   {
     "titulo": "La Novia de la Calzada de los Misterios: la que pide lumbre el 2 de noviembre (Tepeyac, CDMX)",
     "fecha": "2026-10-18 18:50:55",
-    "ultima_actualizacion": "2026-10-18 18:50:55",
+    "ultima_actualizacion": "2026-10-19 08:54:40",
     "tipo": "video",
     "slug": "la_novia_de_la_calzada_de_los_misterios_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 106.4,
+    "num_imagenes": 16,
     "carpeta": "la_novia_de_la_calzada_de_los_misterios_",
+    "archivo_salida": "la_novia_de_la_calzada_de_los_misterios_.mp4",
     "momento_dia": "tarde"
   },
   {
