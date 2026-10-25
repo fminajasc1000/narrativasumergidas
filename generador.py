@@ -1464,6 +1464,81 @@ def subir_video_instagram(ruta_video, titulo=None, descripcion=None, hashtags=No
         print(f"✖ Error subiendo a Instagram: {e}")
         return None
 
+def procesar_cola_instagram_pendiente(limite=1):
+    """
+    Revisa cola_instagram_programada.json y procesa los reels pendientes cuya hora ya llegó.
+    Por seguridad algorítmica, procesa como máximo 'limite' video(s) por ejecución para no saturar Instagram.
+    """
+    ruta_json_cola = "cola_instagram_programada.json"
+    if not os.path.exists(ruta_json_cola):
+        return
+    try:
+        with open(ruta_json_cola, "r", encoding="utf-8") as f:
+            cola = json.load(f)
+    except Exception:
+        return
+
+    if not isinstance(cola, list) or not cola:
+        return
+
+    from datetime import datetime, timezone
+    nueva_cola = []
+    ahora_ts = time.time()
+    modificado = False
+    procesados = 0
+
+    for item in cola:
+        if item.get("estado") == "publicado":
+            continue
+        ruta_mp4 = item.get("archivo_mp4")
+        if not ruta_mp4 or not os.path.exists(ruta_mp4):
+            modificado = True
+            continue
+
+        pub_iso = item.get("publish_at_iso")
+        ts_pub = ahora_ts
+        if pub_iso:
+            try:
+                dt_u = datetime.strptime(pub_iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                ts_pub = dt_u.timestamp()
+            except Exception:
+                ts_pub = ahora_ts
+
+        # Si ya venció su hora programada y no hemos superado el límite seguro de publicaciones en esta sesión
+        if ahora_ts >= ts_pub - 60:
+            if procesados < limite:
+                print(f"\n📸 [COLA INSTAGRAM PENDIENTE]: Procesando Reel pendiente programado para {formatear_hora_cst(pub_iso)}...")
+                res = subir_video_instagram(
+                    ruta_mp4,
+                    titulo=item.get("titulo"),
+                    descripcion=item.get("descripcion"),
+                    hashtags=item.get("hashtags"),
+                    publish_at_iso=None
+                )
+                if res:
+                    item["estado"] = "publicado"
+                    item["publicado_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                    try:
+                        if os.path.exists(ruta_mp4):
+                            os.remove(ruta_mp4)
+                    except Exception:
+                        pass
+                    modificado = True
+                    procesados += 1
+                else:
+                    nueva_cola.append(item)
+            else:
+                nueva_cola.append(item)
+        else:
+            nueva_cola.append(item)
+
+    if modificado:
+        try:
+            with open(ruta_json_cola, "w", encoding="utf-8") as f:
+                json.dump(nueva_cola, f, ensure_ascii=False, indent=2, default=str)
+        except Exception:
+            pass
+
 def obtener_metricas_meta():
     """Consulta métricas de Facebook e Instagram (vistas, alcance, guardados, compartidos, likes, comentarios)
     si existen credenciales en token_meta.json o .env."""
@@ -3969,7 +4044,7 @@ def flujo_videos(manifest_preparado=None):
             detener_sd(p)
 
     print("\n🎬 Ensamblando y publicando videos automáticamente...")
-    for ep, c, aud in trabajos:
+    for i, (ep, c, aud) in enumerate(trabajos):
         mp4 = os.path.join(c, f"{c}.mp4")
         if not os.path.exists(mp4):
             if not os.path.exists(aud) or lista_imagenes_faltantes(ep, c):
@@ -4249,14 +4324,15 @@ def parsear_metadata_carpeta(ruta_carpeta):
                 ("youtube_shorts", "YOUTUBE SHORTS"),
                 ("tiktok", "TIKTOK"),
                 ("facebook_reels", "FACEBOOK REELS"),
-                ("instagram_reels", "INSTAGRAM REELS")
+                ("instagram_reels", "INSTAGRAM REELS"),
+                ("bilibili", "BILIBILI")
             ]:
-                patron_red = rf"##\s*{red_header}\s*\n(.*?)(?=\n##\s|\n---|$)"
+                patron_red = rf"#{{2,4}}\s*{red_header}\s*\n(.*?)(?=\n#{{2,4}}\s|\n---|[\r\n]{{2,}}#|$)"
                 m_red = re.search(patron_red, contenido, re.DOTALL)
                 if m_red:
-                    bloque_r = m_red.group(1)
+                    bloque_r = m_red.group(1).strip()
                     t_r = re.search(r"\*\*Título:\*\*\s*(.+)", bloque_r)
-                    d_r = re.search(r"\*\*Descripción:\*\*\s*(.+)", bloque_r)
+                    d_r = re.search(r"\*\*Descripción:\*\*\s*(.*?)(?=\n\*\*Hashtags:\*\*|\n\*\*|$)", bloque_r, re.DOTALL)
                     h_r = re.search(r"\*\*Hashtags:\*\*\s*(.+)", bloque_r)
                     meta_extraida[red_key] = {
                         "titulo": t_r.group(1).strip() if t_r else info["titulo"],
@@ -4561,6 +4637,8 @@ def flujo_semana_completa():
 # ---------------------------------------------------------------------------
 def iniciar():
     if not API_KEY_ANTHROPIC: print("⚠ Falta API_KEY_ANTHROPIC en .env")
+    try: procesar_cola_instagram_pendiente(limite=1)
+    except Exception: pass
     while True:
         carpetas = detectar_carpetas_inconclusas()
         pendientes = [c for c in carpetas if not c["tiene_mp4"]]
