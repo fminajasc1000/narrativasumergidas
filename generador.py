@@ -1229,8 +1229,8 @@ def subir_video_tiktok(ruta_video, titulo=None, descripcion=None, hashtags=None)
         print(f"✖ Error subiendo a TikTok: {e}")
         return None
 
-def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_iso=None):
-    """Sube y publica (o programa) un video directamente en la Página de Facebook vía Graph API."""
+def subir_video_facebook(ruta_video, titulo=None, descripcion=None, hashtags=None, publish_at_iso=None):
+    """Sube y publica (o programa) un video directamente en la Página de Facebook vía Graph API optimizado para Facebook Reels."""
     if not os.path.exists(ruta_video):
         return None
 
@@ -1251,11 +1251,25 @@ def subir_video_facebook(ruta_video, titulo=None, descripcion=None, publish_at_i
         modo_str = f"PROGRAMADO ({formatear_hora_cst(publish_at_iso)})" if publish_at_iso else "PÚBLICO INMEDIATO"
         print(f"\n📘 Subiendo video a Facebook Page [{modo_str}]: '{os.path.basename(ruta_video)}' ({tam_mb:.1f} MB)...")
 
+        # Formatear el copy con gancho, separación de párrafos y hashtags de distribución de Reels
+        desc_limpia = (descripcion or "").strip()
+        tags_limpios = (hashtags or "").strip()
+        if tags_limpios:
+            if "#Reels" not in tags_limpios and "#reels" not in tags_limpios:
+                tags_limpios = f"{tags_limpios} #Reels"
+        else:
+            tags_limpios = "#Reels #DatosCuriosos #HistoriaReal #LeyendasDeMexico #Misterio"
+
+        if desc_limpia:
+            copy_completo = f"{desc_limpia}\n\n{tags_limpios}"
+        else:
+            copy_completo = f"{titulo or ''}\n\n{tags_limpios}".strip()
+
         url = f"https://graph-video.facebook.com/v19.0/{page_id}/videos"
         payload = {
             "access_token": token,
             "title": titulo or os.path.splitext(os.path.basename(ruta_video))[0],
-            "description": descripcion or ""
+            "description": copy_completo
         }
 
         programado_fb = False
@@ -3677,7 +3691,8 @@ def publicar_video_en_4_redes(mp4, ep, carpeta, fecha_prog_iso=None, on_progress
         else:
             tit_fb = meta_fb.get("titulo") or ep.get("titulo", carpeta)
             desc_fb = meta_fb.get("descripcion", "")
-            res_fb = subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, publish_at_iso=fecha_prog_iso)
+            tags_fb = meta_fb.get("hashtags") or "#Reels #DatosCuriosos #HistoriaReal #LeyendasDeMexico #Misterio"
+            res_fb = subir_video_facebook(mp4, titulo=tit_fb, descripcion=desc_fb, hashtags=tags_fb, publish_at_iso=fecha_prog_iso)
             if res_fb:
                 ya_publicadas["facebook_reels"] = res_fb
                 if on_progress: on_progress()
