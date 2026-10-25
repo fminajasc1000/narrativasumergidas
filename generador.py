@@ -780,10 +780,11 @@ def formatear_hora_cst(publish_at_iso):
     except Exception:
         return publish_at_iso
 
-def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_base=None, forzar_programacion=True):
+def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_base=None, offset_dias=0, forzar_programacion=True):
     """Calcula fecha/hora en formato ISO 8601 UTC (RFC 3339) para programar en las redes sociales.
     Zona horaria de referencia: CST (México, UTC-6).
     Soporta entradas naturales como 'mañana', 'hoy', 'viernes', 'mañana 21:00', '01:30', '2026-10-15 20:00'.
+    offset_dias permite espaciar lotes de videos en días consecutivos para no saturar las redes.
     Cuando forzar_programacion=True, NUNCA devuelve None (garantiza que jamás se libere de inmediato por error)."""
     from datetime import datetime, timedelta, timezone
     tz_cst = timezone(timedelta(hours=-6))
@@ -809,6 +810,9 @@ def calcular_fecha_programacion(momento_dia=None, hora_especifica=None, fecha_ba
             y, m, d = map(int, fecha_norm.split("-"))
             base_dt = ahora_cst.replace(year=y, month=m, day=d, second=0, microsecond=0)
             tiene_fecha_explicita = True
+
+        if offset_dias and int(offset_dias) > 0:
+            base_dt = base_dt + timedelta(days=int(offset_dias))
 
         if hora_especifica and str(hora_especifica).strip():
             he = str(hora_especifica).strip().lower()
@@ -2629,10 +2633,10 @@ FRANJAS_DIA = {
     "2": ("Mañana (07:00 - 10:00 CST: despertar, transporte, datos insólitos)", "manana"),
     "3": ("Mediodía (12:00 - 15:00 CST: break de almuerzo, misterio y arquitectura)", "mediodia"),
     "4": ("Tarde (16:00 - 19:00 CST: salida laboral/escolar, debate en Facebook)", "tarde"),
-    "5": ("Noche Prime (20:00 - 23:00 CST: máxima oscuridad, terror inmersivo)", "noche"),
+    "5": ("Noche Prime (20:00 - 23:00 CST: máxima oscuridad, terror inmersivo - RECOMENDADO)", "noche"),
     "6": ("Madrugada / Insomnio (00:00 - 04:00 CST: paranoia y misterio para desvelados)", "madrugada"),
-    "7": ("Jornada 24H Completa (1 por franja: Mañana, Mediodía, Tarde, Noche y Madrugada)", "jornada_completa"),
-    "8": ("Semana Completa (Lunes a Domingo: 1 video diario con horario prime-time calibrado)", "semana_completa"),
+    "7": ("⚠️ Jornada 24H (5 videos el MISMO día: ¡CUIDADO! Puede penalizar alcance por spam)", "jornada_completa"),
+    "8": ("Semana Completa (Lunes a Domingo: 1 video diario en días consecutivos)", "semana_completa"),
 }
 
 ORDEN_5_FRANJAS = ["manana", "mediodia", "tarde", "noche", "madrugada"]
@@ -2641,23 +2645,29 @@ def pedir_config_videos(num_peticiones=1):
     print("\n¿Para qué momento del día deseas enfocar la historia / publicación?")
     for k, (nombre, _) in FRANJAS_DIA.items():
         print(f"  {k}) {nombre}")
-    # Si se solicitaron 5 entregas, sugerir opción 7 (Jornada 24H) por defecto
-    defecto = "7" if num_peticiones == 5 else "1"
+    # Por seguridad algorítmica, sugerir Noche Prime (5) o Multi (1), NUNCA jornada 24H por defecto
+    defecto = "5" if num_peticiones > 1 else "1"
     op = input(f"Opción [{defecto}]: ").strip() or defecto
     _, clave = FRANJAS_DIA.get(op, FRANJAS_DIA["1"])
 
     fecha_liberacion = None
-    if num_peticiones == 5 or clave == "jornada_completa":
-        print("\n📅 ¿En qué DÍA buscas liberar este lote de 5 videos (Jornada 24H Completa)?")
-        print("   (Puedes escribir: 'mañana', 'hoy', un día como 'viernes', 'sábado', 'domingo' o fecha 'YYYY-MM-DD')")
-        dia_in = input("Día de liberación del lote [mañana]: ").strip() or "mañana"
-        fecha_liberacion = resolver_fecha_dia(dia_in)
-        print(f"   ✔ Lote programado para la jornada del día: {fecha_liberacion}")
-        print(f"     • Video 1 (Mañana):      {fecha_liberacion} 08:00 CST")
-        print(f"     • Video 2 (Mediodía):    {fecha_liberacion} 13:00 CST")
-        print(f"     • Video 3 (Tarde):       {fecha_liberacion} 17:00 CST")
-        print(f"     • Video 4 (Noche Prime): {fecha_liberacion} 21:00 CST")
-        print(f"     • Video 5 (Madrugada):   01:30 CST (cierre de madrugada de la jornada)")
+    if clave == "jornada_completa":
+        print("\n⚠️ [AVISO ALGORÍTMICO]: Publicar 5 videos el mismo día suele activar detectores antispam en Facebook/Instagram (-100x de distribución).")
+        seguro = input("   ¿Seguro que deseas publicar 5 videos en un solo día? [s/N]: ").strip().lower()
+        if seguro != "s":
+            print("   ✔ Cambiando a publicación espaciada: 1 video diario en días consecutivos a las 20:30 CST.")
+            clave = "noche"
+        else:
+            print("\n📅 ¿En qué DÍA buscas liberar este lote de 5 videos (Jornada 24H Completa)?")
+            print("   (Puedes escribir: 'mañana', 'hoy', un día como 'viernes', 'sábado', 'domingo' o fecha 'YYYY-MM-DD')")
+            dia_in = input("Día de liberación del lote [mañana]: ").strip() or "mañana"
+            fecha_liberacion = resolver_fecha_dia(dia_in)
+            print(f"   ✔ Lote programado para la jornada del día: {fecha_liberacion}")
+            print(f"     • Video 1 (Mañana):      {fecha_liberacion} 08:00 CST")
+            print(f"     • Video 2 (Mediodía):    {fecha_liberacion} 13:00 CST")
+            print(f"     • Video 3 (Tarde):       {fecha_liberacion} 17:00 CST")
+            print(f"     • Video 4 (Noche Prime): {fecha_liberacion} 21:00 CST")
+            print(f"     • Video 5 (Madrugada):   01:30 CST (cierre de madrugada de la jornada)")
 
     print("\n¿Deseas programar la publicación automática en las redes (SIN liberar de inmediato al público)?")
     print("  1) Publicar de inmediato al terminar el ensamblaje")
@@ -3984,10 +3994,12 @@ def flujo_videos(manifest_preparado=None):
                 momento_actual = ep.get("momento_dia") or cfg.get("momento_dia") or "multi"
                 fecha_prog_iso = ep.get("fecha_prog_iso")
                 if not fecha_prog_iso:
+                    offset_d = i if (not ep.get("fecha_liberacion") and cfg.get("momento_dia") != "jornada_completa") else 0
                     if modo_prog == "auto_franja":
                         fecha_prog_iso = calcular_fecha_programacion(
                             momento_dia=momento_actual,
                             fecha_base=ep.get("fecha_liberacion") or cfg.get("fecha_liberacion"),
+                            offset_dias=offset_d,
                             forzar_programacion=True
                         )
                     elif modo_prog == "personalizada":
@@ -3995,6 +4007,7 @@ def flujo_videos(manifest_preparado=None):
                             momento_dia=momento_actual,
                             hora_especifica=cfg.get("hora_personalizada"),
                             fecha_base=ep.get("fecha_liberacion") or cfg.get("fecha_liberacion"),
+                            offset_dias=offset_d,
                             forzar_programacion=True
                         )
 
