@@ -321,12 +321,15 @@
   {
     "titulo": "La Xtabay y el perfume del Cementerio General de Mérida",
     "fecha": "2026-10-25 18:50:51",
-    "ultima_actualizacion": "2026-10-25 18:50:51",
+    "ultima_actualizacion": "2026-10-26 02:28:00",
     "tipo": "video",
     "slug": "la_xtabay_y_el_perfume_del_cementerio_ge",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 116.0,
+    "num_imagenes": 26,
     "carpeta": "la_xtabay_y_el_perfume_del_cementerio_ge",
+    "archivo_salida": "la_xtabay_y_el_perfume_del_cementerio_ge.mp4",
     "momento_dia": "tarde"
   },
   {
