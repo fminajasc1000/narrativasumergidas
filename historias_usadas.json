@@ -262,12 +262,15 @@
   {
     "titulo": "La Pascualita: la novia de la vitrina que dicen que no es maniquí (Chihuahua)",
     "fecha": "2026-10-25 18:47:34",
-    "ultima_actualizacion": "2026-10-25 18:47:34",
+    "ultima_actualizacion": "2026-10-26 02:17:14",
     "tipo": "video",
     "slug": "la_pascualita_la_novia_de_la_vitrina_que",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 104.2,
+    "num_imagenes": 17,
     "carpeta": "la_pascualita_la_novia_de_la_vitrina_que",
+    "archivo_salida": "la_pascualita_la_novia_de_la_vitrina_que.mp4",
     "momento_dia": "tarde"
   },
   {
