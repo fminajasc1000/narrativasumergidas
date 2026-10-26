@@ -408,5 +408,16 @@
     "carpeta": "san_pascualito_rey_el_esqueleto_de_tuxtl",
     "archivo_salida": "san_pascualito_rey_el_esqueleto_de_tuxtl.mp4",
     "momento_dia": "manana"
+  },
+  {
+    "titulo": "Señor Xólotl: el perro de Frida Kahlo que esperaba en la Casa Azul",
+    "fecha": "2026-10-25 18:41:31",
+    "ultima_actualizacion": "2026-10-25 18:41:31",
+    "tipo": "video",
+    "slug": "señor_xólotl_el_perro_de_frida_kahlo_que",
+    "estado": "guion_listo",
+    "tier": "FOLCLORE",
+    "carpeta": "señor_xólotl_el_perro_de_frida_kahlo_que",
+    "momento_dia": "noche"
   }
 ]
