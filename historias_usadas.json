@@ -329,12 +329,15 @@
   {
     "titulo": "La momia que grita: Ignacia Aguilar y el Panteón de Santa Paula, Guanajuato",
     "fecha": "2026-10-25 18:34:55",
-    "ultima_actualizacion": "2026-10-25 18:34:55",
+    "ultima_actualizacion": "2026-10-26 01:36:48",
     "tipo": "video",
     "slug": "la_momia_que_grita_ignacia_aguilar_y_el_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 113.5,
+    "num_imagenes": 26,
     "carpeta": "la_momia_que_grita_ignacia_aguilar_y_el_",
+    "archivo_salida": "la_momia_que_grita_ignacia_aguilar_y_el_.mp4",
     "momento_dia": "noche"
   },
   {
