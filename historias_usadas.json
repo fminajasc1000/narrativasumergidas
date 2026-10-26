@@ -276,12 +276,15 @@
   {
     "titulo": "La Patria que llora: el Panteón de San Fernando y la tumba de Juárez",
     "fecha": "2026-10-25 18:53:41",
-    "ultima_actualizacion": "2026-10-25 18:53:41",
+    "ultima_actualizacion": "2026-10-26 02:38:25",
     "tipo": "video",
     "slug": "la_patria_que_llora_el_panteón_de_san_fe",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 110.8,
+    "num_imagenes": 26,
     "carpeta": "la_patria_que_llora_el_panteón_de_san_fe",
+    "archivo_salida": "la_patria_que_llora_el_panteón_de_san_fe.mp4",
     "momento_dia": "noche"
   },
   {
