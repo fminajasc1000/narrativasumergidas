@@ -72,12 +72,15 @@
   {
     "titulo": "El Xoloitzcuintle de Colima: el perro que cruzaba almas por el río Apanohuaya",
     "fecha": "2026-10-25 18:37:52",
-    "ultima_actualizacion": "2026-10-25 18:37:52",
+    "ultima_actualizacion": "2026-10-26 01:46:57",
     "tipo": "video",
     "slug": "el_xoloitzcuintle_de_colima_el_perro_que",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 102.0,
+    "num_imagenes": 24,
     "carpeta": "el_xoloitzcuintle_de_colima_el_perro_que",
+    "archivo_salida": "el_xoloitzcuintle_de_colima_el_perro_que.mp4",
     "momento_dia": "noche"
   },
   {
