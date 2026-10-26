@@ -100,12 +100,15 @@
   {
     "titulo": "Janitzio: los muertos que llegan remando en la Noche de Ánimas",
     "fecha": "2026-10-25 18:44:38",
-    "ultima_actualizacion": "2026-10-25 18:44:38",
+    "ultima_actualizacion": "2026-10-26 02:07:59",
     "tipo": "video",
     "slug": "janitzio_los_muertos_que_llegan_remando_",
-    "estado": "guion_listo",
+    "estado": "video_ensamblado",
     "tier": "FOLCLORE",
+    "duracion_audio_s": 105.3,
+    "num_imagenes": 25,
     "carpeta": "janitzio_los_muertos_que_llegan_remando_",
+    "archivo_salida": "janitzio_los_muertos_que_llegan_remando_.mp4",
     "momento_dia": "noche"
   },
   {
