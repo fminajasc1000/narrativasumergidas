@@ -265,6 +265,17 @@
     "momento_dia": "tarde"
   },
   {
+    "titulo": "La Patria que llora: el Panteón de San Fernando y la tumba de Juárez",
+    "fecha": "2026-10-25 18:53:41",
+    "ultima_actualizacion": "2026-10-25 18:53:41",
+    "tipo": "video",
+    "slug": "la_patria_que_llora_el_panteón_de_san_fe",
+    "estado": "guion_listo",
+    "tier": "FOLCLORE",
+    "carpeta": "la_patria_que_llora_el_panteón_de_san_fe",
+    "momento_dia": "noche"
+  },
+  {
     "titulo": "La Planchada: la enfermera que sigue de guardia en el Hospital Juárez",
     "fecha": "2026-10-13 18:32:02",
     "ultima_actualizacion": "2026-10-13 19:40:58",
